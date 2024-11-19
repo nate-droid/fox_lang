@@ -68,7 +68,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_reduce() {
+    fn test_sub_left() {
         let input = "((A -> C) -> B)";
         let mut parser = Parser::new(input.to_string());
         let res = parser.parse();
@@ -78,5 +78,21 @@ mod tests {
         let x = res.unwrap_or(Node::EmptyNode);
         println!("{:?}", x);
         reduce(x);
+    }
+
+    #[test]
+    fn test_sub_right() {
+        let input = "(A -> (B -> C))";
+        let mut parser = Parser::new(input.to_string());
+        let res = parser.parse();
+        println!("{:?}", res);
+        // check if the result is Ok
+
+        let x = res.unwrap_or(Node::EmptyNode);
+        println!("{:?}", x);
+        // reduce(x);
+        println!("left: {:?}", x.left());
+        println!("operator: {:?}", x.operator());
+        println!("right: {:?}", x.right());
     }
 }

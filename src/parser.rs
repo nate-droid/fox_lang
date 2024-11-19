@@ -1,3 +1,4 @@
+use std::cmp::PartialEq;
 use std::fmt::Error;
 use crate::lexer::{Token, TokenKind};
 use crate::lexer::Lexer;
@@ -15,6 +16,8 @@ use crate::parser::ParseError::EmptyNode;
 pub enum ParseError {
     UnexpectedToken,
     EmptyNode, // this is when there is no node to parse
+    AccessOutOfBoundsToken,
+    UnhandledBehaviour,
 }
 
 impl fmt::Display for ParseError {
@@ -22,6 +25,8 @@ impl fmt::Display for ParseError {
         match self {
             ParseError::UnexpectedToken => write!(f, "Unexpected token"),
             ParseError::EmptyNode => write!(f, "Empty node"),
+            ParseError::AccessOutOfBoundsToken => write!(f, "Access out of bounds token"),
+            ParseError::UnhandledBehaviour => write!(f, "Unhandled behaviour"),
         }
     }
 }
@@ -122,52 +127,57 @@ impl Parser {
                     self.advance();
 
                     let expr = self.parse_expression()?;
+                    println!("expr!! {:?}", expr);
+                    println!("current token: {:?}", self.current());
 
-                    println!("Best Expression: {:?}", expr);
-                    println!("current: {:?}", self.tokens[self.position]);
-                    // match self.tokens[self.position].kind {
-                    //     TokenKind::Identifier => {
-                    //
-                    //         let left_node = Node::Identifier {
-                    //             value: self.tokens[self.position].value.clone(),
-                    //         };
-                    //
-                    //         self.advance();
-                    //
-                    //         let operator = self.tokens[self.position].kind.clone();
-                    //
-                    //         self.advance();
-                    //
-                    //         let right_node = Node::Identifier {
-                    //             value: self.tokens[self.position].value.clone(),
-                    //         };
-                    //
-                    //         let binary_expression = Node::BinaryExpression {
-                    //             left: Box::new(left_node),
-                    //             operator,
-                    //             right: Box::new(right_node),
-                    //         };
-                    //         println!("Binary Expression: {:?}", binary_expression);
-                    //
-                    //         // TODO: add an "expect" function to check if the next token is a RightParenthesis
-                    //         return Ok(binary_expression);
-                    //     }
-                    //     TokenKind::UnaryOperator => {
-                    //         println!("Unary Operator");
-                    //     }
-                    //     TokenKind::LeftParenthesis => {
-                    //         // need to parse another sub-expression recursively
-                    //         let x = self.parse();
-                    //         println!("sub results!");
-                    //         println!("{:?}", x);
-                    //         // TODO: Nate, come back here and unpack the results and store in the parent node
-                    //
-                    //     }
-                    //     _ => {
-                    //         println!("Unexpected token {:?}", self.tokens[self.position]);
-                    //         Err(ParseError::UnexpectedToken)?;
-                    //     }
-                    // }
+                    // TODO: Make sure that all expressions consume the corresponding right and left parenthesis
+
+                    if self.current().kind == TokenKind::LeftParenthesis {
+                        self.advance();
+
+                        let right = self.parse_expression()?;
+
+                        println!("expr {:?}", expr);
+
+                        let binary_expression = Node::BinaryExpression {
+                            left: Box::new(expr),
+                            operator: TokenKind::Implies,
+                            right: Box::new(right),
+                        };
+                        return Ok(binary_expression);
+                    }
+
+                    self.advance();
+
+                    if self.current().kind != TokenKind::RightParenthesis {
+                        println!("Unexpected token: {:?}", self.current());
+                        return Err(ParseError::UnexpectedToken);
+                    }
+
+                    self.advance();
+
+                    if self.position >= self.tokens.len() {
+                        // Reached the end of input
+                        return Ok(expr);
+                    }
+
+                    // TODO: if the current token is an Operator, parse the right hand side of the expression
+                    if self.current().kind == TokenKind::Implies {
+                        // TODO: Write a function that checks a list of "operator" tokens
+                        let left = expr.clone();
+                        let operator = self.tokens[self.position].kind.clone();
+                        self.advance();
+
+                        let right = self.parse_expression()?;
+
+                        let binary_expression = Node::BinaryExpression {
+                            left: Box::new(left),
+                            operator,
+                            right: Box::new(right),
+                        };
+
+                        return Ok(binary_expression);
+                    }
                 }
                 TokenKind::RightParenthesis => {
                     // End "parse Expression"
@@ -175,12 +185,13 @@ impl Parser {
                 }
                 TokenKind::Implies => {
                     println!("Implies");
+                    // TODO Parse the right hand side of the expression
                 }
                 TokenKind::Identifier => {
                     println!("Identifier");
                 }
                 _ => {
-                    println!("Other");
+                    return Err(ParseError::UnexpectedToken);
                 }
             }
             self.advance();
@@ -194,6 +205,20 @@ impl Parser {
         self.position += 1;
     }
 
+    fn peek(&self) -> Token {
+        if self.position + 1 >= self.tokens.len() {
+            return Token {
+                value: "".to_string(),
+                kind: TokenKind::End,
+            };
+        }
+        self.tokens[self.position+1].clone()
+    }
+
+    fn current(&self) -> Token {
+        self.tokens[self.position].clone()
+    }
+
     fn parse_expression(&mut self) -> Result<Node, ParseError> {
         let mut node = Node::EmptyNode;
         match self.tokens[self.position].kind {
@@ -202,12 +227,52 @@ impl Parser {
                 self.advance();
                 let sub_expression = self.parse_expression()?;
                 node = sub_expression;
-                // TODO: What is the best way to handle the results of the sub expression?
+
+                self.advance();
+
+                return Ok(node);
             }
             TokenKind::Identifier => {
-                let binary_expression = self.parse_binary_expression()?;
-                // TODO: add an "expect" function to check if the next token is a RightParenthesis
-                return Ok(binary_expression);
+                if self.peek().kind == TokenKind::RightParenthesis {
+                    let identifier = Node::Identifier {
+                        value: self.tokens[self.position].value.clone(),
+                    };
+                    return Ok(identifier);
+                } else if self.peek().kind == TokenKind::Implies { // TODO add more operators
+                    let left = Node::Identifier {
+                        value: self.tokens[self.position].value.clone(),
+                    };
+
+                    self.advance();
+                    let operator = self.tokens[self.position].kind.clone();
+                    self.advance();
+
+                    if self.tokens[self.position].kind == TokenKind::LeftParenthesis {
+                        let right = self.parse_expression()?;
+
+                        return Ok(Node::BinaryExpression {
+                            left: Box::new(left),
+                            operator,
+                            right: Box::new(right),
+                        });
+                    }
+
+                    let right = Node::Identifier {
+                        value: self.tokens[self.position].value.clone(),
+                    };
+
+                    let binary_expression = Node::BinaryExpression {
+                        left: Box::new(left),
+                        operator,
+                        right: Box::new(right),
+                    };
+
+                    return Ok(binary_expression);
+                } else {
+                    println!("Identifier: {:?}", self.tokens[self.position]);
+                    println!("Peek: {:?}", self.peek());
+                    return Err(ParseError::UnhandledBehaviour);
+                }
             }
             TokenKind::UnaryOperator => {
                 // parse unary expression
@@ -233,6 +298,10 @@ impl Parser {
 
         self.advance();
 
+        if self.position >= self.tokens.len() {
+            return Err(ParseError::AccessOutOfBoundsToken);
+        }
+
         let right_node = Node::Identifier {
             value: self.tokens[self.position].value.clone(),
         };
@@ -242,9 +311,7 @@ impl Parser {
             operator,
             right: Box::new(right_node),
         };
-        println!("Binary Expression: {:?}", binary_expression);
 
-        // TODO: add an "expect" function to check if the next token is a RightParenthesis
         Ok(binary_expression)
     }
 }
@@ -258,8 +325,9 @@ mod tests {
         let input = "(A -> B)";
         let mut parser = Parser::new(input.to_string());
         let res = parser.parse();
-        println!("{:?}", res);
-        // check if the result is Ok
+
+        // Assert that the result is Ok
+        assert!(res.is_ok());
 
         let x = res.unwrap();
         println!("{:?}", x);

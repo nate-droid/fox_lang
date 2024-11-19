@@ -5,7 +5,7 @@ pub(crate) struct Token {
     pub(crate) kind: TokenKind,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum TokenKind {
     Number,
     Operator,
