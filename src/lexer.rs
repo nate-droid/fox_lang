@@ -15,9 +15,12 @@ pub enum TokenKind {
     Whitespace,
     Identifier,
     End,
+    Pipe,
     // Logic
     Implies,
     Negation,
+    Turnstile,
+    And,
 }
 
 impl TokenKind {
@@ -90,6 +93,20 @@ impl Lexer {
                         kind: TokenKind::RightParenthesis,
                     });
                 }
+                '|' => {
+                    if self.peek() == '-' {
+                        self.tokens.push(Token {
+                            value: "|-".to_string(),
+                            kind: TokenKind::Turnstile,
+                        });
+                        self.next_char();
+                    } else {
+                        self.tokens.push(Token {
+                            value: self.char.to_string(),
+                            kind: TokenKind::Pipe,
+                        });
+                    }
+                }
                 '-' => {
                     if self.peek() == '>' {
                         self.tokens.push(Token {
@@ -103,6 +120,12 @@ impl Lexer {
                             kind: TokenKind::Operator,
                         });
                     }
+                }
+                '~' => {
+                    self.tokens.push(Token {
+                        value: self.char.to_string(),
+                        kind: TokenKind::Negation,
+                    });
                 }
                 // test if alphabetic
                 ch if ch.is_alphanumeric() => {
@@ -162,5 +185,23 @@ mod tests {
         lexer.tokenize();
         println!("{:?}", lexer.tokens);
         assert_eq!(lexer.tokens.len(), 5);
+    }
+
+    #[test]
+    fn lex_negation() {
+        let input = "~A";
+        let mut lexer = Lexer::new(input.to_string());
+        lexer.tokenize();
+        println!("{:?}", lexer.tokens);
+        assert_eq!(lexer.tokens.len(), 2);
+    }
+
+    #[test]
+    fn lex_turnstile() {
+        let input = "|-";
+        let mut lexer = Lexer::new(input.to_string());
+        lexer.tokenize();
+        println!("{:?}", lexer.tokens);
+        assert_eq!(lexer.tokens.len(), 1);
     }
 }
