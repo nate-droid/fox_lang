@@ -17,6 +17,24 @@ pub enum TokenKind {
     End,
     // Logic
     Implies,
+    Negation,
+}
+
+impl TokenKind {
+    pub fn is_binary_operator(&self) -> bool {
+        match self {
+            TokenKind::Implies => true,
+            _ => false,
+        }
+    }
+
+    pub fn is_unary_operator(&self) -> bool {
+        match self {
+            TokenKind::UnaryOperator => true,
+            TokenKind::Negation => true,
+            _ => false,
+        }
+    }
 }
 
 pub struct Lexer {
