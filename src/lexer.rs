@@ -151,7 +151,8 @@ mod tests {
         let input = "Hello, world!";
         let mut lexer = Lexer::new(input.to_string());
         lexer.tokenize();
-        println!("{:?}", lexer.tokens);
+
+        assert_eq!(lexer.tokens.len(), 4);
     }
 
     #[test]
@@ -160,5 +161,6 @@ mod tests {
         let mut lexer = Lexer::new(input.to_string());
         lexer.tokenize();
         println!("{:?}", lexer.tokens);
+        assert_eq!(lexer.tokens.len(), 5);
     }
 }

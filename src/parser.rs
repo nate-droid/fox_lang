@@ -144,6 +144,11 @@ impl Parser {
                         });
                     }
 
+                    // TODO: Add a check to see if at the end of the expression
+                    if self.position >= self.tokens.len() -1 {
+                        return Ok(expr);
+                    }
+
                     // if the next token isn't a right parenthesis, then we have an error
                     // this will most likely break things, but best to fix everything now
                     self.advance();
@@ -264,9 +269,6 @@ impl Parser {
                 return Err(ParseError::UnexpectedToken);
             }
         }
-
-        // parse expression
-        Ok(node)
     }
 
     fn parse_binary_expression(&mut self) -> Result<Node, ParseError> {
