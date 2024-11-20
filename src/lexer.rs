@@ -1,8 +1,8 @@
 
 #[derive(Debug, Clone)]
-pub(crate) struct Token {
-    pub(crate) value: String,
-    pub(crate) kind: TokenKind,
+pub struct Token {
+    pub value: String,
+    pub kind: TokenKind,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -21,6 +21,14 @@ pub enum TokenKind {
     Negation,
     Turnstile,
     And,
+    ForAll,
+    Exists,
+    BoundX,
+
+    // metamath specific
+    Phi,
+    Psi,
+    Chi,
 }
 
 impl TokenKind {
