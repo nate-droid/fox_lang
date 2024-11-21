@@ -53,13 +53,17 @@ pub fn reduce(node: Node) -> Result<(Node, Node), ReduceError>{
 
 #[cfg(test)]
 mod tests {
+    use crate::lexer::DefaultLexer;
     use super::*;
 
     #[test]
     fn test_simple_reduce() {
         let input = "(A -> B)";
 
-        let mut parser = Parser::new(input.to_string());
+        let lexer = DefaultLexer::new(input.to_string());
+        // let tokens = lexer.tokenize();
+
+        let mut parser = Parser::new(input.to_string(), lexer);
         let node = parser.parse();
         let result = reduce(node.unwrap());
         println!("{:?}", result);

@@ -1,3 +1,4 @@
+use crate::parser::Lexer;
 
 #[derive(Debug, Clone)]
 pub struct Token {
@@ -16,6 +17,7 @@ pub enum TokenKind {
     Identifier,
     End,
     Pipe,
+
     // Logic
     Implies,
     Negation,
@@ -48,14 +50,14 @@ impl TokenKind {
     }
 }
 
-pub struct Lexer {
+pub struct DefaultLexer {
     pub(crate) tokens: Vec<Token>,
     input: String,
     pub(crate) position: usize,
     char: char,
 }
 
-impl Lexer {
+impl DefaultLexer {
     pub fn new(input: String) -> Self {
         let first_char = input.chars().nth(0).unwrap_or(' ');
         Self {
@@ -65,21 +67,10 @@ impl Lexer {
             char: first_char,
         }
     }
+}
 
-    pub fn current_token(&self) -> Token {
-        self.tokens[self.position].clone()
-    }
-
-    pub fn next_char(&mut self) {
-        self.position += 1;
-        self.char = self.input.chars().nth(self.position).unwrap_or(' ');
-    }
-
-    fn peek(&self) -> char {
-        self.input.chars().nth(self.position + 1).unwrap_or(' ')
-    }
-
-    pub(crate) fn tokenize(&mut self) {
+impl Lexer for DefaultLexer {
+    fn tokenize(&mut self) {
         while self.position < self.input.len() {
             match self.char {
                 ' ' => {
@@ -171,6 +162,25 @@ impl Lexer {
             self.next_char();
         }
     }
+
+    fn current_token(&self) -> Token {
+        self.tokens[self.position].clone()
+    }
+
+
+
+    fn next_char(&mut self) {
+        self.position += 1;
+        self.char = self.input.chars().nth(self.position).unwrap_or(' ');
+    }
+
+    fn peek(&self) -> char {
+        self.input.chars().nth(self.position + 1).unwrap_or(' ')
+    }
+
+    fn tokens(&self) -> Vec<Token> {
+        self.tokens.clone()
+    }
 }
 
 #[cfg(test)]
@@ -180,7 +190,7 @@ mod tests {
     #[test]
     fn split_strings() {
         let input = "Hello, world!";
-        let mut lexer = Lexer::new(input.to_string());
+        let mut lexer = DefaultLexer::new(input.to_string());
         lexer.tokenize();
 
         assert_eq!(lexer.tokens.len(), 4);
@@ -189,7 +199,7 @@ mod tests {
     #[test]
     fn parse_logical_expression() {
         let input = "(A -> B)";
-        let mut lexer = Lexer::new(input.to_string());
+        let mut lexer = DefaultLexer::new(input.to_string());
         lexer.tokenize();
         println!("{:?}", lexer.tokens);
         assert_eq!(lexer.tokens.len(), 5);
@@ -198,7 +208,7 @@ mod tests {
     #[test]
     fn lex_negation() {
         let input = "~A";
-        let mut lexer = Lexer::new(input.to_string());
+        let mut lexer = DefaultLexer::new(input.to_string());
         lexer.tokenize();
         println!("{:?}", lexer.tokens);
         assert_eq!(lexer.tokens.len(), 2);
@@ -207,7 +217,7 @@ mod tests {
     #[test]
     fn lex_turnstile() {
         let input = "|-";
-        let mut lexer = Lexer::new(input.to_string());
+        let mut lexer = DefaultLexer::new(input.to_string());
         lexer.tokenize();
         println!("{:?}", lexer.tokens);
         assert_eq!(lexer.tokens.len(), 1);

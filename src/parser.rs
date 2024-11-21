@@ -1,12 +1,22 @@
 use std::cmp::PartialEq;
 use std::fmt::Error;
 use crate::lexer::{Token, TokenKind};
-use crate::lexer::Lexer;
+use crate::lexer::DefaultLexer;
 
-pub struct Parser {
-    lexer: Lexer,
+pub struct Parser<L: Lexer> {
+    lexer: L,
     position: usize,
     tokens: Vec<Token>,
+}
+
+pub trait Lexer {
+    fn tokenize(&mut self);
+    fn current_token(&self) -> Token;
+    // fn new(input: String) -> Self;
+    fn next_char(&mut self);
+    fn peek(&self) -> char;
+
+    fn tokens(&self) -> Vec<Token>;
 }
 
 use std::fmt;
@@ -106,12 +116,13 @@ impl Node {
     }
 }
 
-impl Parser {
-    pub fn new(input: String) -> Self {
-        let mut lexer = Lexer::new(input);
+impl<L: Lexer> Parser<L> {
+    pub fn new(input: String, mut lexer: L) -> Self {
+
+        // let mut lexer = DefaultLexer::new(input);
         lexer.tokenize();
 
-        let tokens = lexer.tokens.clone();
+        let tokens = lexer.tokens().clone();
 
         Self {
             lexer,
@@ -121,7 +132,7 @@ impl Parser {
     }
 
     pub fn parse(&mut self) -> Result<Node, ParseError> {
-        while self.position < self.lexer.tokens.len() {
+        while self.position < self.lexer.tokens().len() {
 
             match self.tokens[self.position].kind {
                 TokenKind::LeftParenthesis => {
@@ -169,7 +180,11 @@ impl Parser {
                 TokenKind::Identifier => {
                     println!("Identifier");
                 }
+                TokenKind::Turnstile => {
+                    // For now, not doing anything with the turnstile, so just consume and continue
+                }
                 _ => {
+                    println!("Unexpected token: {:?}", self.current());
                     return Err(ParseError::UnexpectedToken);
                 }
             }
@@ -266,6 +281,7 @@ impl Parser {
                 return Ok(Node::EmptyNode);
             }
             _ => {
+                println!("Unexpected token: {:?}", self.current());
                 return Err(ParseError::UnexpectedToken);
             }
         }
@@ -307,7 +323,8 @@ mod tests {
     #[test]
     fn parse() {
         let input = "(A -> B)";
-        let mut parser = Parser::new(input.to_string());
+        let lexer = DefaultLexer::new(input.to_string());
+        let mut parser = Parser::new(input.to_string(), lexer);
         let res = parser.parse();
 
         // Assert that the result is Ok
@@ -320,7 +337,8 @@ mod tests {
     #[test]
     fn parse_unexpected_token() {
         let input = "(A -> B) (C -> D)";
-        let mut parser = Parser::new(input.to_string());
+        let lexer = DefaultLexer::new(input.to_string());
+        let mut parser = Parser::new(input.to_string(), lexer);
         let res = parser.parse();
         println!("{:?}", res);
         assert!(res.is_err());
@@ -329,7 +347,8 @@ mod tests {
     #[test]
     fn test_nested_balanced() {
         let input = "((A -> B) -> (C -> D))";
-        let mut parser = Parser::new(input.to_string());
+        let lexer = DefaultLexer::new(input.to_string());
+        let mut parser = Parser::new(input.to_string(), lexer);
         let res = parser.parse();
         println!("{:?}", res);
         assert!(res.is_ok());
@@ -381,7 +400,8 @@ mod tests {
     #[test]
     fn test_sub_left() {
         let input = "((A -> C) -> B)";
-        let mut parser = Parser::new(input.to_string());
+        let lexer = DefaultLexer::new(input.to_string());
+        let mut parser = Parser::new(input.to_string(), lexer);
         let res = parser.parse();
         println!("{:?}", res);
         // check if the result is Ok
@@ -421,7 +441,8 @@ mod tests {
     #[test]
     fn test_sub_right() {
         let input = "(A -> (B -> C))";
-        let mut parser = Parser::new(input.to_string());
+        let lexer = DefaultLexer::new(input.to_string());
+        let mut parser = Parser::new(input.to_string(), lexer);
         let res = parser.parse();
         println!("{:?}", res);
 
