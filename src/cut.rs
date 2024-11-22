@@ -1,6 +1,104 @@
 use std::f32::consts::E;
-use crate::parser::{Node, Parser};
+use crate::parser::{Lexer, Node, Parser};
 use crate::lexer::TokenKind;
+
+
+pub struct Axiom {
+    index: usize,
+    name: String,
+    hypothesises: Vec<(String, String)>,
+    pub(crate) steps: Vec<Step>,
+    initial_assertion: String,
+    parser: Parser,
+}
+
+impl Axiom {
+    pub fn new(name: String, hypothesises: Vec<(String, String)>, initial_assertion: String, parser: Parser) -> Self {
+        Self {
+            index: 0,
+            name,
+            hypothesises,
+            steps: vec![],
+            initial_assertion,
+            parser,
+        }
+    }
+
+    pub fn add_step(&mut self, node: Node) {
+        let hypothesis = (0, 0);
+        let reference = "".to_string();
+        let expression = node.to_string();
+
+        self.steps.push(Step {
+            index: self.index,
+            hypothesis,
+            reference,
+            expression,
+        });
+
+        self.index += 1;
+    }
+
+    pub fn solve(&mut self) {
+        let mut parser = Parser::new(self.initial_assertion.to_string());
+        let node = parser.parse().unwrap();
+
+        self.add_step(node.clone());
+
+        // match based on node's type
+        if let Node::BinaryExpression { left, operator, right } = node.clone() {
+            // reduce the node
+            let (reduce_left, reduce_right) = reduce(node.clone()).unwrap();
+
+            // TODO: Need to add the correct Hypothesis and Reference
+            self.add_step(reduce_left.clone());
+            self.add_step(reduce_right.clone());
+
+            // TODO: Need to add recursive reduction for the right and left nodes
+            // while loop as long as the left node is not Identifier
+        }
+
+        // loop through the steps, and see if anything needs to be reduced
+        for step in self.steps.iter() {
+            let node = self.parser.parse().unwrap();
+            if let Node::BinaryExpression { left, operator, right } = node.clone() {
+                // reduce the node
+                let (reduce_left, reduce_right) = reduce(node.clone()).unwrap();
+            }
+        }
+
+        // TODO: Might need to loop based on index, and not the actual steps
+
+        // TODO: Refactor:
+        // axioms should be a dictionary of steps
+        // iterate through the steps, and add a key value pair of the index and the step
+    }
+}
+
+#[derive(Debug)]
+pub(crate) struct Step {
+    index: usize,
+    hypothesis: (usize, usize),
+    reference: String,
+    expression: String,
+}
+
+impl Step {
+    pub(crate) fn new(node: Node) -> Self {
+        let index = 0;
+        let hypothesis = (0, 0);
+        let reference = "".to_string();
+        let expression = node.to_string();
+
+        Self {
+            index,
+            hypothesis,
+            reference,
+            expression,
+        }
+    }
+}
+
 
 #[derive(Debug)]
 pub enum ReduceError {
@@ -63,7 +161,7 @@ mod tests {
         let lexer = DefaultLexer::new(input.to_string());
         // let tokens = lexer.tokenize();
 
-        let mut parser = Parser::new(input.to_string(), lexer);
+        let mut parser = Parser::new(input.to_string());
         let node = parser.parse();
         let result = reduce(node.unwrap());
         println!("{:?}", result);
@@ -80,5 +178,16 @@ mod tests {
         } else {
             panic!("Expected Node::Identifier");
         }
+    }
+
+    #[test]
+    fn test_recursive_reduce() {
+        let input = "(A -> (B -> C))";
+
+        let lexer = DefaultLexer::new(input.to_string());
+
+        let mut parser = Parser::new(input.to_string());
+        let node = parser.parse().unwrap();
+        let axiom = Axiom::new("ax-1".to_string(), vec![], node.to_string(), parser);
     }
 }

@@ -33,6 +33,32 @@ pub enum TokenKind {
     Chi,
 }
 
+impl std::fmt::Display for TokenKind {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            TokenKind::Number => write!(f, "Number"),
+            TokenKind::Operator => write!(f, "Operator"),
+            TokenKind::UnaryOperator => write!(f, "UnaryOperator"),
+            TokenKind::LeftParenthesis => write!(f, "LeftParenthesis"),
+            TokenKind::RightParenthesis => write!(f, "RightParenthesis"),
+            TokenKind::Whitespace => write!(f, "Whitespace"),
+            TokenKind::Identifier => write!(f, "Identifier"),
+            TokenKind::End => write!(f, "End"),
+            TokenKind::Pipe => write!(f, "Pipe"),
+            TokenKind::Implies => write!(f, "->"),
+            TokenKind::Negation => write!(f, "Negation"),
+            TokenKind::Turnstile => write!(f, "Turnstile"),
+            TokenKind::And => write!(f, "And"),
+            TokenKind::ForAll => write!(f, "ForAll"),
+            TokenKind::Exists => write!(f, "Exists"),
+            TokenKind::BoundX => write!(f, "BoundX"),
+            TokenKind::Phi => write!(f, "Phi"),
+            TokenKind::Psi => write!(f, "Psi"),
+            TokenKind::Chi => write!(f, "Chi"),
+        }
+    }
+}
+
 impl TokenKind {
     pub fn is_binary_operator(&self) -> bool {
         match self {
@@ -48,6 +74,7 @@ impl TokenKind {
             _ => false,
         }
     }
+
 }
 
 pub struct DefaultLexer {

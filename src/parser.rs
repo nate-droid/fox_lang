@@ -3,8 +3,8 @@ use std::fmt::Error;
 use crate::lexer::{Token, TokenKind};
 use crate::lexer::DefaultLexer;
 
-pub struct Parser<L: Lexer> {
-    lexer: L,
+pub struct Parser {
+    // lexer: L,
     position: usize,
     tokens: Vec<Token>,
 }
@@ -20,6 +20,9 @@ pub trait Lexer {
 }
 
 use std::fmt;
+use crate::metamath_lexer::MetaMathLexer;
+// import MetaMathLexer
+
 use crate::parser::ParseError::EmptyNode;
 
 #[derive(Debug)]
@@ -114,25 +117,55 @@ impl Node {
             _ => None,
         }
     }
+
+    pub fn to_string(&self) -> String {
+        match self {
+            Node::BinaryExpression { left, operator, right } => {
+                format!("({} {} {})", left.to_string(), operator, right.to_string())
+            }
+            Node::UnaryExpression { operator, right } => {
+                format!("({} {})", operator, right.to_string())
+            }
+            Node::Identifier { value } => {
+                value.clone()
+            }
+            Node::EmptyNode => {
+                "".to_string()
+            }
+        }
+    }
 }
 
-impl<L: Lexer> Parser<L> {
-    pub fn new(input: String, mut lexer: L) -> Self {
+impl Parser {
+    pub fn new(input: String) -> Self {
 
-        // let mut lexer = DefaultLexer::new(input);
+        let mut lexer = DefaultLexer::new(input);
         lexer.tokenize();
 
         let tokens = lexer.tokens().clone();
 
         Self {
-            lexer,
+            // lexer,
+            position: 0,
+            tokens,
+        }
+    }
+
+    pub fn new_mm(input: String) -> Self {
+        let mut l = MetaMathLexer::new(input.clone());
+        l.tokenize();
+
+        let tokens = l.tokens().clone();
+
+        Self {
+            // lexer: DefaultLexer::new(input.clone()),
             position: 0,
             tokens,
         }
     }
 
     pub fn parse(&mut self) -> Result<Node, ParseError> {
-        while self.position < self.lexer.tokens().len() {
+        while self.position < self.tokens.len() {
 
             match self.tokens[self.position].kind {
                 TokenKind::LeftParenthesis => {
@@ -324,7 +357,7 @@ mod tests {
     fn parse() {
         let input = "(A -> B)";
         let lexer = DefaultLexer::new(input.to_string());
-        let mut parser = Parser::new(input.to_string(), lexer);
+        let mut parser = Parser::new(input.to_string());
         let res = parser.parse();
 
         // Assert that the result is Ok
@@ -338,7 +371,7 @@ mod tests {
     fn parse_unexpected_token() {
         let input = "(A -> B) (C -> D)";
         let lexer = DefaultLexer::new(input.to_string());
-        let mut parser = Parser::new(input.to_string(), lexer);
+        let mut parser = Parser::new(input.to_string());
         let res = parser.parse();
         println!("{:?}", res);
         assert!(res.is_err());
@@ -348,7 +381,7 @@ mod tests {
     fn test_nested_balanced() {
         let input = "((A -> B) -> (C -> D))";
         let lexer = DefaultLexer::new(input.to_string());
-        let mut parser = Parser::new(input.to_string(), lexer);
+        let mut parser = Parser::new(input.to_string());
         let res = parser.parse();
         println!("{:?}", res);
         assert!(res.is_ok());
@@ -401,7 +434,7 @@ mod tests {
     fn test_sub_left() {
         let input = "((A -> C) -> B)";
         let lexer = DefaultLexer::new(input.to_string());
-        let mut parser = Parser::new(input.to_string(), lexer);
+        let mut parser = Parser::new(input.to_string());
         let res = parser.parse();
         println!("{:?}", res);
         // check if the result is Ok
@@ -442,7 +475,7 @@ mod tests {
     fn test_sub_right() {
         let input = "(A -> (B -> C))";
         let lexer = DefaultLexer::new(input.to_string());
-        let mut parser = Parser::new(input.to_string(), lexer);
+        let mut parser = Parser::new(input.to_string());
         let res = parser.parse();
         println!("{:?}", res);
 

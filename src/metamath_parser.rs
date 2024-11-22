@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod tests {
-    use crate::cut::reduce;
+    use crate::cut::{reduce, Axiom};
     use crate::metamath_lexer::MetaMathLexer;
     use crate::parser::{Node, Parser};
     use super::*;
@@ -9,7 +9,7 @@ mod tests {
     fn test_ax_1() {
         let input = "⊢ (𝜑 → (𝜓 → 𝜑))";
         let lexer = MetaMathLexer::new(input.to_string());
-        let mut parser = Parser::new(input.to_string(), lexer);
+        let mut parser = Parser::new_mm(input.to_string());
 
         let node = parser.parse();
         println!("{:?}", node);
@@ -40,5 +40,32 @@ mod tests {
         } else {
             panic!("Expected Node::BinaryExpression");
         }
+    }
+
+    #[test]
+    fn test_step_reduce() {
+        let input = "⊢ (𝜑 → (𝜓 → 𝜑))";
+
+        let mut parser = Parser::new_mm(input.to_string());
+
+        let node = parser.parse().unwrap();
+        println!("{:?}", node);
+
+        let mut axiom = Axiom::new("ax-1".to_string(), vec![], node.to_string(), parser);
+        axiom.solve();
+        println!("{:?}", axiom.steps);
+
+    }
+
+    #[test]
+    fn test_recursive_step() {
+        let input = "⊢ (𝜑 → (𝜓 → 𝜑))";
+
+        let mut parser = Parser::new_mm(input.to_string());
+
+        let node = parser.parse().unwrap();
+        let mut axiom = Axiom::new("ax-2".to_string(), vec![], node.to_string(), parser);
+        axiom.solve();
+        println!("{:?}", axiom.steps);
     }
 }
