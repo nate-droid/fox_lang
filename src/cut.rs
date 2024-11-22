@@ -1,13 +1,13 @@
-use std::f32::consts::E;
+use std::collections::HashMap;
+use std::hash::Hash;
 use crate::parser::{Lexer, Node, Parser};
 use crate::lexer::TokenKind;
-
 
 pub struct Axiom {
     index: usize,
     name: String,
     hypothesises: Vec<(String, String)>,
-    pub(crate) steps: Vec<Step>,
+    pub(crate) steps: HashMap<usize, Step>,
     initial_assertion: String,
     parser: Parser,
 }
@@ -18,7 +18,7 @@ impl Axiom {
             index: 0,
             name,
             hypothesises,
-            steps: vec![],
+            steps: HashMap::new(),
             initial_assertion,
             parser,
         }
@@ -29,7 +29,7 @@ impl Axiom {
         let reference = "".to_string();
         let expression = node.to_string();
 
-        self.steps.push(Step {
+        self.steps.insert(self.index, Step {
             index: self.index,
             hypothesis,
             reference,
@@ -43,9 +43,9 @@ impl Axiom {
         let mut parser = Parser::new(self.initial_assertion.to_string());
         let node = parser.parse().unwrap();
 
+        // add the initial node
         self.add_step(node.clone());
 
-        // match based on node's type
         if let Node::BinaryExpression { left, operator, right } = node.clone() {
             // reduce the node
             let (reduce_left, reduce_right) = reduce(node.clone()).unwrap();
@@ -53,25 +53,37 @@ impl Axiom {
             // TODO: Need to add the correct Hypothesis and Reference
             self.add_step(reduce_left.clone());
             self.add_step(reduce_right.clone());
-
-            // TODO: Need to add recursive reduction for the right and left nodes
-            // while loop as long as the left node is not Identifier
         }
 
-        // loop through the steps, and see if anything needs to be reduced
-        for step in self.steps.iter() {
-            let node = self.parser.parse().unwrap();
-            if let Node::BinaryExpression { left, operator, right } = node.clone() {
-                // reduce the node
-                let (reduce_left, reduce_right) = reduce(node.clone()).unwrap();
+        self.index = 0;
+        loop {
+            let mut step = &Step{
+                index: 0,
+                hypothesis: (0, 0),
+                reference: "".to_string(),
+                expression: "".to_string(),
+            };
+
+            if let Some(found_step) = self.steps.get(&self.index) {
+                step = found_step;
+            } else {
+                break;
             }
+
+            let mut parser = Parser::new(step.expression.clone());
+            let node = parser.parse().unwrap();
+
+            if let Node::Identifier { value } = node.clone() {
+                self.index += 1;
+                continue;
+            }
+
+            let (reduce_left, reduce_right) = reduce(node).unwrap();
+
+            self.add_step(reduce_left.clone());
+            self.add_step(reduce_right.clone());
+
         }
-
-        // TODO: Might need to loop based on index, and not the actual steps
-
-        // TODO: Refactor:
-        // axioms should be a dictionary of steps
-        // iterate through the steps, and add a key value pair of the index and the step
     }
 }
 
@@ -123,8 +135,6 @@ pub fn reduce(node: Node) -> Result<(Node, Node), ReduceError>{
         Node::BinaryExpression { left, operator, right } => {
             match node.operator() {
                 TokenKind::Implies => {
-                    // time to do some reduction!
-
                     // |- A -> B becomes A |- B
 
                     let node_left = *left;
@@ -157,17 +167,15 @@ mod tests {
     #[test]
     fn test_simple_reduce() {
         let input = "(A -> B)";
-
-        let lexer = DefaultLexer::new(input.to_string());
-        // let tokens = lexer.tokenize();
-
         let mut parser = Parser::new(input.to_string());
+
         let node = parser.parse();
+
         let result = reduce(node.unwrap());
-        println!("{:?}", result);
+
         // assert that the result is A, B
         let (left, right) = result.unwrap();
-        // assert that Node is of type Identifier
+
         if let Node::Identifier { value } = left {
             assert_eq!(value, "A");
         } else {
@@ -188,6 +196,11 @@ mod tests {
 
         let mut parser = Parser::new(input.to_string());
         let node = parser.parse().unwrap();
-        let axiom = Axiom::new("ax-1".to_string(), vec![], node.to_string(), parser);
+        let mut axiom = Axiom::new("ax-1".to_string(), vec![], node.to_string(), parser);
+        axiom.solve();
+        println!("{:?}", axiom.steps);
+
+        // asert that the length of steps is 4
+        assert_eq!(axiom.steps.len(), 4);
     }
 }
