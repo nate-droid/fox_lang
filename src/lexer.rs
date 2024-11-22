@@ -27,10 +27,6 @@ pub enum TokenKind {
     Exists,
     BoundX,
 
-    // metamath specific
-    Phi,
-    Psi,
-    Chi,
 }
 
 impl std::fmt::Display for TokenKind {
@@ -52,9 +48,6 @@ impl std::fmt::Display for TokenKind {
             TokenKind::ForAll => write!(f, "ForAll"),
             TokenKind::Exists => write!(f, "Exists"),
             TokenKind::BoundX => write!(f, "BoundX"),
-            TokenKind::Phi => write!(f, "Phi"),
-            TokenKind::Psi => write!(f, "Psi"),
-            TokenKind::Chi => write!(f, "Chi"),
         }
     }
 }

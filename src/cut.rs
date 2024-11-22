@@ -200,7 +200,6 @@ mod tests {
         axiom.solve();
         println!("{:?}", axiom.steps);
 
-        // asert that the length of steps is 4
         assert_eq!(axiom.steps.len(), 4);
     }
 }

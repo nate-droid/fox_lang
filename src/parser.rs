@@ -145,7 +145,6 @@ impl Parser {
         let tokens = lexer.tokens().clone();
 
         Self {
-            // lexer,
             position: 0,
             tokens,
         }
@@ -158,7 +157,6 @@ impl Parser {
         let tokens = l.tokens().clone();
 
         Self {
-            // lexer: DefaultLexer::new(input.clone()),
             position: 0,
             tokens,
         }
@@ -174,10 +172,7 @@ impl Parser {
                     self.advance();
 
                     let expr = self.parse_expression()?;
-                    println!("expr!! {:?}", expr);
-                    println!("current token: {:?}", self.current());
 
-                    // TODO: the parse_expression is returning with a current token of "=>"
                     if self.current().kind.is_binary_operator() {
                         self.advance();
                         let right = self.parse_expression()?;
@@ -188,7 +183,6 @@ impl Parser {
                         });
                     }
 
-                    // TODO: Add a check to see if at the end of the expression
                     if self.position >= self.tokens.len() -1 {
                         return Ok(expr);
                     }
@@ -208,7 +202,6 @@ impl Parser {
                 }
                 TokenKind::Implies => {
                     println!("Implies");
-                    // TODO Parse the right hand side of the expression
                 }
                 TokenKind::Identifier => {
                     println!("Identifier");
