@@ -241,61 +241,45 @@ impl Parser {
     }
 
     fn parse_expression(&mut self) -> Result<Node, ParseError> {
-        let mut node = Node::EmptyNode;
-
         match self.current().kind {
             TokenKind::LeftParenthesis => {
                 // this is a sub expression
                 self.advance();
 
                 let sub_expression = self.parse_expression()?;
-
+                println!("Current: {:?}", self.current());
+                if self.current().kind != TokenKind::RightParenthesis {
+                    // panic!("ahhhhhhh");
+                }
                 self.advance();
                 if self.current().kind.is_binary_operator() {
                     return Ok(sub_expression);
                 } else if self.current().kind != TokenKind::RightParenthesis {
-                    return Err(ParseError::UnclosedParenthesis);
+                    println!("sub_expression: {:?}", sub_expression);
+                    println!("Unexpected token: {:?} at position {} ", self.current(), self.position);
+                    // return Err(ParseError::UnclosedParenthesis);
                 }
 
-                return Ok(sub_expression);
+                Ok(sub_expression)
             }
             TokenKind::Identifier => {
                 if self.peek().kind == TokenKind::RightParenthesis {
                     let identifier = Node::Identifier {
                         value: self.current().value.clone(),
                     };
-                    return Ok(identifier);
+                    self.advance();
+                    
+                    Ok(identifier)
                 } else if self.peek().kind.is_binary_operator() {
-                    let left = Node::Identifier {
-                        value: self.current().value.clone(),
-                    };
+                    let expression = self.parse_binary_expression()?;
 
-                    self.advance();
-                    let operator = self.current().kind.clone();
-                    self.advance();
-
-                    if self.current().kind == TokenKind::LeftParenthesis {
-                        let right = self.parse_expression()?;
-
-                        return Ok(Node::BinaryExpression {
-                            left: Box::new(left),
-                            operator,
-                            right: Box::new(right),
-                        });
+                    if self.current().kind != TokenKind::RightParenthesis {
+                        println!("expression: {:?}", expression);
+                        println!("Unexpected token: {:?}", self.current());
+                        //panic!("unexpected token {:?}", self.current());
                     }
-
-                    let right = Node::Identifier {
-                        value: self.current().value.clone(),
-                    };
-                    self.advance();
-
-                    let binary_expression = Node::BinaryExpression {
-                        left: Box::new(left),
-                        operator,
-                        right: Box::new(right),
-                    };
-
-                    return Ok(binary_expression);
+                    return Ok(expression);
+                    // TODO: Pickup here. This should not consume the Ident, but rather just call parse_binary_expression
                 } else {
                     println!("Identifier: {:?}", self.current());
                     println!("Peek: {:?}", self.peek());
@@ -304,11 +288,11 @@ impl Parser {
             }
             TokenKind::UnaryOperator => {
                 // parse unary expression
-                return Ok(Node::EmptyNode);
+                Ok(Node::EmptyNode)
             }
             _ => {
                 println!("Unexpected token: {:?}", self.current());
-                return Err(ParseError::UnexpectedToken);
+                Err(ParseError::UnexpectedToken)
             }
         }
     }
@@ -317,20 +301,34 @@ impl Parser {
         let left_node = Node::Identifier {
             value: self.current().value.clone(),
         };
+        if self.current().kind != TokenKind::Identifier {
+            panic!("this needs to be parsed as an expression");
+            return Err(ParseError::UnexpectedToken);
+        }
 
         self.advance();
-
+        
         let operator = self.current().kind.clone();
-
+        
         self.advance();
 
         if self.position >= self.tokens.len() {
             return Err(ParseError::AccessOutOfBoundsToken);
         }
-
+        
+        if self.current().kind == TokenKind::LeftParenthesis {
+            return Ok(Node::BinaryExpression {
+                left: Box::new(left_node),
+                operator,
+                right: Box::new(self.parse_expression()?),
+            });
+        }
+        
         let right_node = Node::Identifier {
             value: self.current().value.clone(),
         };
+        
+        self.advance();
 
         let binary_expression = Node::BinaryExpression {
             left: Box::new(left_node),
@@ -349,7 +347,7 @@ mod tests {
     #[test]
     fn parse() {
         let input = "(A -> B)";
-        let lexer = DefaultLexer::new(input.to_string());
+
         let mut parser = Parser::new(input.to_string());
         let res = parser.parse();
 
@@ -363,7 +361,7 @@ mod tests {
     #[test]
     fn parse_unexpected_token() {
         let input = "(A -> B) (C -> D)";
-        let lexer = DefaultLexer::new(input.to_string());
+
         let mut parser = Parser::new(input.to_string());
         let res = parser.parse();
         println!("{:?}", res);
@@ -373,7 +371,7 @@ mod tests {
     #[test]
     fn test_nested_balanced() {
         let input = "((A -> B) -> (C -> D))";
-        let lexer = DefaultLexer::new(input.to_string());
+
         let mut parser = Parser::new(input.to_string());
         let res = parser.parse();
         println!("{:?}", res);
@@ -426,11 +424,9 @@ mod tests {
     #[test]
     fn test_sub_left() {
         let input = "((A -> C) -> B)";
-        let lexer = DefaultLexer::new(input.to_string());
+
         let mut parser = Parser::new(input.to_string());
         let res = parser.parse();
-        println!("{:?}", res);
-        // check if the result is Ok
 
         let x = res.unwrap();
         println!("{:?}", x);
@@ -467,10 +463,9 @@ mod tests {
     #[test]
     fn test_sub_right() {
         let input = "(A -> (B -> C))";
-        let lexer = DefaultLexer::new(input.to_string());
+
         let mut parser = Parser::new(input.to_string());
         let res = parser.parse();
-        println!("{:?}", res);
 
         let x = res.unwrap();
 

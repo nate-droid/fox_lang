@@ -64,6 +64,33 @@ mod tests {
         let mut parser = Parser::new_mm(input.to_string());
 
         let node = parser.parse().unwrap();
+        let mut axiom = Axiom::new("ax-1".to_string(), vec![], node.to_string(), parser);
+        axiom.solve();
+        println!("{:?}", axiom.steps);
+    }
+    
+    #[test]
+    fn test_ax_2() {
+        let input = "⊢ ((𝜑 → (𝜓 → 𝜒)) → ((𝜑 → 𝜓) → (𝜑 → 𝜒)))";
+        
+        let mut parser = Parser::new_mm(input.to_string());
+
+        let node = parser.parse().unwrap();
+        let mut axiom = Axiom::new("ax-2".to_string(), vec![], node.to_string(), parser);
+        axiom.solve();
+        println!("{:?}", axiom.steps);
+    }
+    
+    #[test]
+    fn test_temp_oops() {
+        // let input = "(𝜑 → ((𝜑 → 𝜓) → (𝜑 → 𝜒)))";
+        // let input = "(𝜑 → ((𝜑 → 𝜓) → 𝜒))";
+        let input = "(𝜑 → (𝜑 → (𝜑 → 𝜒)))"; // works
+        let input = "(𝜑 → ((𝜑 → 𝜓) → 𝜑))"; // works
+
+        let mut parser = Parser::new_mm(input.to_string());
+
+        let node = parser.parse().unwrap();
         let mut axiom = Axiom::new("ax-2".to_string(), vec![], node.to_string(), parser);
         axiom.solve();
         println!("{:?}", axiom.steps);
