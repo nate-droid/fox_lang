@@ -119,12 +119,27 @@ impl Node {
     }
 
     pub fn to_string(&self) -> String {
+        // TODO: Add nested expressions
         match self {
             Node::BinaryExpression { left, operator, right } => {
-                format!("({} {} {})", left.to_string(), operator, right.to_string())
+                // format!("({} {} {})", left.to_string(), operator, right.to_string())
+                let left_str = match **left {
+                    Node::BinaryExpression { .. } => format!("({})", left.to_string()),
+                    _ => left.to_string(),
+                };
+                let right_str = match **right {
+                    Node::BinaryExpression { .. } => format!("({})", right.to_string()),
+                    _ => right.to_string(),
+                };
+                format!("{} {} {}", left_str, operator, right_str)
             }
             Node::UnaryExpression { operator, right } => {
-                format!("({} {})", operator, right.to_string())
+                // format!("({} {})", operator, right.to_string())
+                let right_str = match **right {
+                    Node::BinaryExpression { .. } | Node::UnaryExpression { .. } => format!("({})", right.to_string()),
+                    _ => right.to_string(),
+                };
+                format!("{} {}", operator, right_str)
             }
             Node::Identifier { value } => {
                 value.clone()
@@ -173,6 +188,11 @@ impl Parser {
 
                     let expr = self.parse_expression()?;
 
+                    if self.current().kind == TokenKind::LeftParenthesis {
+                        // consume the right parenthesis
+                        panic!("unexpected left parenthesis");
+                    }
+                    
                     if self.current().kind.is_binary_operator() {
                         self.advance();
                         let right = self.parse_expression()?;
@@ -191,6 +211,7 @@ impl Parser {
                     // this will most likely break things, but best to fix everything now
                     self.advance();
                     if self.current().kind != TokenKind::RightParenthesis {
+                        println!("Unexpected token: {:?}", self.current());
                         return Err(ParseError::UnclosedParenthesis);
                     }
 
@@ -204,10 +225,13 @@ impl Parser {
                     println!("Implies");
                 }
                 TokenKind::Identifier => {
-                    println!("Identifier");
+                    return Ok(Node::Identifier {
+                        value: self.current().value.clone(),
+                    });
                 }
                 TokenKind::Turnstile => {
                     // For now, not doing anything with the turnstile, so just consume and continue
+                    println!("skipping turnstile");
                 }
                 _ => {
                     println!("Unexpected token: {:?}", self.current());
@@ -218,6 +242,7 @@ impl Parser {
 
         }
 
+        println!("initial position: {:?}", self.tokens);
         Err(EmptyNode)
     }
 
@@ -247,7 +272,7 @@ impl Parser {
                 self.advance();
 
                 let sub_expression = self.parse_expression()?;
-                println!("Current: {:?}", self.current());
+                
                 if self.current().kind != TokenKind::RightParenthesis {
                     // panic!("ahhhhhhh");
                 }
@@ -258,6 +283,9 @@ impl Parser {
                     println!("sub_expression: {:?}", sub_expression);
                     println!("Unexpected token: {:?} at position {} ", self.current(), self.position);
                     // return Err(ParseError::UnclosedParenthesis);
+                } else {
+                    println!("token: {:?}", self.current());
+                    panic!("not so good")
                 }
 
                 Ok(sub_expression)
@@ -317,10 +345,13 @@ impl Parser {
         }
         
         if self.current().kind == TokenKind::LeftParenthesis {
+            //let sub_right = self.parse_expression()?;
+            // println!("sub_right: {:?}", sub_right);
             return Ok(Node::BinaryExpression {
                 left: Box::new(left_node),
                 operator,
                 right: Box::new(self.parse_expression()?),
+                // right: Box::new(sub_right),
             });
         }
         
