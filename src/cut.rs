@@ -24,21 +24,6 @@ impl Axiom {
             parser,
         }
     }
-
-    pub fn add_step(&mut self, node: Node) {
-        let hypothesis = (0, 0);
-        let reference = "".to_string();
-        let expression = node.to_string();
-
-        self.steps.insert(self.index, Step {
-            index: self.index,
-            hypothesis,
-            reference,
-            expression,
-        });
-
-        self.index += 1;
-    }
     
     pub fn add_best_step(&mut self, node: Node) -> usize {
         let ref_index = self.index.clone();
@@ -273,11 +258,11 @@ mod tests {
         let lexer = DefaultLexer::new(input.to_string());
 
         let mut parser = Parser::new(input.to_string());
-        let node = parser.parse().unwrap();
-        let mut axiom = Axiom::new("ax-1".to_string(), vec![], node.to_string(), parser);
+        let mut axiom = Axiom::new("ax-1".to_string(), vec![], input.to_string(), parser);
         axiom.solve();
-        println!("{:?}", axiom.steps);
+        println!("{:?}", axiom.best_steps);
+        println!("{:?}", axiom.best_steps.len());
 
-        assert_eq!(axiom.steps.len(), 4);
+        assert_eq!(axiom.best_steps.len(), 5);
     }
 }

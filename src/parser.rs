@@ -122,16 +122,16 @@ impl Node {
         // TODO: Add nested expressions
         match self {
             Node::BinaryExpression { left, operator, right } => {
-                // format!("({} {} {})", left.to_string(), operator, right.to_string())
-                let left_str = match **left {
-                    Node::BinaryExpression { .. } => format!("({})", left.to_string()),
-                    _ => left.to_string(),
-                };
-                let right_str = match **right {
-                    Node::BinaryExpression { .. } => format!("({})", right.to_string()),
-                    _ => right.to_string(),
-                };
-                format!("{} {} {}", left_str, operator, right_str)
+                format!("({} {} {})", left.to_string(), operator, right.to_string())
+                // let left_str = match **left {
+                //     Node::BinaryExpression { .. } => format!("({})", left.to_string()),
+                //     _ => left.to_string(),
+                // };
+                // let right_str = match **right {
+                //     Node::BinaryExpression { .. } => format!("({})", right.to_string()),
+                //     _ => right.to_string(),
+                // };
+                // format!("{} {} {}", left_str, operator, right_str)
             }
             Node::UnaryExpression { operator, right } => {
                 // format!("({} {})", operator, right.to_string())
@@ -285,7 +285,7 @@ impl Parser {
                     // return Err(ParseError::UnclosedParenthesis);
                 } else {
                     println!("token: {:?}", self.current());
-                    panic!("not so good")
+                    // panic!("not so good")
                 }
 
                 Ok(sub_expression)
