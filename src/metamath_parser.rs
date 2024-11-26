@@ -8,15 +8,12 @@ mod tests {
     #[test]
     fn test_ax_1() {
         let input = "⊢ (𝜑 → (𝜓 → 𝜑))";
-        let lexer = MetaMathLexer::new(input.to_string());
+
         let mut parser = Parser::new_mm(input.to_string());
 
         let node = parser.parse();
-        println!("{:?}", node);
 
         let result = reduce(node.unwrap());
-
-        println!("{:?}", result);
 
         let (left, right) = result.unwrap();
         if let Node::Identifier { value } = left {
@@ -46,7 +43,7 @@ mod tests {
     fn test_step_reduce() {
         let input = "⊢ (𝜑 → (𝜓 → 𝜑))";
 
-        let mut parser = Parser::new_mm(input.to_string());
+        let parser = Parser::new_mm(input.to_string());
 
         let mut axiom = Axiom::new("ax-1".to_string(), vec![], input.to_string(), parser);
         axiom.solve();
@@ -58,7 +55,7 @@ mod tests {
     fn test_recursive_step() {
         let input = "⊢ (𝜑 → (𝜓 → 𝜑))";
 
-        let mut parser = Parser::new_mm(input.to_string());
+        let parser = Parser::new_mm(input.to_string());
         
         let mut axiom = Axiom::new("ax-1".to_string(), vec![], input.to_string(), parser);
         axiom.solve();
@@ -69,7 +66,7 @@ mod tests {
     fn test_ax_2() {
         let input = "⊢ ((𝜑 → (𝜓 → 𝜒)) → ((𝜑 → 𝜓) → (𝜑 → 𝜒)))";
         
-        let mut parser = Parser::new_mm(input.to_string());
+        let parser = Parser::new_mm(input.to_string());
         
         let mut axiom = Axiom::new("ax-2".to_string(), vec![], input.to_string(), parser);
         axiom.solve();
@@ -83,7 +80,7 @@ mod tests {
         // let input = "(𝜑 → (𝜑 → (𝜑 → 𝜒)))"; // works
         let input = "⊢ ((𝜑 → (𝜓 → 𝜒)) → ((𝜑 → 𝜓) → (𝜑 → 𝜒)))";
 
-        let mut parser = Parser::new_mm(input.to_string());
+        let parser = Parser::new_mm(input.to_string());
         
         let mut axiom = Axiom::new("ax-2".to_string(), vec![], input.to_string(), parser);
         axiom.solve();

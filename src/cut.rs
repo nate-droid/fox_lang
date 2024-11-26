@@ -50,6 +50,7 @@ impl Axiom {
         ref_index
     }
 
+    // TODO: add a return type to handle errors
     pub fn solve(&mut self) {
         // let mut parser = Parser::new_mm(self.initial_assertion.to_string());
         // let node = parser.parse().unwrap();
@@ -254,14 +255,10 @@ mod tests {
     #[test]
     fn test_recursive_reduce() {
         let input = "(A -> (B -> C))";
-
-        let lexer = DefaultLexer::new(input.to_string());
-
-        let mut parser = Parser::new(input.to_string());
+        
+        let parser = Parser::new(input.to_string());
         let mut axiom = Axiom::new("ax-1".to_string(), vec![], input.to_string(), parser);
         axiom.solve();
-        println!("{:?}", axiom.best_steps);
-        println!("{:?}", axiom.best_steps.len());
 
         assert_eq!(axiom.best_steps.len(), 5);
     }
