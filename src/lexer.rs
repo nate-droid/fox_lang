@@ -10,6 +10,7 @@ pub struct Token {
 pub enum TokenKind {
     Number,
     Operator,
+    BinaryOperator,
     UnaryOperator,
     LeftParenthesis,
     RightParenthesis,
@@ -34,6 +35,7 @@ impl std::fmt::Display for TokenKind {
         match self {
             TokenKind::Number => write!(f, "Number"),
             TokenKind::Operator => write!(f, "Operator"),
+            TokenKind::BinaryOperator => write!(f, "BinaryOperator"),
             TokenKind::UnaryOperator => write!(f, "UnaryOperator"),
             TokenKind::LeftParenthesis => write!(f, "LeftParenthesis"),
             TokenKind::RightParenthesis => write!(f, "RightParenthesis"),
@@ -42,7 +44,7 @@ impl std::fmt::Display for TokenKind {
             TokenKind::End => write!(f, "End"),
             TokenKind::Pipe => write!(f, "Pipe"),
             TokenKind::Implies => write!(f, "->"),
-            TokenKind::Negation => write!(f, "Negation"),
+            TokenKind::Negation => write!(f, "¬"),
             TokenKind::Turnstile => write!(f, "Turnstile"),
             TokenKind::And => write!(f, "And"),
             TokenKind::ForAll => write!(f, "ForAll"),
@@ -141,6 +143,12 @@ impl Lexer for DefaultLexer {
                     }
                 }
                 '~' => {
+                    self.tokens.push(Token {
+                        value: self.char.to_string(),
+                        kind: TokenKind::Negation,
+                    });
+                }
+                '¬' => {
                     self.tokens.push(Token {
                         value: self.char.to_string(),
                         kind: TokenKind::Negation,

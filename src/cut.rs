@@ -1,12 +1,12 @@
 use std::collections::HashMap;
-use crate::parser::{Node, Parser};
+use crate::parser::{Node, ParseError, Parser};
 use crate::lexer::TokenKind;
 
 pub struct Axiom {
     index: usize,
     name: String,
     hypothesises: Vec<(String, String)>,
-    pub(crate) best_steps: Vec<Step>,
+    pub(crate) steps: Vec<Step>,
     initial_assertion: String,
     parser: Parser,
 }
@@ -17,26 +17,26 @@ impl Axiom {
             index: 0,
             name,
             hypothesises,
-            best_steps: Vec::new(),
+            steps: Vec::new(),
             initial_assertion,
             parser,
         }
     }
     
-    pub fn add_best_step(&mut self, node: Node) -> usize {
+    pub fn add_step(&mut self, node: Node) -> usize {
         let ref_index = self.index.clone();
         let hypothesis = (0, 0);
         let reference = "".to_string();
         let expression = node.to_string();
         
         // TODO: Nate check if the entry already exists
-        for (index, step) in self.best_steps.iter().enumerate() {
+        for (index, step) in self.steps.iter().enumerate() {
             if step.expression == expression {
                 return index;
             }
         }
         
-        self.best_steps.push(Step {
+        self.steps.push(Step {
             index: self.index,
             hypothesis,
             reference,
@@ -49,38 +49,40 @@ impl Axiom {
     }
 
     // TODO: add a return type to handle errors
-    pub fn solve(&mut self) {
-        let node = self.parser.parse().unwrap();
+    pub fn solve(&mut self) -> Result<(), ParseError> {
+        let node = self.parser.parse()?;
         // add the initial node
         
         // self.add_step(node.clone());
         println!("string test: {}", node.to_string());
-        
-        self.add_best_step(node.clone());
+        // println!("node test: {:?}", node.right());
+        self.add_step(node.clone());
         
         println!("initial assertion: {}", self.initial_assertion);
         let mut i = 0;
         loop {
-            if i >= self.best_steps.len() {
+            if i >= self.steps.len() {
                 break;
             }
             
-            let step = &self.best_steps[i];
+            let step = &self.steps[i];
             println!("{:?}", step);
             
             let mut parser = Parser::new(step.expression.clone());
             
             let node = parser.parse().unwrap();
             let (reduce_left, reduce_right) = reduce(node).unwrap();
-            let left_index = self.add_best_step(reduce_left.clone());
-            let right_index = self.add_best_step(reduce_right.clone());
+            let left_index = self.add_step(reduce_left.clone());
+            let right_index = self.add_step(reduce_right.clone());
             
             i += 1;
         }
+        
+        Ok(())
     }
     
     pub fn print_steps(&self) {
-        for step in self.best_steps.iter() {
+        for step in self.steps.iter() {
             println!("{:?}", step);
         }
     }
@@ -130,6 +132,18 @@ pub fn reduce(node: Node) -> Result<(Node, Node), ReduceError>{
     match node.clone() {
         Node::UnaryExpression {operator, .. } => {
             println!("Found a unary expression");
+            match node.operator() {
+                TokenKind::Negation => {
+                    // |- ¬A becomes A |- ⊥
+                    println!("node: {:?}", node.right());
+                    let right = node.right().unwrap();
+                    
+                    return Ok((node.clone(), *right.clone()));
+                }
+                _ => {
+                    return Err(ReduceError::Unimplemented);
+                }
+            }
         }
         Node::BinaryExpression { left, operator, right } => {
             match node.operator() {
@@ -195,6 +209,6 @@ mod tests {
         let mut axiom = Axiom::new("ax-1".to_string(), vec![], input.to_string(), parser);
         axiom.solve();
 
-        assert_eq!(axiom.best_steps.len(), 5);
+        assert_eq!(axiom.steps.len(), 5);
     }
 }
