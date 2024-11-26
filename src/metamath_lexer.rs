@@ -8,13 +8,6 @@ pub struct MetaMathLexer {
     tokens: Vec<Token>,
 }
 
-// add metamath lexing errors
-#[derive(Debug)]
-pub enum MetaMathLexerError {
-    Unimplemented,
-    InvalidToken,
-}
-
 impl MetaMathLexer {
 
     pub fn new(input: String) -> Self {

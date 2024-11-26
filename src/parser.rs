@@ -183,35 +183,7 @@ impl Parser {
 
             match self.tokens[self.position].kind {
                 TokenKind::LeftParenthesis => {
-
-                    let expr = self.parse_expression()?;
-
-                    return Ok(expr);
-
-                    if self.current().kind.is_binary_operator() {
-                        panic!("hi");
-                        let operator = self.current().kind.clone();
-                        println!("4current: {:?}", self.current());
-                        self.advance();
-                        println!("4current: {:?}", self.current());
-                        if self.current().kind == Identifier {
-
-                            return Ok(Node::BinaryExpression {
-                                left: Box::new(expr),
-                                operator,
-                                right: Box::new(self.parse_identifier()?),
-                            });
-                        }
-
-                        let right = self.parse_expression()?;
-                        return Ok(Node::BinaryExpression {
-                            left: Box::new(expr),
-                            operator,
-                            right: Box::new(right),
-                        });
-                    }
-
-                    return Ok(expr);
+                    return self.parse_expression()
                 }
                 RightParenthesis => {
                     // End "parse Expression"
@@ -221,7 +193,6 @@ impl Parser {
                     println!("Implies");
                 }
                 Identifier => {
-
                     return Ok(Node::Identifier {
                         value: self.current().value.clone(),
                     });
@@ -239,7 +210,6 @@ impl Parser {
 
         }
 
-        println!("initial position: {:?}", self.tokens);
         Err(EmptyNode)
     }
 
@@ -271,51 +241,26 @@ impl Parser {
     }
 
     fn parse_expression(&mut self) -> Result<Node, ParseError> {
-        // TODO: I want to have this expression consume the entire expression
-
         match self.current().kind {
             TokenKind::LeftParenthesis => {
                 self.consume(TokenKind::LeftParenthesis)?;
 
-                let mut left = Node::EmptyNode;
                 if self.is_binary_expression() {
-                    left = self.parse_expression()?;
-                    // if !self.peek().kind.is_binary_operator() {
+                    let left = self.parse_expression()?;
+
                     if self.position >= self.tokens.len() || !self.current().kind.is_binary_operator() {
-                        // println!("current: {:?}", self.current());
-                        // println!("peek: {:?}", self.peek());
                         return Ok(left);
                     }
 
                     let operator = self.current().kind.clone();
                     self.advance();
-                    println!("5current: {:?}", self.current());
+                    
                     let right = self.parse_expression()?;
                     return Ok(Node::BinaryExpression {
                         left: Box::new(left),
                         operator,
                         right: Box::new(right),
                     });
-                    // TODO: this needs a check to see if there is anything else in the expression: ((A -> B) -> C) for example
-                } else if self.is_identifier() {
-
-                    let identifier = self.parse_identifier()?;
-                    if self.current().kind.is_binary_operator() {
-                        panic!("this should be parsed as a binary expression");
-                    }
-                    if !self.peek().kind.is_binary_operator() {
-                        return Ok(self.parse_identifier()?);
-                    }
-
-                    self.advance();
-                    let operator = self.current().kind.clone();
-                    let right = self.parse_expression()?;
-                    return Ok(Node::BinaryExpression {
-                        left: Box::new(self.parse_identifier()?),
-                        operator,
-                        right: Box::new(right),
-                    });
-                    // return self.parse_identifier();
                 }
 
                 // this is a sub expression
@@ -330,13 +275,11 @@ impl Parser {
                     return Ok(sub_expression);
                 }
 
-                // self.advance();
-
                 if self.current().kind.is_binary_operator() {
                     return Ok(sub_expression);
-                } else if self.current().kind == TokenKind::RightParenthesis && self.peek().kind.is_binary_operator() {
+                } else if self.current().kind == RightParenthesis && self.peek().kind.is_binary_operator() {
 
-                    self.consume(TokenKind::RightParenthesis)?;
+                    self.consume(RightParenthesis)?;
 
                     if !self.current().kind.is_binary_operator() {
                         return Err(ParseError::UnexpectedToken)
@@ -346,11 +289,9 @@ impl Parser {
                     self.advance();
 
                     if self.current().kind == TokenKind::LeftParenthesis {
-                        // TODO: temp, clean this up once all works
                         self.consume(TokenKind::LeftParenthesis)?;
                         let temp = self.parse_expression()?;
-                        println!("temp: {:?}", temp);
-                        println!("current: {:?}", self.current());
+
                         return Ok(Node::BinaryExpression {
                             left: Box::new(sub_expression),
                             operator,
@@ -360,7 +301,7 @@ impl Parser {
 
                     let right = self.parse_expression()?;
 
-                    self.consume(TokenKind::RightParenthesis)?;
+                    self.consume(RightParenthesis)?;
 
                     return Ok(Node::BinaryExpression {
                         left: Box::new(sub_expression),
@@ -368,7 +309,6 @@ impl Parser {
                         right: Box::new(right),
                     });
                 }
-                // TODO: Add a check if the current token is a ) AND if it needs more parsing like a binary expression
 
                 Ok(sub_expression)
             }
@@ -382,16 +322,13 @@ impl Parser {
                 } else if self.peek().kind.is_binary_operator() {
                     let expression = self.parse_binary_expression()?;
 
-                    if self.current().kind == TokenKind::RightParenthesis {
-                        // close off expression
+                    if self.current().kind == RightParenthesis {
                         self.consume(RightParenthesis)?;
                     }
 
                     return Ok(expression);
                 } else {
-                    println!("Identifier: {:?}", self.current());
-                    println!("Peek: {:?}", self.peek());
-                    return Err(ParseError::UnhandledBehaviour);
+                    return Err(UnhandledBehaviour);
                 }
             }
             TokenKind::UnaryOperator => {
@@ -409,9 +346,9 @@ impl Parser {
         self.current().kind == Identifier && self.peek().kind.is_binary_operator()
     }
 
-    fn is_identifier(&self) -> bool {
-        self.current().kind == Identifier
-    }
+    // fn is_identifier(&self) -> bool {
+    //     self.current().kind == Identifier
+    // }
 
     fn parse_identifier(&mut self) -> Result<Node, ParseError> {
         if self.current().kind != Identifier {
@@ -428,7 +365,7 @@ impl Parser {
     }
 
     fn parse_binary_expression(&mut self) -> Result<Node, ParseError> {
-        if self.current().kind != TokenKind::Identifier {
+        if self.current().kind != Identifier {
             panic!("this needs to be parsed as an expression");
             return Err(ParseError::UnexpectedToken);
         }
