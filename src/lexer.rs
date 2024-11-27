@@ -43,7 +43,7 @@ impl std::fmt::Display for TokenKind {
             TokenKind::Identifier => write!(f, "Identifier"),
             TokenKind::End => write!(f, "End"),
             TokenKind::Pipe => write!(f, "Pipe"),
-            TokenKind::Implies => write!(f, "->"),
+            TokenKind::Implies => write!(f, "→"),
             TokenKind::Negation => write!(f, "¬"),
             TokenKind::Turnstile => write!(f, "Turnstile"),
             TokenKind::And => write!(f, "And"),
@@ -152,6 +152,12 @@ impl Lexer for DefaultLexer {
                     self.tokens.push(Token {
                         value: self.char.to_string(),
                         kind: TokenKind::Negation,
+                    });
+                }
+                '→' => {
+                    self.tokens.push(Token {
+                        value: self.char.to_string(),
+                        kind: TokenKind::Implies,
                     });
                 }
                 // test if alphabetic

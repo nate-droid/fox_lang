@@ -6,14 +6,22 @@ mod tests {
     use super::*;
 
     #[test]
+    fn test_node_print() {
+        let input = "(𝜑 → (𝜓 → 𝜑))";
+        let mut parser = Parser::new_mm(input.to_string());
+        let node = parser.parse().unwrap();
+        assert_eq!(node.to_string(), input);
+    }
+    
+    #[test]
     fn test_ax_1() {
         let input = "⊢ (𝜑 → (𝜓 → 𝜑))";
 
         let mut parser = Parser::new_mm(input.to_string());
 
-        let node = parser.parse();
-
-        let result = reduce(node.unwrap());
+        let node = parser.parse().unwrap();
+        
+        let result = reduce(node);
 
         let (left, right) = result.unwrap();
         if let Node::Identifier { value } = left {
@@ -22,7 +30,7 @@ mod tests {
             panic!("Expected Node::Identifier");
         }
 
-        if let Node::BinaryExpression { left, operator, right } = right {
+        if let Node::BinaryExpression { left, operator: _, right } = right {
             if let Node::Identifier { value } = *left {
                 assert_eq!(value, "𝜓");
             } else {
@@ -46,7 +54,7 @@ mod tests {
         let parser = Parser::new_mm(input.to_string());
 
         let mut axiom = Axiom::new("ax-1".to_string(), vec![], input.to_string(), parser);
-        axiom.solve();
+        axiom.solve().expect("TODO: panic message");
         println!("{:?}", axiom.steps);
 
     }
@@ -58,7 +66,7 @@ mod tests {
         let parser = Parser::new_mm(input.to_string());
         
         let mut axiom = Axiom::new("ax-1".to_string(), vec![], input.to_string(), parser);
-        axiom.solve();
+        axiom.solve().expect("TODO: panic message");
         println!("{:?}", axiom.steps);
     }
     
@@ -69,14 +77,15 @@ mod tests {
         let parser = Parser::new_mm(input.to_string());
         
         let mut axiom = Axiom::new("ax-2".to_string(), vec![], input.to_string(), parser);
-        axiom.solve();
+        axiom.solve().expect("TODO: panic message");
         axiom.print_steps();
     }
     
-    #[test]
+    #[test] 
     fn test_ax_3() {
         let input = "⊢ ((¬ 𝜑 → ¬ 𝜓) → (𝜓 → 𝜑))";
-        // let input = "⊢ (¬ 𝜑)";
+        // let input = "⊢ (𝜑 → ¬ 𝜓)";
+        // let input = "⊢ (¬ 𝜓)";
 
         let parser = Parser::new_mm(input.to_string());
         

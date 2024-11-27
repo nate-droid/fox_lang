@@ -6,7 +6,7 @@ pub struct Axiom {
     index: usize,
     name: String,
     hypothesises: Vec<(String, String)>,
-    pub(crate) steps: Vec<Step>,
+    pub steps: Vec<Step>,
     initial_assertion: String,
     parser: Parser,
 }
@@ -66,12 +66,15 @@ impl Axiom {
             }
             
             let step = &self.steps[i];
-            println!("{:?}", step);
+            println!("Step: {:?}", step);
             
             let mut parser = Parser::new(step.expression.clone());
             
-            let node = parser.parse().unwrap();
+            let node = parser.parse()?;
+            println!("node: {:?}", node);
             let (reduce_left, reduce_right) = reduce(node).unwrap();
+            println!("reduce_left: {:?}", reduce_left);
+            println!("reduce_right: {:?}", reduce_right);
             let left_index = self.add_step(reduce_left.clone());
             let right_index = self.add_step(reduce_right.clone());
             
@@ -207,7 +210,7 @@ mod tests {
         
         let parser = Parser::new(input.to_string());
         let mut axiom = Axiom::new("ax-1".to_string(), vec![], input.to_string(), parser);
-        axiom.solve();
+        axiom.solve().expect("TODO: panic message");
 
         assert_eq!(axiom.steps.len(), 5);
     }

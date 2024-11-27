@@ -127,6 +127,9 @@ impl Node {
                 format!("({} {} {})", left.to_string(), operator, right.to_string())
             }
             Node::UnaryExpression { operator, right } => {
+                // if let Node::Identifier { value } = *right.clone() {
+                //     return format!("{} {}", operator, value);
+                // }
                 format!("({} {})", operator, right.to_string())
             }
             Node::Identifier { value } => {
@@ -144,7 +147,7 @@ impl Parser {
 
         let mut lexer = DefaultLexer::new(input);
         lexer.tokenize();
-
+        println!("Tokens: {:?}", lexer.tokens());
         let tokens = lexer.tokens().clone();
 
         Self {
@@ -189,6 +192,10 @@ impl Parser {
                     println!("skipping turnstile");
                 }
                 _ => {
+                    if self.current().kind.is_unary_operator() {
+                        let node = self.parse_unary_expression()?;
+                        return Ok(node);
+                    } 
                     println!("Unexpected token: {:?}", self.current());
                     return Err(ParseError::UnexpectedToken);
                 }
@@ -340,13 +347,16 @@ impl Parser {
                 } else if self.peek().kind.is_binary_operator() {
                     let expression = self.parse_binary_expression()?;
 
+                    println!("expression: {:?}", expression);
                     if self.current().kind == RightParenthesis {
                         self.consume(RightParenthesis)?;
                     }
 
                     return Ok(expression);
                 } else {
-                    return Err(UnhandledBehaviour);
+                    println!("Unexpected token: {:?}", self.current());
+                    
+                    return Ok(self.parse_identifier()?);
                 }
             }
             TokenKind::UnaryOperator => {
