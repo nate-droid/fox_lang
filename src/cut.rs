@@ -71,10 +71,9 @@ impl Axiom {
             let mut parser = Parser::new(step.expression.clone());
             
             let node = parser.parse()?;
-            println!("node: {:?}", node);
+
             let (reduce_left, reduce_right) = reduce(node).unwrap();
-            println!("reduce_left: {:?}", reduce_left);
-            println!("reduce_right: {:?}", reduce_right);
+
             let left_index = self.add_step(reduce_left.clone());
             let right_index = self.add_step(reduce_right.clone());
             
@@ -132,19 +131,19 @@ impl std::error::Error for ReduceError {}
 
 // This function should return a box of nodes or an error
 pub fn reduce(node: Node) -> Result<(Node, Node), ReduceError>{
-    match node.clone() {
-        Node::UnaryExpression {operator, .. } => {
+    return match node.clone() {
+        Node::UnaryExpression { operator, .. } => {
             println!("Found a unary expression");
             match node.operator() {
                 TokenKind::Negation => {
                     // |- ¬A becomes A |- ⊥
                     println!("node: {:?}", node.right());
                     let right = node.right().unwrap();
-                    
-                    return Ok((node.clone(), *right.clone()));
+
+                    Ok((node.clone(), *right.clone()))
                 }
                 _ => {
-                    return Err(ReduceError::Unimplemented);
+                    Err(ReduceError::Unimplemented)
                 }
             }
         }
@@ -156,21 +155,21 @@ pub fn reduce(node: Node) -> Result<(Node, Node), ReduceError>{
                     let node_left = *left;
                     let node_right = *right;
 
-                    return Ok((node_left, node_right));
+                    Ok((node_left, node_right))
                 }
                 _ => {
-                    return Err(ReduceError::Unimplemented);
+                    Err(ReduceError::Unimplemented)
                 }
             }
         }
-        Node::Identifier {value} => {
+        Node::Identifier { value } => {
             // found a single node, can't reduce any further
-            return Ok((node.clone(), node.clone()));
+            Ok((node.clone(), node.clone()))
         }
         _ => {
-            return Err(ReduceError::Unimplemented);
+            Err(ReduceError::Unimplemented)
         }
-    }
+    };
 
     Err(ReduceError::EmptyNode)
 }
