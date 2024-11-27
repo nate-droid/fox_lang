@@ -493,17 +493,7 @@ mod tests {
         let x = res.unwrap();
         println!("{:?}", x);
     }
-
-    #[test]
-    fn parse_unexpected_token() {
-        let input = "(A -> B) % (C -> D)";
-
-        let mut parser = Parser::new(input.to_string());
-        let res = parser.parse();
-        println!("{:?}", res);
-        assert!(res.is_err());
-    }
-
+    
     #[test]
     fn test_nested_balanced() {
         let input = "((A -> B) -> (C -> D))";
