@@ -5,3 +5,4 @@ mod cut;
 
 pub mod metamath_parser;
 pub mod combinator;
+mod repl;
