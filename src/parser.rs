@@ -30,7 +30,7 @@ use crate::parser::ParseError::{EmptyNode, UnhandledBehaviour};
 pub enum ParseError {
     UnexpectedToken,
     EmptyNode, // this is when there is no node to parse
-    AccessOutOfBoundsToken,
+    AccessOutOfBoundsToken { position: usize, total_tokens: usize },
     UnhandledBehaviour,
     UnclosedParenthesis,
 }
@@ -40,7 +40,7 @@ impl fmt::Display for ParseError {
         match self {
             ParseError::UnexpectedToken => write!(f, "Unexpected token"),
             ParseError::EmptyNode => write!(f, "Empty node"),
-            ParseError::AccessOutOfBoundsToken => write!(f, "Access out of bounds token"),
+            ParseError::AccessOutOfBoundsToken { position, total_tokens } => write!(f, "Access out of bounds token at position {} with total tokens {}", position, total_tokens),
             ParseError::UnhandledBehaviour => write!(f, "Unhandled behaviour"),
             ParseError::UnclosedParenthesis => write!(f, "Unclosed parenthesis"),
         }
@@ -68,21 +68,18 @@ pub enum Node {
 
 impl Node {
     fn evaluate(&self) -> bool {
-        match self {
-            Node::BinaryExpression { left, operator, right } => {
-                match operator {
-                    _ => false
-                }
+        if let Node::BinaryExpression { left, operator, right } = self {
+            match operator {
+                _ => false
             }
-            Node::UnaryExpression { operator, right } => {
-                match operator {
-                    _ => false
-                }
+        } else if let Node::UnaryExpression { operator, right } = self {
+            match operator {
+                _ => false
             }
-            Node::Identifier { value } => { false }
-            _ => {
-                false
-            }
+        } else if let Node::Identifier { value } = self {
+            false
+        } else {
+            false
         }
 
     }
@@ -147,7 +144,7 @@ impl Parser {
 
         let mut lexer = DefaultLexer::new(input);
         lexer.tokenize();
-        println!("Tokens: {:?}", lexer.tokens());
+
         let tokens = lexer.tokens().clone();
 
         Self {
@@ -184,7 +181,7 @@ impl Parser {
                 }
                 Identifier => {
                     return Ok(Node::Identifier {
-                        value: self.current().value.clone(),
+                        value: self.current()?.value.clone(),
                     });
                 }
                 TokenKind::Turnstile => {
@@ -192,7 +189,7 @@ impl Parser {
                     println!("skipping turnstile");
                 }
                 _ => {
-                    if self.current().kind.is_unary_operator() {
+                    if self.current()?.kind.is_unary_operator() {
                         let node = self.parse_unary_expression()?;
                         return Ok(node);
                     } 
@@ -213,14 +210,14 @@ impl Parser {
 
     fn consume(&mut self, expect: TokenKind) -> Result<(), ParseError> {
         if expect == TokenKind::BinaryOperator {
-            if !self.current().kind.is_binary_operator() {
+            if !self.current()?.kind.is_binary_operator() {
                 println!("Expected: {:?}, got: {:?}", expect, self.current());
                 return Err(ParseError::UnexpectedToken);
             }
             self.advance();
             return Ok(());
         } else if expect == TokenKind::UnaryOperator {
-            if !self.current().kind.is_unary_operator() {
+            if !self.current()?.kind.is_unary_operator() {
                 println!("Expected: {:?}, got: {:?}", expect, self.current());
                 return Err(ParseError::UnexpectedToken);
             }
@@ -228,7 +225,7 @@ impl Parser {
             return Ok(());
         }
         
-        if self.current().kind != expect {
+        if self.current()?.kind != expect {
             println!("Expected: {:?}, got: {:?}", expect, self.current());
             return Err(ParseError::UnexpectedToken);
         }
@@ -247,24 +244,65 @@ impl Parser {
         self.tokens[self.position+1].clone()
     }
 
-    fn current(&self) -> Token {
-        self.tokens[self.position].clone()
+    fn current(&self) -> Result<Token, ParseError> {
+        if self.position < self.tokens.len() {
+            Ok(self.tokens[self.position].clone())
+        } else {
+            Err(ParseError::AccessOutOfBoundsToken {
+                position: self.position,
+                total_tokens: self.tokens.len(),
+            })
+        }
     }
 
     fn parse_expression(&mut self) -> Result<Node, ParseError> {
-        match self.current().kind {
+        // This needs some new logic to properly parse any potential unary operators that may be included as a sub expression of a binary expression
+        
+        match self.current()?.kind {
             TokenKind::LeftParenthesis => {
                 self.consume(TokenKind::LeftParenthesis)?;
-
+        
+                // this could happen by parsing for a "left" expression
+                // that expression could be either unary, binary, or simply an identifier
+                
+                let left = self.parse_expression()?;
+                
+                // println!("left: {:?}", left);
+                
+                if self.position >= self.tokens.len() {
+                    return Ok(left);
+                }
+                
+                if self.current()?.kind.is_binary_operator() {
+                    let operator = self.get_operator()?;
+                    self.consume(TokenKind::BinaryOperator)?;
+                    let right = self.parse_expression()?;
+                    // self.consume(RightParenthesis)?;
+                    
+                    return Ok(Node::BinaryExpression {
+                        left: Box::new(left),
+                        operator,
+                        right: Box::new(right),
+                    });
+                } else if self.current()?.kind.is_unary_operator() {
+                    println!("Unary operator");
+                } else if self.peek().kind == RightParenthesis {
+                    self.consume(RightParenthesis)?;
+                    return Ok(left);
+                } else {
+                    return Ok(left);
+                }
+        
+                
                 if self.is_binary_expression() {
                     let left = self.parse_expression()?;
-
-                    if self.position >= self.tokens.len() || !self.current().kind.is_binary_operator() {
+        
+                    if self.position >= self.tokens.len() || !self.current()?.kind.is_binary_operator() {
                         return Ok(left);
                     }
-
-                    let operator = self.current().kind.clone();
-
+        
+                    let operator = self.get_operator()?;
+        
                     self.consume(TokenKind::BinaryOperator)?;
                     
                     let right = self.parse_expression()?;
@@ -274,8 +312,7 @@ impl Parser {
                         right: Box::new(right),
                     });
                 } else if self.is_unary_expression() {
-                    // main focus will be to understand how to handle negation recursively without too much more nesting
-                    let operator = self.current().kind.clone();
+                    let operator = self.get_operator()?;
                     
                     self.consume(TokenKind::UnaryOperator)?;
                     
@@ -285,87 +322,82 @@ impl Parser {
                         right: Box::new(right),
                     });
                 }
-
-                // this is a sub expression
+        
                 let sub_expression = self.parse_expression()?;
                 
                 if self.position >= self.tokens.len() {
                     return Ok(sub_expression);
                 }
                 
-                if self.current().kind == RightParenthesis {
+                if self.current()?.kind == RightParenthesis {
                     self.consume(RightParenthesis)?;
                     return Ok(sub_expression);
                 }
-
-                if self.current().kind.is_binary_operator() {
+        
+                if self.current()?.kind.is_binary_operator() {
                     return Ok(sub_expression);
-                } else if self.current().kind == RightParenthesis && self.peek().kind.is_binary_operator() {
-
+                } else if self.current()?.kind == RightParenthesis && self.peek().kind.is_binary_operator() {
+        
                     self.consume(RightParenthesis)?;
-
-                    if !self.current().kind.is_binary_operator() {
+        
+                    if !self.current()?.kind.is_binary_operator() {
                         println!("Unexpected token: {:?}", self.current());
                         return Err(ParseError::UnexpectedToken)
                     }
-
-                    let operator = self.current().kind.clone();
+        
+                    let operator = self.get_operator()?;
                     
                     self.consume(TokenKind::BinaryOperator)?;
-
-                    if self.current().kind == TokenKind::LeftParenthesis {
+        
+                    if self.current()?.kind == TokenKind::LeftParenthesis {
                         self.consume(TokenKind::LeftParenthesis)?;
                         let temp = self.parse_expression()?;
-
+        
                         return Ok(Node::BinaryExpression {
                             left: Box::new(sub_expression),
                             operator,
                             right: Box::new(temp),
                         });
                     }
-
+        
                     let right = self.parse_expression()?;
-
+        
                     self.consume(RightParenthesis)?;
-
+        
                     return Ok(Node::BinaryExpression {
                         left: Box::new(sub_expression),
                         operator,
                         right: Box::new(right),
                     });
                 }
-
+        
                 Ok(sub_expression)
             }
             Identifier => {
-                if self.peek().kind == RightParenthesis {
-                    let ident = self.parse_identifier()?;
-
+                let ident = self.parse_identifier()?;
+                if self.current()?.kind == RightParenthesis {
                     self.consume(RightParenthesis)?;
-
-                    Ok(ident)
-                } else if self.peek().kind.is_binary_operator() {
-                    let expression = self.parse_binary_expression()?;
-
-                    println!("expression: {:?}", expression);
-                    if self.current().kind == RightParenthesis {
-                        self.consume(RightParenthesis)?;
-                    }
-
-                    return Ok(expression);
-                } else {
-                    println!("Unexpected token: {:?}", self.current());
-                    
-                    return Ok(self.parse_identifier()?);
+                    return Ok(ident)
                 }
+                Ok(ident)
             }
             TokenKind::UnaryOperator => {
-                // parse unary expression
-                Ok(Node::EmptyNode)
+                let node = self.parse_unary_expression()?;
+                println!("unary node: {:?}", node);
+                if self.peek().kind.is_binary_operator() {
+                    let operator = self.get_operator()?;
+                    self.consume(TokenKind::BinaryOperator)?;
+                    let right = self.parse_expression()?;
+                    return Ok(Node::BinaryExpression {
+                        left: Box::new(node),
+                        operator,
+                        right: Box::new(right),
+                    });
+                }
+                Ok(node)
             }
             _ => {
-                // TODO: add better logic for unary operators
-                if self.current().kind.is_unary_operator() {
+                if self.current()?.kind.is_unary_operator() {
                     let node = self.parse_unary_expression()?;
                     return Ok(node);
                 }
@@ -373,15 +405,21 @@ impl Parser {
                 Err(ParseError::UnexpectedToken)
             }
         }
-        
-    }
+}
     
     fn is_unary_expression(&self) -> bool {
-        self.current().kind.is_unary_operator()
+        if let Ok(current) = self.current() {
+            return current.kind.is_unary_operator()
+        }
+        false
     }
 
     fn is_binary_expression(&self) -> bool {
-        self.current().kind == Identifier && self.peek().kind.is_binary_operator()
+        if let Ok(current) = self.current() {
+            current.kind == Identifier && self.peek().kind.is_binary_operator()
+        } else {
+            false
+        }
     }
 
     // fn is_identifier(&self) -> bool {
@@ -389,13 +427,13 @@ impl Parser {
     // }
 
     fn parse_identifier(&mut self) -> Result<Node, ParseError> {
-        if self.current().kind != Identifier {
+        if self.current()?.kind != Identifier {
             println!("Unexpected token: {:?}", self.current());
             return Err(ParseError::UnexpectedToken);
         }
 
         let identifier = Node::Identifier {
-            value: self.current().value.clone(),
+            value: self.current()?.value.clone(),
         };
 
         self.consume(Identifier)?;
@@ -404,12 +442,12 @@ impl Parser {
     }
     
     fn parse_unary_expression(&mut self) -> Result<Node, ParseError> {
-        if !self.current().kind.is_unary_operator() {
+        if !self.current()?.kind.is_unary_operator() {
             println!("Unexpected token: {:?}", self.current());
             return Err(ParseError::UnexpectedToken);
         }
-        
-        let operator = self.current().kind.clone();
+
+        let operator = self.get_operator()?;
         
         self.consume(TokenKind::UnaryOperator)?;
         
@@ -422,24 +460,27 @@ impl Parser {
     }
 
     fn parse_binary_expression(&mut self) -> Result<Node, ParseError> {
-        if self.current().kind != Identifier {
+        if self.current()?.kind != Identifier {
             panic!("this needs to be parsed as an expression");
             return Err(ParseError::UnexpectedToken);
         }
         let left_node = Node::Identifier {
-            value: self.current().value.clone(),
+            value: self.current()?.value.clone(),
         };
         self.consume(Identifier)?;
-        
-        let operator = self.current().kind.clone();
+
+        let operator = self.get_operator()?;
         
         self.consume(TokenKind::BinaryOperator)?;
 
         if self.position >= self.tokens.len() {
-            return Err(ParseError::AccessOutOfBoundsToken);
+            return         Err(ParseError::AccessOutOfBoundsToken {
+                position: self.position,
+                total_tokens: self.tokens.len(),
+            });
         }
         
-        if self.current().kind == TokenKind::LeftParenthesis {
+        if self.current()?.kind == TokenKind::LeftParenthesis {
             return Ok(Node::BinaryExpression {
                 left: Box::new(left_node),
                 operator,
@@ -448,10 +489,10 @@ impl Parser {
         }
         
         let right_node = Node::Identifier {
-            value: self.current().value.clone(),
+            value: self.current()?.value.clone(),
         };
         
-        if self.current().kind.is_unary_operator() {
+        if self.current()?.kind.is_unary_operator() {
             return Ok(Node::BinaryExpression {
                 left: Box::new(left_node),
                 operator,
@@ -468,6 +509,16 @@ impl Parser {
         };
 
         Ok(binary_expression)
+    }
+
+    fn get_operator(&self) -> Result<TokenKind, ParseError> {
+        match self.current() {
+            Ok(token) => Ok(token.kind.clone()),
+            Err(e) => {
+                println!("Error retrieving current token: {:?}", e);
+                Err(e)
+            }
+        }
     }
 
     pub fn dump_state(&mut self) {

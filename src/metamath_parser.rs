@@ -85,12 +85,15 @@ mod tests {
     fn test_ax_3() {
         let input = "⊢ ((¬ 𝜑 → ¬ 𝜓) → (𝜓 → 𝜑))";
         // let input = "⊢ (𝜑 → ¬ 𝜓)";
+        // let input = "⊢ (¬ 𝜑 → ¬ 𝜓)";
+        // let input = "((¬ 𝜑) → (¬ 𝜓))";
         // let input = "⊢ (¬ 𝜓)";
 
         let parser = Parser::new_mm(input.to_string());
         
         let mut axiom = Axiom::new("ax-3".to_string(), vec![], input.to_string(), parser);
-        axiom.solve().expect("TODO: panic message");
+        // assert!(axiom.solve().is_ok(), "Axiom solve resulted in an error");
+        axiom.solve().unwrap_or_else(|e| panic!("Axiom solve resulted in an error: {:?}", e));
         axiom.print_steps();
     }
 }

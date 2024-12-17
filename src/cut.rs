@@ -24,7 +24,7 @@ impl Axiom {
     }
     
     pub fn add_step(&mut self, node: Node) -> usize {
-        let ref_index = self.index.clone();
+        let ref_index = self.index;
         let hypothesis = (0, 0);
         let reference = "".to_string();
         let expression = node.to_string();
@@ -53,10 +53,13 @@ impl Axiom {
         let node = self.parser.parse()?;
         // add the initial node
         
-        // self.add_step(node.clone());
         println!("string test: {}", node.to_string());
-        // println!("node test: {:?}", node.right());
+
+        let (reduce_left, reduce_right) = reduce(node.clone()).unwrap();
+        
         self.add_step(node.clone());
+        self.add_step(reduce_left.clone());
+        self.add_step(reduce_right.clone());
         
         println!("initial assertion: {}", self.initial_assertion);
         let mut i = 0;
@@ -71,9 +74,9 @@ impl Axiom {
             let mut parser = Parser::new(step.expression.clone());
             
             let node = parser.parse()?;
-
+            
             let (reduce_left, reduce_right) = reduce(node).unwrap();
-
+            
             let left_index = self.add_step(reduce_left.clone());
             let right_index = self.add_step(reduce_right.clone());
             
@@ -154,7 +157,8 @@ pub fn reduce(node: Node) -> Result<(Node, Node), ReduceError>{
 
                     let node_left = *left;
                     let node_right = *right;
-
+                    println!("node_left: {:?}", node_left);
+                    println!("node_right: {:?}", node_right);
                     Ok((node_left, node_right))
                 }
                 _ => {
