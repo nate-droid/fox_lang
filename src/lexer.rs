@@ -142,13 +142,7 @@ impl Lexer for DefaultLexer {
                         });
                     }
                 }
-                '~' => {
-                    self.tokens.push(Token {
-                        value: self.char.to_string(),
-                        kind: TokenKind::Negation,
-                    });
-                }
-                '¬' => {
+                '~' | '¬' => {
                     self.tokens.push(Token {
                         value: self.char.to_string(),
                         kind: TokenKind::Negation,

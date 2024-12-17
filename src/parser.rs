@@ -284,94 +284,12 @@ impl Parser {
                         operator,
                         right: Box::new(right),
                     });
-                } else if self.current()?.kind.is_unary_operator() {
-                    println!("Unary operator");
                 } else if self.peek().kind == RightParenthesis {
                     self.consume(RightParenthesis)?;
                     return Ok(left);
                 } else {
                     return Ok(left);
                 }
-        
-                
-                if self.is_binary_expression() {
-                    let left = self.parse_expression()?;
-        
-                    if self.position >= self.tokens.len() || !self.current()?.kind.is_binary_operator() {
-                        return Ok(left);
-                    }
-        
-                    let operator = self.get_operator()?;
-        
-                    self.consume(TokenKind::BinaryOperator)?;
-                    
-                    let right = self.parse_expression()?;
-                    return Ok(Node::BinaryExpression {
-                        left: Box::new(left),
-                        operator,
-                        right: Box::new(right),
-                    });
-                } else if self.is_unary_expression() {
-                    let operator = self.get_operator()?;
-                    
-                    self.consume(TokenKind::UnaryOperator)?;
-                    
-                    let right = self.parse_expression()?;
-                    return Ok(Node::UnaryExpression {
-                        operator,
-                        right: Box::new(right),
-                    });
-                }
-        
-                let sub_expression = self.parse_expression()?;
-                
-                if self.position >= self.tokens.len() {
-                    return Ok(sub_expression);
-                }
-                
-                if self.current()?.kind == RightParenthesis {
-                    self.consume(RightParenthesis)?;
-                    return Ok(sub_expression);
-                }
-        
-                if self.current()?.kind.is_binary_operator() {
-                    return Ok(sub_expression);
-                } else if self.current()?.kind == RightParenthesis && self.peek().kind.is_binary_operator() {
-        
-                    self.consume(RightParenthesis)?;
-        
-                    if !self.current()?.kind.is_binary_operator() {
-                        println!("Unexpected token: {:?}", self.current());
-                        return Err(ParseError::UnexpectedToken)
-                    }
-        
-                    let operator = self.get_operator()?;
-                    
-                    self.consume(TokenKind::BinaryOperator)?;
-        
-                    if self.current()?.kind == TokenKind::LeftParenthesis {
-                        self.consume(TokenKind::LeftParenthesis)?;
-                        let temp = self.parse_expression()?;
-        
-                        return Ok(Node::BinaryExpression {
-                            left: Box::new(sub_expression),
-                            operator,
-                            right: Box::new(temp),
-                        });
-                    }
-        
-                    let right = self.parse_expression()?;
-        
-                    self.consume(RightParenthesis)?;
-        
-                    return Ok(Node::BinaryExpression {
-                        left: Box::new(sub_expression),
-                        operator,
-                        right: Box::new(right),
-                    });
-                }
-        
-                Ok(sub_expression)
             }
             Identifier => {
                 let ident = self.parse_identifier()?;
