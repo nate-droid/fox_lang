@@ -95,6 +95,18 @@ impl Lexer for MetaMathLexer {
                         kind: TokenKind::Identifier,
                     });
                 }
+                '&' => {
+                    self.tokens.push(Token {
+                        value: self.char.to_string(),
+                        kind: TokenKind::HypothesisConjunction,
+                    });
+                }
+                '⇒' => {
+                    self.tokens.push(Token {
+                        value: self.char.to_string(),
+                        kind: TokenKind::HypothesisEnd,
+                    });
+                }
                 _ => {
                     panic!("Invalid token: {}", self.char);
                 }

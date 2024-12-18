@@ -5,14 +5,34 @@ use crate::lexer::TokenKind;
 pub struct Axiom {
     index: usize,
     name: String,
-    hypothesises: Vec<(String, String)>,
+    hypothesises: Vec<String>,
     pub steps: Vec<Step>,
     initial_assertion: String,
     parser: Parser,
 }
 
 impl Axiom {
-    pub fn new(name: String, hypothesises: Vec<(String, String)>, initial_assertion: String, parser: Parser) -> Self {
+    pub fn new(name: String, initial_assertion: String, parser: Parser) -> Self {
+        // check if initial assertion includes a ⇒ or a &, this means that there are hypothesis that need to be parsed and recorded
+        let mut hypothesises = Vec::new();
+        if initial_assertion.contains("⇒") {
+            // split before and after the ⇒, the first part will be hypothesis, the second part will be the assertion
+            let parts: Vec<&str> = initial_assertion.split("⇒").collect();
+            let hypothesis = parts[0].trim();
+            let assertion = parts[1].trim();
+            
+            // check if the hypothesis contains a &, this means that there are multiple hypothesis
+            if hypothesis.contains("&") {
+                let parts: Vec<&str> = hypothesis.split("&").collect();
+                
+                for part in parts {
+                    hypothesises.push(part.trim().to_string());
+                }
+            } else {
+                hypothesises.push(hypothesis.to_string());
+            }
+        }
+        
         Self {
             index: 0,
             name,
@@ -50,6 +70,11 @@ impl Axiom {
 
     // TODO: add a return type to handle errors
     pub fn solve(&mut self) -> Result<(), ParseError> {
+        
+        // TODO: Add a check that parses until there are no more nodes
+        // TODO: What would a "body" look like for the AST
+        // design a proper AST
+        
         let node = self.parser.parse()?;
         // add the initial node
         
@@ -212,7 +237,7 @@ mod tests {
         let input = "(A -> (B -> C))";
         
         let parser = Parser::new(input.to_string());
-        let mut axiom = Axiom::new("ax-1".to_string(), vec![], input.to_string(), parser);
+        let mut axiom = Axiom::new("ax-1".to_string(), input.to_string(), parser);
         axiom.solve().expect("TODO: panic message");
 
         assert_eq!(axiom.steps.len(), 5);

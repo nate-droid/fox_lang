@@ -27,6 +27,10 @@ pub enum TokenKind {
     ForAll,
     Exists,
     BoundX,
+    
+    // MetaMath specific
+    HypothesisConjunction, // &, this links two or more hypotheses
+    HypothesisEnd, // ⇒, this ends a list of hypotheses
 
 }
 
@@ -50,6 +54,8 @@ impl std::fmt::Display for TokenKind {
             TokenKind::ForAll => write!(f, "ForAll"),
             TokenKind::Exists => write!(f, "Exists"),
             TokenKind::BoundX => write!(f, "BoundX"),
+            TokenKind::HypothesisConjunction => write!(f, "&"),
+            TokenKind::HypothesisEnd => write!(f, "⇒"),
         }
     }
 }
@@ -152,6 +158,18 @@ impl Lexer for DefaultLexer {
                     self.tokens.push(Token {
                         value: self.char.to_string(),
                         kind: TokenKind::Implies,
+                    });
+                }
+                '&' => {
+                    self.tokens.push(Token {
+                        value: self.char.to_string(),
+                        kind: TokenKind::HypothesisConjunction,
+                    });
+                }
+                '⇒' => {
+                    self.tokens.push(Token {
+                        value: self.char.to_string(),
+                        kind: TokenKind::HypothesisEnd,
                     });
                 }
                 // test if alphabetic

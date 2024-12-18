@@ -53,7 +53,7 @@ mod tests {
 
         let parser = Parser::new_mm(input.to_string());
 
-        let mut axiom = Axiom::new("ax-1".to_string(), vec![], input.to_string(), parser);
+        let mut axiom = Axiom::new("ax-1".to_string(), input.to_string(), parser);
         axiom.solve().expect("TODO: panic message");
         println!("{:?}", axiom.steps);
 
@@ -65,7 +65,7 @@ mod tests {
 
         let parser = Parser::new_mm(input.to_string());
         
-        let mut axiom = Axiom::new("ax-1".to_string(), vec![], input.to_string(), parser);
+        let mut axiom = Axiom::new("ax-1".to_string(), input.to_string(), parser);
         axiom.solve().expect("TODO: panic message");
         println!("{:?}", axiom.steps);
     }
@@ -76,7 +76,7 @@ mod tests {
         
         let parser = Parser::new_mm(input.to_string());
         
-        let mut axiom = Axiom::new("ax-2".to_string(), vec![], input.to_string(), parser);
+        let mut axiom = Axiom::new("ax-2".to_string(), input.to_string(), parser);
         axiom.solve().expect("TODO: panic message");
         axiom.print_steps();
     }
@@ -84,15 +84,26 @@ mod tests {
     #[test] 
     fn test_ax_3() {
         let input = "⊢ ((¬ 𝜑 → ¬ 𝜓) → (𝜓 → 𝜑))";
-        // let input = "⊢ (𝜑 → ¬ 𝜓)";
-        // let input = "⊢ (¬ 𝜑 → ¬ 𝜓)";
-        // let input = "((¬ 𝜑) → (¬ 𝜓))";
-        // let input = "⊢ (¬ 𝜓)";
 
         let parser = Parser::new_mm(input.to_string());
         
-        let mut axiom = Axiom::new("ax-3".to_string(), vec![], input.to_string(), parser);
-        // assert!(axiom.solve().is_ok(), "Axiom solve resulted in an error");
+        let mut axiom = Axiom::new("ax-3".to_string(), input.to_string(), parser);
+        
+        axiom.solve().unwrap_or_else(|e| panic!("Axiom solve resulted in an error: {:?}", e));
+        axiom.print_steps();
+        
+        assert_eq!(axiom.steps.len(), 7);
+    }
+    
+    #[test]
+    fn test_ax_mp() {
+        // test for modus ponens
+        // ⊢ 𝜑 & ⊢ (𝜑 → 𝜓) ⇒ ⊢ 𝜓
+        // next steps are to parse & and ⇒ to setup the as of yet unimplemented "hypothesis" section
+        let input = "⊢ 𝜑 & ⊢ (𝜑 → 𝜓) ⇒ ⊢ 𝜓";
+        let parser = Parser::new_mm(input.to_string());
+        let mut axiom = Axiom::new("ax-mp".to_string(), input.to_string(), parser);
+        
         axiom.solve().unwrap_or_else(|e| panic!("Axiom solve resulted in an error: {:?}", e));
         axiom.print_steps();
     }

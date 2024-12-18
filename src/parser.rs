@@ -1,5 +1,4 @@
 use std::cmp::PartialEq;
-use std::fmt::Error;
 use crate::lexer::{Token, TokenKind};
 use crate::lexer::DefaultLexer;
 
@@ -257,28 +256,28 @@ impl Parser {
 
     fn parse_expression(&mut self) -> Result<Node, ParseError> {
         // This needs some new logic to properly parse any potential unary operators that may be included as a sub expression of a binary expression
-        
+
         match self.current()?.kind {
             TokenKind::LeftParenthesis => {
                 self.consume(TokenKind::LeftParenthesis)?;
-        
+
                 // this could happen by parsing for a "left" expression
                 // that expression could be either unary, binary, or simply an identifier
-                
+
                 let left = self.parse_expression()?;
-                
+
                 // println!("left: {:?}", left);
-                
+
                 if self.position >= self.tokens.len() {
                     return Ok(left);
                 }
-                
+
                 if self.current()?.kind.is_binary_operator() {
                     let operator = self.get_operator()?;
                     self.consume(TokenKind::BinaryOperator)?;
                     let right = self.parse_expression()?;
                     // self.consume(RightParenthesis)?;
-                    
+
                     return Ok(Node::BinaryExpression {
                         left: Box::new(left),
                         operator,
