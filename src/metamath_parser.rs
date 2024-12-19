@@ -51,9 +51,7 @@ mod tests {
     fn test_step_reduce() {
         let input = "⊢ (𝜑 → (𝜓 → 𝜑))";
 
-        let parser = Parser::new_mm(input.to_string());
-
-        let mut axiom = Axiom::new("ax-1".to_string(), input.to_string(), parser);
+        let mut axiom = Axiom::new("ax-1".to_string(), input.to_string());
         axiom.solve().expect("TODO: panic message");
         println!("{:?}", axiom.steps);
 
@@ -62,10 +60,8 @@ mod tests {
     #[test]
     fn test_recursive_step() {
         let input = "⊢ (𝜑 → (𝜓 → 𝜑))";
-
-        let parser = Parser::new_mm(input.to_string());
         
-        let mut axiom = Axiom::new("ax-1".to_string(), input.to_string(), parser);
+        let mut axiom = Axiom::new("ax-1".to_string(), input.to_string());
         axiom.solve().expect("TODO: panic message");
         println!("{:?}", axiom.steps);
     }
@@ -74,9 +70,7 @@ mod tests {
     fn test_ax_2() {
         let input = "⊢ ((𝜑 → (𝜓 → 𝜒)) → ((𝜑 → 𝜓) → (𝜑 → 𝜒)))";
         
-        let parser = Parser::new_mm(input.to_string());
-        
-        let mut axiom = Axiom::new("ax-2".to_string(), input.to_string(), parser);
+        let mut axiom = Axiom::new("ax-2".to_string(), input.to_string());
         axiom.solve().expect("TODO: panic message");
         axiom.print_steps();
     }
@@ -84,10 +78,8 @@ mod tests {
     #[test] 
     fn test_ax_3() {
         let input = "⊢ ((¬ 𝜑 → ¬ 𝜓) → (𝜓 → 𝜑))";
-
-        let parser = Parser::new_mm(input.to_string());
         
-        let mut axiom = Axiom::new("ax-3".to_string(), input.to_string(), parser);
+        let mut axiom = Axiom::new("ax-3".to_string(), input.to_string());
         
         axiom.solve().unwrap_or_else(|e| panic!("Axiom solve resulted in an error: {:?}", e));
         axiom.print_steps();
@@ -98,12 +90,54 @@ mod tests {
     #[test]
     fn test_ax_mp() {
         // test for modus ponens
-        // ⊢ 𝜑 & ⊢ (𝜑 → 𝜓) ⇒ ⊢ 𝜓
-        // next steps are to parse & and ⇒ to setup the as of yet unimplemented "hypothesis" section
-        let input = "⊢ 𝜑 & ⊢ (𝜑 → 𝜓) ⇒ ⊢ 𝜓";
-        let parser = Parser::new_mm(input.to_string());
-        let mut axiom = Axiom::new("ax-mp".to_string(), input.to_string(), parser);
         
+        let input = "⊢ 𝜑 & ⊢ (𝜑 → 𝜓) ⇒ ⊢ 𝜓";
+        
+        let mut axiom = Axiom::new("ax-mp".to_string(), input.to_string());
+        
+        axiom.solve().unwrap_or_else(|e| panic!("Axiom solve resulted in an error: {:?}", e));
+        axiom.print_steps();
+    }
+    
+    #[test]
+    fn test_ax_gen() {
+        let input = "∀𝑥𝜑";
+        let mut axiom = Axiom::new("ax-gen".to_string(), input.to_string());
+        axiom.solve().unwrap_or_else(|e| panic!("Axiom solve resulted in an error: {:?}", e));
+        axiom.print_steps();
+    }
+    
+    #[test]
+    fn test_ax_4() {
+        let input = "⊢ (∀𝑥(𝜑 → 𝜓) → (∀𝑥𝜑 → ∀𝑥𝜓))";
+        let mut axiom = Axiom::new("ax-4".to_string(), input.to_string());
+        axiom.solve().unwrap_or_else(|e| panic!("Axiom solve resulted in an error: {:?}", e));
+        axiom.print_steps();
+    }
+    
+    #[test]
+    fn test_ax_5() {
+        let input = "⊢ (𝜑 → ∀𝑥𝜑)";
+        let mut axiom = Axiom::new("ax-5".to_string(), input.to_string());
+        axiom.solve().unwrap_or_else(|e| panic!("Axiom solve resulted in an error: {:?}", e));
+        axiom.print_steps();
+    }
+    
+    #[test]
+    fn test_ax_6() {
+        let input = "⊢ ¬ ∀𝑥 ¬ 𝑥 = 𝑦";
+
+        let mut axiom = Axiom::new("ax-6".to_string(), input.to_string());
+        axiom.solve().unwrap_or_else(|e| panic!("Axiom solve resulted in an error: {:?}", e));
+        axiom.print_steps();
+        
+        assert_eq!(axiom.steps.len(), 6);
+    }
+    
+    #[test]
+    fn test_ax_7() {
+        let input = "⊢ (𝑥 = 𝑦 → (𝑥 = 𝑧 → 𝑦 = 𝑧))";
+        let mut axiom = Axiom::new("ax-7".to_string(), input.to_string());
         axiom.solve().unwrap_or_else(|e| panic!("Axiom solve resulted in an error: {:?}", e));
         axiom.print_steps();
     }

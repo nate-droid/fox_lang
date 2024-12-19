@@ -5,16 +5,18 @@ use crate::lexer::TokenKind;
 pub struct Axiom {
     index: usize,
     name: String,
-    hypothesises: Vec<String>,
+    pub hypothesises: Vec<String>,
     pub steps: Vec<Step>,
     initial_assertion: String,
     parser: Parser,
 }
 
 impl Axiom {
-    pub fn new(name: String, initial_assertion: String, parser: Parser) -> Self {
+    pub fn new(name: String, mut initial_assertion: String) -> Self {
         // check if initial assertion includes a ⇒ or a &, this means that there are hypothesis that need to be parsed and recorded
+        
         let mut hypothesises = Vec::new();
+        
         if initial_assertion.contains("⇒") {
             // split before and after the ⇒, the first part will be hypothesis, the second part will be the assertion
             let parts: Vec<&str> = initial_assertion.split("⇒").collect();
@@ -31,7 +33,12 @@ impl Axiom {
             } else {
                 hypothesises.push(hypothesis.to_string());
             }
+            
+            // replace the initial assertion with the rest of the string
+            initial_assertion = assertion.to_string();
         }
+        
+        let parser = Parser::new_mm(initial_assertion.clone());
         
         Self {
             index: 0,
@@ -68,17 +75,14 @@ impl Axiom {
         ref_index
     }
 
-    // TODO: add a return type to handle errors
     pub fn solve(&mut self) -> Result<(), ParseError> {
-        
-        // TODO: Add a check that parses until there are no more nodes
-        // TODO: What would a "body" look like for the AST
-        // design a proper AST
         
         let node = self.parser.parse()?;
         // add the initial node
         
         println!("string test: {}", node.to_string());
+        println!("left: {:?}", node.left());
+        println!("right: {:?}", node.right());
 
         let (reduce_left, reduce_right) = reduce(node.clone()).unwrap();
         
@@ -96,7 +100,7 @@ impl Axiom {
             let step = &self.steps[i];
             println!("Step: {:?}", step);
             
-            let mut parser = Parser::new(step.expression.clone());
+            let mut parser = Parser::new_mm(step.expression.clone());
             
             let node = parser.parse()?;
             
@@ -182,9 +186,11 @@ pub fn reduce(node: Node) -> Result<(Node, Node), ReduceError>{
 
                     let node_left = *left;
                     let node_right = *right;
-                    println!("node_left: {:?}", node_left);
-                    println!("node_right: {:?}", node_right);
+
                     Ok((node_left, node_right))
+                }
+                TokenKind::ForAll | TokenKind::Equality => {
+                    Ok((*left, *right))
                 }
                 _ => {
                     Err(ReduceError::Unimplemented)
@@ -234,12 +240,11 @@ mod tests {
 
     #[test]
     fn test_recursive_reduce() {
-        let input = "(A -> (B -> C))";
+        let input = "(𝜑 → (𝜓 → 𝜑))";
         
-        let parser = Parser::new(input.to_string());
-        let mut axiom = Axiom::new("ax-1".to_string(), input.to_string(), parser);
+        let mut axiom = Axiom::new("ax-1".to_string(), input.to_string());
         axiom.solve().expect("TODO: panic message");
 
-        assert_eq!(axiom.steps.len(), 5);
+        assert_eq!(axiom.steps.len(), 4);
     }
 }

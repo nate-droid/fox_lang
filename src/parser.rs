@@ -92,7 +92,7 @@ impl Node {
                 operator.clone()
             }
             Node::Identifier { value } => {
-                TokenKind::Identifier
+                Identifier
             }
             _ => {
                 TokenKind::End
@@ -117,15 +117,15 @@ impl Node {
     }
 
     pub fn to_string(&self) -> String {
-        // TODO: Add nested expressions
         match self {
             Node::BinaryExpression { left, operator, right } => {
-                format!("({} {} {})", left.to_string(), operator, right.to_string())
+                if *operator == TokenKind::ForAll {
+                    format!("∀{}{}", left.to_string(), right.to_string())
+                } else {
+                    format!("({} {} {})", left.to_string(), operator, right.to_string())    
+                }
             }
             Node::UnaryExpression { operator, right } => {
-                // if let Node::Identifier { value } = *right.clone() {
-                //     return format!("{} {}", operator, value);
-                // }
                 format!("({} {})", operator, right.to_string())
             }
             Node::Identifier { value } => {
@@ -168,7 +168,7 @@ impl Parser {
         while self.position < self.tokens.len() {
 
             match self.tokens[self.position].kind {
-                TokenKind::LeftParenthesis => {
+                TokenKind::LeftParenthesis | TokenKind::ForAll => {
                     return self.parse_expression()
                 }
                 RightParenthesis => {
@@ -179,6 +179,20 @@ impl Parser {
                     println!("Implies");
                 }
                 Identifier => {
+                    // need a bit more robust check to see if there are any "next" operators in the expression
+                    // TODO: circle back here, after fixing how the for all block gets parsed
+                    
+                    if self.peek().kind.is_binary_operator() {
+                        let left = self.parse_identifier()?;
+                        let operator = self.get_operator()?;
+                        self.consume(TokenKind::BinaryOperator)?;
+                        let right = self.parse_expression()?;
+                        return Ok(Node::BinaryExpression {
+                            left: Box::new(left),
+                            operator,
+                            right: Box::new(right),
+                        });
+                    }
                     return Ok(Node::Identifier {
                         value: self.current()?.value.clone(),
                     });
@@ -188,6 +202,7 @@ impl Parser {
                     println!("skipping turnstile");
                 }
                 _ => {
+                    println!("Unexpected token: {:?}", self.current());
                     if self.current()?.kind.is_unary_operator() {
                         let node = self.parse_unary_expression()?;
                         return Ok(node);
@@ -292,15 +307,32 @@ impl Parser {
             }
             Identifier => {
                 let ident = self.parse_identifier()?;
+                if self.position >= self.tokens.len() {
+                    return Ok(ident);
+                }
+                
                 if self.current()?.kind == RightParenthesis {
                     self.consume(RightParenthesis)?;
                     return Ok(ident)
                 }
+                
+                // peek and check if the next token is a binary operator, if yes, parse as binary node
+                if self.current()?.kind.is_binary_operator() {
+                    let operator = self.get_operator()?;
+                    self.consume(TokenKind::BinaryOperator)?;
+                    let right = self.parse_expression()?;
+                    return Ok(Node::BinaryExpression {
+                        left: Box::new(ident),
+                        operator,
+                        right: Box::new(right),
+                    });
+                }
+                
                 Ok(ident)
             }
             TokenKind::UnaryOperator => {
                 let node = self.parse_unary_expression()?;
-                println!("unary node: {:?}", node);
+                
                 if self.peek().kind.is_binary_operator() {
                     let operator = self.get_operator()?;
                     self.consume(TokenKind::BinaryOperator)?;
@@ -312,6 +344,22 @@ impl Parser {
                     });
                 }
                 Ok(node)
+            }
+            TokenKind::ForAll => {
+            
+                let operator = self.get_operator()?;
+                self.consume(TokenKind::ForAll)?;
+
+                let first = self.parse_identifier()?;
+                println!("first: {:?}", first);
+                let second = self.parse_expression()?;
+
+                return Ok(Node::BinaryExpression {
+                    left: Box::new(first),
+                    operator,
+                    right: Box::new(second),
+                });
+            
             }
             _ => {
                 if self.current()?.kind.is_unary_operator() {

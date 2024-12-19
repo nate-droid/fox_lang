@@ -31,6 +31,7 @@ pub enum TokenKind {
     // MetaMath specific
     HypothesisConjunction, // &, this links two or more hypotheses
     HypothesisEnd, // ⇒, this ends a list of hypotheses
+    Equality, // =
 
 }
 
@@ -56,6 +57,7 @@ impl std::fmt::Display for TokenKind {
             TokenKind::BoundX => write!(f, "BoundX"),
             TokenKind::HypothesisConjunction => write!(f, "&"),
             TokenKind::HypothesisEnd => write!(f, "⇒"),
+            TokenKind::Equality => write!(f, "="),
         }
     }
 }
@@ -64,6 +66,8 @@ impl TokenKind {
     pub fn is_binary_operator(&self) -> bool {
         match self {
             TokenKind::Implies => true,
+            TokenKind::ForAll => true,
+            TokenKind::Equality => true,
             _ => false,
         }
     }
@@ -170,6 +174,12 @@ impl Lexer for DefaultLexer {
                     self.tokens.push(Token {
                         value: self.char.to_string(),
                         kind: TokenKind::HypothesisEnd,
+                    });
+                }
+                '∀' => {
+                    self.tokens.push(Token {
+                        value: self.char.to_string(),
+                        kind: TokenKind::ForAll,
                     });
                 }
                 // test if alphabetic

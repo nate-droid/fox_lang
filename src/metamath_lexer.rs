@@ -71,7 +71,8 @@ impl Lexer for MetaMathLexer {
                 '𝑥' => {
                     self.tokens.push(Token {
                         value: self.char.to_string(),
-                        kind: TokenKind::BoundX,
+                        // kind: TokenKind::BoundX,
+                        kind: TokenKind::Identifier, // changing this to an identifier in order to simplify the early stages
                     });
                 }
                 '𝜑' => {
@@ -105,6 +106,24 @@ impl Lexer for MetaMathLexer {
                     self.tokens.push(Token {
                         value: self.char.to_string(),
                         kind: TokenKind::HypothesisEnd,
+                    });
+                }
+                '=' => {
+                    self.tokens.push(Token {
+                        value: self.char.to_string(),
+                        kind: TokenKind::Equality,
+                    });
+                }
+                'A' | 'B' | 'C' => {
+                    self.tokens.push(Token {
+                        value: self.char.to_string(),
+                        kind: TokenKind::Identifier,
+                    });
+                }
+                '𝑦' | '𝑧' => {
+                    self.tokens.push(Token {
+                        value: self.char.to_string(),
+                        kind: TokenKind::Identifier,
                     });
                 }
                 _ => {
@@ -242,7 +261,7 @@ mod tests {
         let expected_tokens = vec![
             TokenKind::Turnstile,
             TokenKind::ForAll,
-            TokenKind::BoundX,
+            TokenKind::Identifier,
             TokenKind::Identifier,
         ];
 
@@ -261,7 +280,7 @@ mod tests {
             TokenKind::Turnstile,
             TokenKind::LeftParenthesis,
             TokenKind::ForAll,
-            TokenKind::BoundX,
+            TokenKind::Identifier,
             TokenKind::LeftParenthesis,
             TokenKind::Identifier,
             TokenKind::Implies,
@@ -270,11 +289,11 @@ mod tests {
             TokenKind::Implies,
             TokenKind::LeftParenthesis,
             TokenKind::ForAll,
-            TokenKind::BoundX,
+            TokenKind::Identifier,
             TokenKind::Identifier,
             TokenKind::Implies,
             TokenKind::ForAll,
-            TokenKind::BoundX,
+            TokenKind::Identifier,
             TokenKind::Identifier,
             TokenKind::RightParenthesis,
             TokenKind::RightParenthesis,
