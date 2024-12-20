@@ -19,7 +19,7 @@ pub trait Lexer {
 }
 
 use std::fmt;
-use crate::lexer::TokenKind::{Identifier, RightParenthesis};
+use crate::lexer::TokenKind::{ForAll, Identifier, RightParenthesis};
 use crate::metamath_lexer::MetaMathLexer;
 // import MetaMathLexer
 
@@ -186,6 +186,7 @@ impl Parser {
                         let left = self.parse_identifier()?;
                         let operator = self.get_operator()?;
                         self.consume(TokenKind::BinaryOperator)?;
+                        
                         let right = self.parse_expression()?;
                         return Ok(Node::BinaryExpression {
                             left: Box::new(left),
@@ -202,7 +203,6 @@ impl Parser {
                     println!("skipping turnstile");
                 }
                 _ => {
-                    println!("Unexpected token: {:?}", self.current());
                     if self.current()?.kind.is_unary_operator() {
                         let node = self.parse_unary_expression()?;
                         return Ok(node);
@@ -290,6 +290,7 @@ impl Parser {
                 if self.current()?.kind.is_binary_operator() {
                     let operator = self.get_operator()?;
                     self.consume(TokenKind::BinaryOperator)?;
+                    
                     let right = self.parse_expression()?;
                     // self.consume(RightParenthesis)?;
 
@@ -320,6 +321,16 @@ impl Parser {
                 if self.current()?.kind.is_binary_operator() {
                     let operator = self.get_operator()?;
                     self.consume(TokenKind::BinaryOperator)?;
+                    
+                    if operator == TokenKind::Equality {
+                        let right = self.parse_identifier()?;
+                        return Ok(Node::BinaryExpression {
+                            left: Box::new(ident),
+                            operator,
+                            right: Box::new(right),
+                        });
+                    }
+                    
                     let right = self.parse_expression()?;
                     return Ok(Node::BinaryExpression {
                         left: Box::new(ident),
@@ -349,10 +360,19 @@ impl Parser {
             
                 let operator = self.get_operator()?;
                 self.consume(TokenKind::ForAll)?;
-
+                
                 let first = self.parse_identifier()?;
-                println!("first: {:?}", first);
-                let second = self.parse_expression()?;
+
+                if self.current()?.kind == TokenKind::LeftParenthesis || self.current()?.kind.is_unary_operator() || self.current()?.kind == ForAll{
+                    let second = self.parse_expression()?;
+                    return Ok(Node::BinaryExpression {
+                        left: Box::new(first),
+                        operator,
+                        right: Box::new(second),
+                    });
+                }
+                
+                let second = self.parse_identifier()?;
 
                 return Ok(Node::BinaryExpression {
                     left: Box::new(first),
@@ -386,10 +406,6 @@ impl Parser {
             false
         }
     }
-
-    // fn is_identifier(&self) -> bool {
-    //     self.current().kind == Identifier
-    // }
 
     fn parse_identifier(&mut self) -> Result<Node, ParseError> {
         if self.current()?.kind != Identifier {

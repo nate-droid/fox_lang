@@ -141,4 +141,77 @@ mod tests {
         axiom.solve().unwrap_or_else(|e| panic!("Axiom solve resulted in an error: {:?}", e));
         axiom.print_steps();
     }
+    
+    #[test]
+    fn test_ax_8() {
+        let input = "⊢ (𝑥 = 𝑦 → (𝑥 ∈ 𝑧 → 𝑦 ∈ 𝑧))";
+        let mut axiom = Axiom::new("ax-8".to_string(), input.to_string());
+        axiom.solve().unwrap_or_else(|e| panic!("Axiom solve resulted in an error: {:?}", e));
+        axiom.print_steps();
+        assert_eq!(axiom.steps.len(), 8);
+    }
+    
+    #[test]
+    fn test_ax_9() {
+        let input = "⊢ (𝑥 = 𝑦 → (𝑧 ∈ 𝑥 → 𝑧 ∈ 𝑦))";
+        // let input = "⊢ (𝑥 = 𝑦 → 𝑧)";
+        let mut axiom = Axiom::new("ax-9".to_string(), input.to_string());
+        axiom.solve().unwrap_or_else(|e| panic!("Axiom solve resulted in an error: {:?}", e));
+        axiom.print_steps();
+        assert_eq!(axiom.steps.len(), 8);
+    }
+    
+    #[test]
+    fn test_ax_10() {
+        let input = "⊢ (¬ ∀𝑥𝜑 → ∀𝑥 ¬ ∀𝑥𝜑)";
+        let mut axiom = Axiom::new("ax-10".to_string(), input.to_string());
+        axiom.solve().unwrap_or_else(|e| panic!("Axiom solve resulted in an error: {:?}", e));
+        axiom.print_steps();
+        
+        assert_eq!(axiom.steps.len(), 6);
+    }
+    
+    #[test]
+    fn test_ax_11() {
+        let input = "⊢ (∀𝑥∀𝑦𝜑 → ∀𝑦∀𝑥𝜑)";
+        // let input = "⊢ (∀𝑥∀𝑦𝜑)";
+        let mut axiom = Axiom::new("ax-11".to_string(), input.to_string());
+        axiom.solve().unwrap_or_else(|e| panic!("Axiom solve resulted in an error: {:?}", e));
+        axiom.print_steps();
+        assert_eq!(axiom.steps.len(), 8);
+    }
+    
+    #[test]
+    fn test_ax_12() {
+        let input = "⊢ (𝑥 = 𝑦 → (∀𝑦𝜑 → ∀𝑥(𝑥 = 𝑦 → 𝜑)))";
+        let mut axiom = Axiom::new("ax-12".to_string(), input.to_string());
+        axiom.solve().unwrap_or_else(|e| panic!("Axiom solve resulted in an error: {:?}", e));
+        axiom.print_steps();
+        // assert_eq!(axiom.steps.len(), 8);
+        // TODO: Validate Length
+    }
+    
+    #[test]
+    fn test_ax_13() {
+        let input = "⊢ (¬ 𝑥 = 𝑦 → (𝑦 = 𝑧 → ∀𝑥 𝑦 = 𝑧))";
+        let mut axiom = Axiom::new("ax-13".to_string(), input.to_string());
+        axiom.solve().unwrap_or_else(|e| panic!("Axiom solve resulted in an error: {:?}", e));
+        axiom.print_steps();
+        // assert_eq!(axiom.steps.len(), 8);
+        // TODO: Validate length
+    }
+    
+    // The axioms in the next section are related to Zermelo-Fraenkel set theory (ZFC)
+    #[test]
+    fn test_ax_ext() {
+        // Axiom of Extensionality
+        // let input = "⊢ (∀𝑧(𝑧 ∈ 𝑥 ↔ 𝑧 ∈ 𝑦) → 𝑥 = 𝑦)";
+        let input = "⊢ ¬ (((𝜑 ↔ 𝜓) → ¬ ((𝜑 → 𝜓) → ¬ (𝜓 → 𝜑))) → ¬ (¬ ((𝜑 → 𝜓) → ¬ (𝜓 → 𝜑)) → (𝜑 ↔ 𝜓)))";
+        let mut axiom = Axiom::new("ax-ext".to_string(), input.to_string());
+        axiom.solve().unwrap_or_else(|e| panic!("Axiom solve resulted in an error: {:?}", e));
+        axiom.print_steps();
+        
+        // TODO: Pickup. Need to investigate how biconditional operators are being parsed.
+        // seems like another case of incorrect levels of precedence
+    }
 }

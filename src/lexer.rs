@@ -32,7 +32,8 @@ pub enum TokenKind {
     HypothesisConjunction, // &, this links two or more hypotheses
     HypothesisEnd, // ⇒, this ends a list of hypotheses
     Equality, // =
-
+    ElementOf, // ∈
+    Biconditional, // ↔
 }
 
 impl std::fmt::Display for TokenKind {
@@ -58,6 +59,8 @@ impl std::fmt::Display for TokenKind {
             TokenKind::HypothesisConjunction => write!(f, "&"),
             TokenKind::HypothesisEnd => write!(f, "⇒"),
             TokenKind::Equality => write!(f, "="),
+            TokenKind::ElementOf => write!(f, "∈"),
+            TokenKind::Biconditional => write!(f, "↔"),
         }
     }
 }
@@ -68,6 +71,8 @@ impl TokenKind {
             TokenKind::Implies => true,
             TokenKind::ForAll => true,
             TokenKind::Equality => true,
+            TokenKind::ElementOf => true,
+            TokenKind::Biconditional => true,
             _ => false,
         }
     }

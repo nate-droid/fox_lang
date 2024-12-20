@@ -126,6 +126,18 @@ impl Lexer for MetaMathLexer {
                         kind: TokenKind::Identifier,
                     });
                 }
+                '∈' => {
+                    self.tokens.push(Token {
+                        value: self.char.to_string(),
+                        kind: TokenKind::ElementOf,
+                    });
+                }
+                '↔' => {
+                    self.tokens.push(Token {
+                        value: self.char.to_string(),
+                        kind: TokenKind::Biconditional,
+                    });
+                }
                 _ => {
                     panic!("Invalid token: {}", self.char);
                 }

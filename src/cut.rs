@@ -81,8 +81,6 @@ impl Axiom {
         // add the initial node
         
         println!("string test: {}", node.to_string());
-        println!("left: {:?}", node.left());
-        println!("right: {:?}", node.right());
 
         let (reduce_left, reduce_right) = reduce(node.clone()).unwrap();
         
@@ -98,7 +96,7 @@ impl Axiom {
             }
             
             let step = &self.steps[i];
-            println!("Step: {:?}", step);
+            // println!("Step: {:?}", step);
             
             let mut parser = Parser::new_mm(step.expression.clone());
             
@@ -165,11 +163,9 @@ impl std::error::Error for ReduceError {}
 pub fn reduce(node: Node) -> Result<(Node, Node), ReduceError>{
     return match node.clone() {
         Node::UnaryExpression { operator, .. } => {
-            println!("Found a unary expression");
             match node.operator() {
                 TokenKind::Negation => {
                     // |- ¬A becomes A |- ⊥
-                    println!("node: {:?}", node.right());
                     let right = node.right().unwrap();
 
                     Ok((node.clone(), *right.clone()))
@@ -181,7 +177,7 @@ pub fn reduce(node: Node) -> Result<(Node, Node), ReduceError>{
         }
         Node::BinaryExpression { left, operator, right } => {
             match node.operator() {
-                TokenKind::Implies => {
+                TokenKind::Implies | TokenKind::Biconditional => {
                     // |- A -> B becomes A |- B
 
                     let node_left = *left;
@@ -189,7 +185,7 @@ pub fn reduce(node: Node) -> Result<(Node, Node), ReduceError>{
 
                     Ok((node_left, node_right))
                 }
-                TokenKind::ForAll | TokenKind::Equality => {
+                TokenKind::ForAll | TokenKind::Equality | TokenKind::ElementOf => {
                     Ok((*left, *right))
                 }
                 _ => {
