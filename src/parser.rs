@@ -49,6 +49,35 @@ impl fmt::Display for ParseError {
 impl std::error::Error for ParseError {}
 
 #[derive(Debug, Clone)]
+pub enum Value {
+    Int(i32),
+    Float(f64),
+    Str(String),
+    // Add other types as needed
+}
+
+impl Value {
+    pub fn from_string(s: String) -> Self {
+        if let Ok(i) = s.parse::<i32>() {
+            return Value::Int(i);
+        } else if let Ok(f) = s.parse::<f64>() {
+            return Value::Float(f);
+        }
+        Value::Str(s)
+    }
+}
+
+impl fmt::Display for Value {
+    fn fmt(&self,f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            Value::Int (i) => write!(f, "{}", i),
+            Value::Float(fl) => write!(f, "{}", fl),
+            Value::Str(s) => write!(f, "{}", s),
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
 pub enum Node {
     BinaryExpression {
         left: Box<Node>,
@@ -61,6 +90,16 @@ pub enum Node {
     },
     Identifier {
         value: String,
+    },
+    Identity {
+        name: String,
+        value: Value,
+        kind: String,
+    },
+    Call {
+        name: String,
+        arguments: Vec<Token>,
+        returns: Vec<Node>,
     },
     EmptyNode,
 }
@@ -130,6 +169,12 @@ impl Node {
             }
             Node::Identifier { value } => {
                 value.clone()
+            }
+            Node::Identity { name, value, kind } => {
+                format!("{} : {} = {}", name, kind, value)
+            }
+            Node::Call { name, arguments, returns } => {
+                format!("{}({:?})", name, arguments)
             }
             Node::EmptyNode => {
                 "".to_string()

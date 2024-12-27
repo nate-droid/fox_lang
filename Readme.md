@@ -24,6 +24,9 @@ their system. When I get a bit more time, and the structure stabilizes a bit mor
 an examples folder. To run all tests at once, you can run `cargo test`. I have been aiming to keep main in a "working" state
 as much as possible, meaning that running all tests should always pass.
 
+Initial drafts of the language can be found in 'lang_scratch/'. As implied in the naming, these are only rough initial drafts
+and are subject to change.
+
 # Coming Up
 
 I've managed to complete the first 8 axioms from MetaMath, along with things like Modus Ponens and Generalization. 

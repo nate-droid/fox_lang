@@ -1,5 +1,7 @@
+use crate::lang_ast::Ast;
 use crate::lang_lexer::LangLexer;
 use crate::lexer::{Token, TokenKind};
+use crate::parser::{Node, Value};
 
 struct LangParser {
     lexer: LangLexer,
@@ -21,31 +23,76 @@ impl LangParser {
         }
     }
     
-    fn parse(&mut self) -> Result<(), String> {
+    fn parse(&mut self) -> Result<Ast, String> {
         let mut globals = Vec::new();
+        let mut ast = Ast::new();
+        
         while self.position < self.tokens.len() {
             match self.tokens[self.position].kind {
                 TokenKind::Print => {
                     self.consume(TokenKind::Print)?;
                     self.consume(TokenKind::LeftParenthesis)?;
                     println!("{:?}", self.tokens[self.position].value);
+                    let input = self.current_token()?;
                     self.advance();
                     self.consume(TokenKind::RightParenthesis)?;
                     self.consume(TokenKind::Semicolon)?;
+                    let node = Node::Call {
+                        name: "print".to_string(),
+                        arguments: vec![input],
+                        returns: vec![],
+                    };
+                    ast.add_node(node);
                 }
                 TokenKind::Let => {
                     self.consume(TokenKind::Let)?;
                     globals.push(self.current_token()?);
+                    
+                    let name = self.current_token()?;
+                    
                     self.consume(TokenKind::Word)?;
                     self.consume(TokenKind::Colon)?;
+                    
+                    let kind = self.current_token()?;
+                    // TODO: write a function to grab "kind" from the tokens
+                    
                     self.consume(TokenKind::Nat)?;
+                    
                     self.consume(TokenKind::Assign)?;
-                    println!("{:?}", self.tokens[self.position].value);
+                    
+                    
+                    let val = self.current_token()?;
+                    
+                    // TODO: Will need a more robust way to handle expressions in the future
+                    if self.peek_token()?.kind == TokenKind::Add {
+                        self.consume(TokenKind::Add)?;
+                        let val2 = self.current_token()?;
+                    
+                        // TODO: need to handle types a bit more
+                        let ident = Node::Identity {
+                            name: name.value.to_string(),
+                            value: Value::from_string(val.value + &*val2.value),
+                            kind: kind.value,
+                        };
+                        ast.add_node(ident);
+                        self.consume(TokenKind::Semicolon)?;
+                        continue;
+                    }
+                    
                     self.advance();
+                    
+                    let ident = Node::Identity {
+                        name: name.value.to_string(),
+                        value: Value::from_string(val.value),
+                        kind: kind.value,
+                    };
+                    ast.add_node(ident);
                     self.consume(TokenKind::Semicolon)?;
+                    continue;
                 }
                 _ => {
                     println!("{:?}", self.tokens[self.position].kind);
+                    println!("{:?}", self.tokens[self.position].value);
                     return Err("Unexpected token".to_string());
                 }
             }
@@ -57,9 +104,7 @@ impl LangParser {
         // test by printing a variable
         // test by implementing addition and subtraction
 
-        // TODO: Have this return a Node or vec of Nodes
-
-        Ok(())
+        Ok(ast)
     }
     
     fn consume(&mut self, kind: TokenKind) -> Result<(), String> {
@@ -84,12 +129,18 @@ impl LangParser {
             Err("No more tokens".to_string())
         }
     }
+    
+    fn peek_token(&self) -> Result<Token, String> {
+        if self.position + 1 < self.tokens.len() {
+            Ok(self.tokens[self.position + 1].clone())
+        } else {
+            Err("No more tokens".to_string())
+        }
+    }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::lang_lexer::LangLexer;
-    use crate::lexer::TokenKind;
     use super::*;
 
     #[test]
@@ -98,7 +149,8 @@ mod tests {
         
         let mut parser = LangParser::new(input.to_string());
         
-        parser.parse().expect("TODO: panic message");
+        let ast = parser.parse().expect("TODO: panic message");
+        println!("{:?}", ast);
     }
     
     #[test]
@@ -107,7 +159,32 @@ mod tests {
         
         let mut parser = LangParser::new(input.to_string());
         
-        parser.parse().expect("TODO: panic message");
+        let ast = parser.parse().expect("TODO: panic message");
+        println!("{:?}", ast);
+    }
+    
+    #[test]
+    fn multi_line_variables() {
+        let input = "let x : Nat = 1;\
+        let y : Nat = 2;";
+        let mut parser = LangParser::new(input.to_string());
+        println!("{:?}", parser.tokens);
+        let ast = parser.parse().expect("unexpected failure");
+        println!("{:?}", ast);
+    }
+    
+    #[test]
+    fn addition() {
+        let input = "let x : Nat = 1 + 2;";
+        let mut parser = LangParser::new(input.to_string());
+        // let ast = parser.parse().expect("unexpected failure");
         
+        // todo!("Implement addition");
+    }
+    
+    #[test]
+    fn error_handling() {
+        // add checks that the parser returns an error when it should
+        // for example, having an expression not terminate with a semicolon
     }
 }

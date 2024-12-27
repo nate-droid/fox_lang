@@ -65,6 +65,12 @@ impl LangLexer {
                         kind: TokenKind::Colon,
                     });
                 }
+                '+' => {
+                    self.tokens.push(Token {
+                        value: self.char.to_string(),
+                        kind: TokenKind::Add,
+                    })
+                }
                 // parse words
                 _ if self.char.is_alphabetic() => {
                     let mut word = String::new();

@@ -27,14 +27,14 @@ pub enum TokenKind {
     ForAll,
     Exists,
     BoundX,
-    
+
     // MetaMath specific
     HypothesisConjunction, // &, this links two or more hypotheses
     HypothesisEnd, // ⇒, this ends a list of hypotheses
     Equality, // =
     ElementOf, // ∈
     Biconditional, // ↔
-    
+
     // builtins
     Print,
     Word, // once the format settles down, lets rename this to "identity"
@@ -45,6 +45,8 @@ pub enum TokenKind {
     Assign,
     Colon,
     Nat,
+    
+    Add,
 }
 
 impl std::fmt::Display for TokenKind {
@@ -81,6 +83,7 @@ impl std::fmt::Display for TokenKind {
             TokenKind::Assign => write!(f, "Assign"),
             TokenKind::Colon => write!(f, "Colon"),
             TokenKind::Nat => write!(f, "Nat"),
+            TokenKind::Add => write!(f, "+"),
         }
     }
 }
@@ -262,7 +265,7 @@ impl Lexer for DefaultLexer {
     fn tokens(&self) -> Vec<Token> {
         self.tokens.clone()
     }
-    
+
 }
 
 #[cfg(test)]
