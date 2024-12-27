@@ -34,6 +34,17 @@ pub enum TokenKind {
     Equality, // =
     ElementOf, // ∈
     Biconditional, // ↔
+    
+    // builtins
+    Print,
+    Word, // once the format settles down, lets rename this to "identity"
+    String,
+    Semicolon,
+    Type,
+    Let,
+    Assign,
+    Colon,
+    Nat,
 }
 
 impl std::fmt::Display for TokenKind {
@@ -61,6 +72,15 @@ impl std::fmt::Display for TokenKind {
             TokenKind::Equality => write!(f, "="),
             TokenKind::ElementOf => write!(f, "∈"),
             TokenKind::Biconditional => write!(f, "↔"),
+            TokenKind::Print => write!(f, "Print"),
+            TokenKind::Word => write!(f, "Word"),
+            TokenKind::String => write!(f, "String"),
+            TokenKind::Semicolon => write!(f, "Semicolon"),
+            TokenKind::Type => write!(f, "Type"),
+            TokenKind::Let => write!(f, "Let"),
+            TokenKind::Assign => write!(f, "Assign"),
+            TokenKind::Colon => write!(f, "Colon"),
+            TokenKind::Nat => write!(f, "Nat"),
         }
     }
 }
@@ -242,6 +262,7 @@ impl Lexer for DefaultLexer {
     fn tokens(&self) -> Vec<Token> {
         self.tokens.clone()
     }
+    
 }
 
 #[cfg(test)]

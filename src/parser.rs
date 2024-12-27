@@ -122,7 +122,7 @@ impl Node {
                 if *operator == TokenKind::ForAll {
                     format!("∀{}{}", left.to_string(), right.to_string())
                 } else {
-                    format!("({} {} {})", left.to_string(), operator, right.to_string())    
+                    format!("({} {} {})", left.to_string(), operator, right.to_string())
                 }
             }
             Node::UnaryExpression { operator, right } => {
@@ -181,12 +181,12 @@ impl Parser {
                 Identifier => {
                     // need a bit more robust check to see if there are any "next" operators in the expression
                     // TODO: circle back here, after fixing how the for all block gets parsed
-                    
+
                     if self.peek().kind.is_binary_operator() {
                         let left = self.parse_identifier()?;
                         let operator = self.get_operator()?;
                         self.consume(TokenKind::BinaryOperator)?;
-                        
+
                         let right = self.parse_expression()?;
                         return Ok(Node::BinaryExpression {
                             left: Box::new(left),
@@ -290,7 +290,7 @@ impl Parser {
                 if self.current()?.kind.is_binary_operator() {
                     let operator = self.get_operator()?;
                     self.consume(TokenKind::BinaryOperator)?;
-                    
+
                     let right = self.parse_expression()?;
                     // self.consume(RightParenthesis)?;
 
@@ -311,17 +311,17 @@ impl Parser {
                 if self.position >= self.tokens.len() {
                     return Ok(ident);
                 }
-                
+
                 if self.current()?.kind == RightParenthesis {
                     self.consume(RightParenthesis)?;
                     return Ok(ident)
                 }
-                
+
                 // peek and check if the next token is a binary operator, if yes, parse as binary node
                 if self.current()?.kind.is_binary_operator() {
                     let operator = self.get_operator()?;
                     self.consume(TokenKind::BinaryOperator)?;
-                    
+
                     if operator == TokenKind::Equality {
                         let right = self.parse_identifier()?;
                         return Ok(Node::BinaryExpression {
@@ -330,7 +330,7 @@ impl Parser {
                             right: Box::new(right),
                         });
                     }
-                    
+
                     let right = self.parse_expression()?;
                     return Ok(Node::BinaryExpression {
                         left: Box::new(ident),
@@ -338,12 +338,12 @@ impl Parser {
                         right: Box::new(right),
                     });
                 }
-                
+
                 Ok(ident)
             }
             TokenKind::UnaryOperator => {
                 let node = self.parse_unary_expression()?;
-                
+
                 if self.peek().kind.is_binary_operator() {
                     let operator = self.get_operator()?;
                     self.consume(TokenKind::BinaryOperator)?;
@@ -357,10 +357,10 @@ impl Parser {
                 Ok(node)
             }
             TokenKind::ForAll => {
-            
+
                 let operator = self.get_operator()?;
                 self.consume(TokenKind::ForAll)?;
-                
+
                 let first = self.parse_identifier()?;
 
                 if self.current()?.kind == TokenKind::LeftParenthesis || self.current()?.kind.is_unary_operator() || self.current()?.kind == ForAll{
@@ -371,7 +371,7 @@ impl Parser {
                         right: Box::new(second),
                     });
                 }
-                
+
                 let second = self.parse_identifier()?;
 
                 return Ok(Node::BinaryExpression {
@@ -379,7 +379,7 @@ impl Parser {
                     operator,
                     right: Box::new(second),
                 });
-            
+
             }
             _ => {
                 if self.current()?.kind.is_unary_operator() {

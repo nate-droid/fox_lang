@@ -29,3 +29,6 @@ as much as possible, meaning that running all tests should always pass.
 I've managed to complete the first 8 axioms from MetaMath, along with things like Modus Ponens and Generalization. 
 For next steps, I am looking to create more of an actual language, as opposed to just accepting a proposition as a string. 
 In order to keep logic split up I will most likely implement this as a separate parser.
+
+Note! I haven't had a lot of time, so I have decided to continue by stapling things together (20 minutes here, 15 minutes there), and letting the structure 
+evolve as the project grows, apologize for the mess!

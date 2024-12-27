@@ -163,6 +163,7 @@ impl Lexer for MetaMathLexer {
     fn tokens(&self) -> Vec<Token> {
         self.tokens.clone()
     }
+    
 }
 
 #[cfg(test)]

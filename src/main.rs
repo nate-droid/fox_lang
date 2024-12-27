@@ -1,6 +1,8 @@
 mod lexer;
 mod parser;
 
+mod lang_lexer;
+
 mod metamath_lexer;
 
 mod cut;
