@@ -52,40 +52,57 @@ impl LangParser {
                     
                     self.consume(TokenKind::Word)?;
                     self.consume(TokenKind::Colon)?;
-                    
-                    let kind = self.current_token()?;
+
                     // TODO: write a function to grab "kind" from the tokens
-                    
+                    let kind = self.current_token()?;
+
                     self.consume(TokenKind::Nat)?;
                     
                     self.consume(TokenKind::Assign)?;
                     
-                    
-                    let val = self.current_token()?;
+                    // TODO: Add a "fetch value and consume" function
+                    let left = self.parse_node()?;
                     
                     // TODO: Will need a more robust way to handle expressions in the future
-                    if self.peek_token()?.kind == TokenKind::Add {
+                    if self.current_token()?.kind == TokenKind::Add {
                         self.consume(TokenKind::Add)?;
-                        let val2 = self.current_token()?;
-                    
-                        // TODO: need to handle types a bit more
+                        
+                        // ensure that left is a number
+                        let val = match left {
+                            Node::Atomic { value } => value,
+                            _ => return Err("Unexpected token".to_string()),
+                        };
+                        
+                        // fetch the right side and ensure it is a number
+                        let right = self.parse_node()?;
+                        let val2 = match right {
+                            Node::Atomic { value } => value,
+                            _ => return Err("Unexpected token".to_string()),
+                        };
+                        
+                        let n = Node::BinaryExpression {
+                            left: Box::from(Node::Atomic { value: val }),
+                            operator: TokenKind::Add,
+                            right: Box::from(Node::Atomic { value: val2 }),
+                        };
+
                         let ident = Node::Identity {
                             name: name.value.to_string(),
-                            value: Value::from_string(val.value + &*val2.value),
+                            value: Box::from(n),
                             kind: kind.value,
                         };
+                        
                         ast.add_node(ident);
                         self.consume(TokenKind::Semicolon)?;
                         continue;
                     }
                     
-                    self.advance();
-                    
                     let ident = Node::Identity {
                         name: name.value.to_string(),
-                        value: Value::from_string(val.value),
+                        value: Box::from(left),
                         kind: kind.value,
                     };
+                    
                     ast.add_node(ident);
                     self.consume(TokenKind::Semicolon)?;
                     continue;
@@ -101,10 +118,22 @@ impl LangParser {
 
         dbg!(globals);
 
-        // test by printing a variable
-        // test by implementing addition and subtraction
-
         Ok(ast)
+    }
+    
+    fn parse_node(&mut self) -> Result<Node, String> {
+        match self.current_token()?.kind {
+            TokenKind::Number => {
+                let val = Value::from_string(self.current_token()?.value.clone());
+                self.advance();
+                Ok(Node::Atomic {
+                    value: val,
+                })
+            }
+            _ => {
+                Err("Unexpected token".to_string())
+            }
+        }
     }
     
     fn consume(&mut self, kind: TokenKind) -> Result<(), String> {
@@ -177,8 +206,8 @@ mod tests {
     fn addition() {
         let input = "let x : Nat = 1 + 2;";
         let mut parser = LangParser::new(input.to_string());
-        // let ast = parser.parse().expect("unexpected failure");
-        
+        let ast = parser.parse().expect("unexpected failure");
+        println!("{:?}", ast);
         // todo!("Implement addition");
     }
     

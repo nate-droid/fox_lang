@@ -93,8 +93,11 @@ pub enum Node {
     },
     Identity {
         name: String,
-        value: Value,
+        value: Box<Node>,
         kind: String,
+    },
+    Atomic {
+        value: Value,
     },
     Call {
         name: String,
@@ -171,7 +174,10 @@ impl Node {
                 value.clone()
             }
             Node::Identity { name, value, kind } => {
-                format!("{} : {} = {}", name, kind, value)
+                format!("{} : {} = {:?}", name, kind, value)
+            }
+            Node::Atomic { value } => {
+                value.to_string()
             }
             Node::Call { name, arguments, returns } => {
                 format!("{}({:?})", name, arguments)

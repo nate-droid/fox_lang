@@ -251,8 +251,6 @@ impl Lexer for DefaultLexer {
         self.tokens[self.position].clone()
     }
 
-
-
     fn next_char(&mut self) {
         self.position += 1;
         self.char = self.input.chars().nth(self.position).unwrap_or(' ');

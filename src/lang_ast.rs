@@ -32,10 +32,13 @@ fn eval(ast: Node) -> Result<(), String> {
             
         }
         Node::Identity { name, value, kind} => {
-            println!("let {} : {} = {}", name, kind, value);
+            println!("let {} : {} = {:?}", name, kind, value);
         }
         Node::Call { name, arguments, returns } => {
             eval_call(name, arguments)?;
+        }
+        Node::Atomic { value } => {
+            
         }
         Node::EmptyNode => {}
     }
@@ -70,7 +73,9 @@ mod tests {
         let mut ast = Ast::new();
         ast.add_node(Node::Identity {
             name: "x".to_string(),
-            value: Value::from_string("10".to_string()),
+            value: Box::from(Node::Atomic {
+                value: Value::Int(10),
+            }),
             kind: "Nat".to_string(),
         });
         
