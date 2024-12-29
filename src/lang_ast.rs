@@ -1,5 +1,6 @@
-use crate::lexer::Token;
-use crate::parser::Node;
+use crate::lexer::{Token, TokenKind};
+use crate::parser::{Node, Value};
+use crate::parser::Node::EmptyNode;
 
 #[derive(Debug)]
 pub struct Ast {
@@ -19,11 +20,12 @@ impl Ast {
     }
 }
 
-fn eval(ast: Node) -> Result<(), String> {
+fn eval(ast: Node) -> Result<Node, String> {
     // traverse and evaluate the AST
     match ast {
         Node::BinaryExpression { left, operator, right } => {
-            let left = eval(*left);
+            let res = eval_binary_expression(*left, operator, *right)?;
+            return Ok(res);
         }
         Node::UnaryExpression { operator, right } => {
             
@@ -33,6 +35,8 @@ fn eval(ast: Node) -> Result<(), String> {
         }
         Node::Identity { name, value, kind} => {
             println!("let {} : {} = {:?}", name, kind, value);
+            let new_val = eval(*value);
+            println!("{:?}", new_val);
         }
         Node::Call { name, arguments, returns } => {
             eval_call(name, arguments)?;
@@ -40,10 +44,32 @@ fn eval(ast: Node) -> Result<(), String> {
         Node::Atomic { value } => {
             
         }
-        Node::EmptyNode => {}
+        EmptyNode => {}
     }
     
-    Ok(())
+    Ok(EmptyNode)
+}
+
+fn eval_binary_expression(left: Node, operator: TokenKind, right: Node) -> Result<Node, String> {
+    match operator {
+        TokenKind::Add => {
+            if let Node::Atomic { value: left_val } = left {
+                if let Node::Atomic { value: right_val } = right {
+                    match (left_val, right_val) {
+                        (Value::Int(left), Value::Int(right)) => {
+                            return Ok(Node::Atomic {
+                                value: Value::Int(left + right),
+                            });
+                        }
+                        _ => return Err("Invalid types".to_string()),
+                    }
+                }
+            }
+        }
+        _ => return Err("Unknown operator".to_string()),
+    }
+    
+    Ok(EmptyNode)
 }
 
 fn eval_call(name: String, arguments: Vec<Token>) -> Result<(), String> {
@@ -78,8 +104,7 @@ mod tests {
             }),
             kind: "Nat".to_string(),
         });
-        
-        assert_eq!(eval(ast.nodes[0].clone()), Ok(()));
+        let res = eval(ast.nodes[0].clone()).expect("unexpected failure");
     }
     
     #[test]
@@ -93,7 +118,16 @@ mod tests {
             }],
             returns: vec![],
         });
+        let res = eval(ast.nodes[0].clone()).expect("unexpected failure");
+    }
+    
+    #[test]
+    fn eval_addition() {
+        let input = "let x : Nat = 1 + 2;";
+        let mut parser = crate::lang_parser::LangParser::new(input.to_string());
+        let ast = parser.parse().expect("unexpected failure");
         
-        assert_eq!(eval(ast.nodes[0].clone()), Ok(()));
+        let res = eval(ast.nodes[0].clone()).expect("unexpected failure");
+        println!("{:?}", res);
     }
 }

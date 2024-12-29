@@ -3,14 +3,14 @@ use crate::lang_lexer::LangLexer;
 use crate::lexer::{Token, TokenKind};
 use crate::parser::{Node, Value};
 
-struct LangParser {
+pub(crate) struct LangParser {
     lexer: LangLexer,
     tokens: Vec<Token>,
     position: usize,
 }
 
 impl LangParser {
-    fn new(input: String) -> Self {
+    pub(crate) fn new(input: String) -> Self {
         let mut lexer = LangLexer::new(input);
         lexer.tokenize();
 
@@ -23,7 +23,7 @@ impl LangParser {
         }
     }
     
-    fn parse(&mut self) -> Result<Ast, String> {
+    pub(crate) fn parse(&mut self) -> Result<Ast, String> {
         let mut globals = Vec::new();
         let mut ast = Ast::new();
         
@@ -32,11 +32,13 @@ impl LangParser {
                 TokenKind::Print => {
                     self.consume(TokenKind::Print)?;
                     self.consume(TokenKind::LeftParenthesis)?;
-                    println!("{:?}", self.tokens[self.position].value);
+
                     let input = self.current_token()?;
+                    
                     self.advance();
                     self.consume(TokenKind::RightParenthesis)?;
                     self.consume(TokenKind::Semicolon)?;
+                    
                     let node = Node::Call {
                         name: "print".to_string(),
                         arguments: vec![input],
@@ -47,9 +49,9 @@ impl LangParser {
                 TokenKind::Let => {
                     self.consume(TokenKind::Let)?;
                     globals.push(self.current_token()?);
-                    
+
                     let name = self.current_token()?;
-                    
+
                     self.consume(TokenKind::Word)?;
                     self.consume(TokenKind::Colon)?;
 
@@ -57,33 +59,21 @@ impl LangParser {
                     let kind = self.current_token()?;
 
                     self.consume(TokenKind::Nat)?;
-                    
+
                     self.consume(TokenKind::Assign)?;
                     
-                    // TODO: Add a "fetch value and consume" function
                     let left = self.parse_node()?;
-                    
+
                     // TODO: Will need a more robust way to handle expressions in the future
                     if self.current_token()?.kind == TokenKind::Add {
                         self.consume(TokenKind::Add)?;
                         
-                        // ensure that left is a number
-                        let val = match left {
-                            Node::Atomic { value } => value,
-                            _ => return Err("Unexpected token".to_string()),
-                        };
-                        
-                        // fetch the right side and ensure it is a number
                         let right = self.parse_node()?;
-                        let val2 = match right {
-                            Node::Atomic { value } => value,
-                            _ => return Err("Unexpected token".to_string()),
-                        };
-                        
+
                         let n = Node::BinaryExpression {
-                            left: Box::from(Node::Atomic { value: val }),
+                            left: Box::from(left),
                             operator: TokenKind::Add,
-                            right: Box::from(Node::Atomic { value: val2 }),
+                            right: Box::from(right),
                         };
 
                         let ident = Node::Identity {
@@ -91,18 +81,18 @@ impl LangParser {
                             value: Box::from(n),
                             kind: kind.value,
                         };
-                        
+
                         ast.add_node(ident);
                         self.consume(TokenKind::Semicolon)?;
                         continue;
                     }
-                    
+
                     let ident = Node::Identity {
                         name: name.value.to_string(),
                         value: Box::from(left),
                         kind: kind.value,
                     };
-                    
+
                     ast.add_node(ident);
                     self.consume(TokenKind::Semicolon)?;
                     continue;
@@ -120,7 +110,7 @@ impl LangParser {
 
         Ok(ast)
     }
-    
+
     fn parse_node(&mut self) -> Result<Node, String> {
         match self.current_token()?.kind {
             TokenKind::Number => {
@@ -130,12 +120,22 @@ impl LangParser {
                     value: val,
                 })
             }
+            TokenKind::Word => {
+                let name = self.current_token()?;
+                self.advance();
+                Ok(Node::Identity {
+                    name: name.value.clone(),
+                    value: Box::from(Node::Atomic { value: Value::Int(0) }),
+                    kind: "Nat".to_string(),
+                })
+            }
             _ => {
+                println!("{:?}", self.current_token()?.kind);
                 Err("Unexpected token".to_string())
             }
         }
     }
-    
+
     fn consume(&mut self, kind: TokenKind) -> Result<(), String> {
         if self.tokens[self.position].kind == kind {
             self.advance();
@@ -208,7 +208,20 @@ mod tests {
         let mut parser = LangParser::new(input.to_string());
         let ast = parser.parse().expect("unexpected failure");
         println!("{:?}", ast);
-        // todo!("Implement addition");
+        
+        assert_eq!(ast.nodes.len(), 1);
+    }
+    
+    #[test]
+    fn addition_with_variables() {
+        let input = "let x : Nat = 1;\
+        let y : Nat = 2;\
+        let z : Nat = x + y;";
+        let mut parser = LangParser::new(input.to_string());
+        let ast = parser.parse().expect("unexpected failure");
+        println!("{:?}", ast);
+        
+        assert_eq!(ast.nodes.len(), 3);
     }
     
     #[test]
