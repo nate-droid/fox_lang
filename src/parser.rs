@@ -49,6 +49,7 @@ impl fmt::Display for ParseError {
 impl std::error::Error for ParseError {}
 
 #[derive(Debug, Clone)]
+#[derive(PartialEq)]
 pub enum Value {
     Int(i32),
     Float(f64),
@@ -185,6 +186,13 @@ impl Node {
             Node::EmptyNode => {
                 "".to_string()
             }
+        }
+    }
+    
+    pub fn val(&self) -> Value {
+        match self {
+            Node::Atomic { value } => value.clone(),
+            _ => Value::Str("".to_string()),
         }
     }
 }

@@ -106,7 +106,7 @@ impl LangParser {
             self.advance();
         }
 
-        dbg!(globals);
+        // dbg!(globals);
 
         Ok(ast)
     }

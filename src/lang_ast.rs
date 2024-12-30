@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use crate::lexer::{Token, TokenKind};
 use crate::parser::{Node, Value};
 use crate::parser::Node::EmptyNode;
@@ -5,6 +6,7 @@ use crate::parser::Node::EmptyNode;
 #[derive(Debug)]
 pub struct Ast {
     pub nodes: Vec<Node>,
+    declarations: HashMap<String, Node>,
 }
 
 
@@ -12,68 +14,114 @@ impl Ast {
     pub fn new() -> Self {
         Self {
             nodes: Vec::new(),
+            declarations: HashMap::new(),
         }
     }
     
     pub fn add_node(&mut self, node: Node) {
         self.nodes.push(node);
     }
-}
+    
+    pub fn eval(&mut self) -> Result<(), String> {
+        for node in self.nodes.clone() {
 
-fn eval(ast: Node) -> Result<Node, String> {
-    // traverse and evaluate the AST
-    match ast {
-        Node::BinaryExpression { left, operator, right } => {
-            let res = eval_binary_expression(*left, operator, *right)?;
-            return Ok(res);
+            match node {
+                Node::BinaryExpression { left, operator, right } => {
+                    let res = self.eval_binary_expression(*left, operator, *right)?;
+                    return Ok(())
+                }
+                Node::UnaryExpression { operator, right } => {
+
+                }
+                Node::Identifier { value, .. } => {
+
+                }
+                Node::Identity { name, value, kind} => {
+                    let res = self.eval_node(*value)?;
+                    
+                    self.declarations.insert(name, res);
+                }
+                Node::Call { name, arguments, returns } => {
+                    eval_call(name, arguments)?;
+                }
+                Node::Atomic { value } => {
+
+                }
+                EmptyNode => {}
+            }
         }
-        Node::UnaryExpression { operator, right } => {
-            
+        Ok(())
+    }
+
+    fn eval_node(&mut self, ast: Node) -> Result<Node, String> {
+        // traverse and evaluate the AST
+        match ast {
+            Node::BinaryExpression { left, operator, right } => {
+                let res = self.eval_binary_expression(*left, operator, *right)?;
+                return Ok(res);
+            }
+            Node::UnaryExpression { operator, right } => {
+                todo!("Unary expressions");
+            }
+            Node::Identifier { value, .. } => {
+                todo!("Identifiers");
+            }
+            Node::Identity { name, value, kind} => {
+                return self.eval_node(*value);
+            }
+            Node::Call { name, arguments, returns } => {
+                eval_call(name, arguments)?;
+            }
+            Node::Atomic { value } => {
+                return Ok(Node::Atomic { value });
+            }
+            EmptyNode => {
+                todo!("Empty node");
+            }
         }
-        Node::Identifier { value, .. } => {
-            
+
+        Ok(EmptyNode)
+    }
+
+    fn replace_var(&mut self, mut node: Node) -> Result<Node, String> {
+        if let Node::Identity { value: left_val, name, .. } = node.clone() {
+            let res = self.declarations.get(&name).expect("unexpected failure").clone();
+            node = res;
         }
-        Node::Identity { name, value, kind} => {
-            println!("let {} : {} = {:?}", name, kind, value);
-            let new_val = eval(*value);
-            println!("{:?}", new_val);
-        }
-        Node::Call { name, arguments, returns } => {
-            eval_call(name, arguments)?;
-        }
-        Node::Atomic { value } => {
-            
-        }
-        EmptyNode => {}
+        Ok(node)
     }
     
-    Ok(EmptyNode)
-}
+    fn eval_binary_expression(&mut self, mut left: Node, operator: TokenKind, mut right: Node) -> Result<Node, String> {
+        match operator {
+            TokenKind::Add => {
+                if let Node::Identity { value: left_val, name, .. } = left.clone() {
+                    left = self.replace_var(left)?;
+                }
+                if let Node::Identity { value: right_val, name, .. } = right.clone() {
+                    right = self.replace_var(right)?;
+                }
 
-fn eval_binary_expression(left: Node, operator: TokenKind, right: Node) -> Result<Node, String> {
-    match operator {
-        TokenKind::Add => {
-            if let Node::Atomic { value: left_val } = left {
-                if let Node::Atomic { value: right_val } = right {
-                    match (left_val, right_val) {
-                        (Value::Int(left), Value::Int(right)) => {
-                            return Ok(Node::Atomic {
-                                value: Value::Int(left + right),
-                            });
+                if let Node::Atomic { value: left_val } = left {
+                    if let Node::Atomic { value: right_val } = right {
+                        match (left_val, right_val) {
+                            (Value::Int(left), Value::Int(right)) => {
+                                return Ok(Node::Atomic {
+                                    value: Value::Int(left + right),
+                                });
+                            }
+                            _ => return Err("Invalid types".to_string()),
                         }
-                        _ => return Err("Invalid types".to_string()),
                     }
                 }
             }
+            _ => return Err("Unknown operator".to_string()),
         }
-        _ => return Err("Unknown operator".to_string()),
+
+        Ok(EmptyNode)
     }
-    
-    Ok(EmptyNode)
 }
 
 fn eval_call(name: String, arguments: Vec<Token>) -> Result<(), String> {
-    
     // TODO: Have the call names be enums
     
     match name.as_str() {
@@ -104,7 +152,7 @@ mod tests {
             }),
             kind: "Nat".to_string(),
         });
-        let res = eval(ast.nodes[0].clone()).expect("unexpected failure");
+        ast.eval().expect("unexpected failure");
     }
     
     #[test]
@@ -118,16 +166,31 @@ mod tests {
             }],
             returns: vec![],
         });
-        let res = eval(ast.nodes[0].clone()).expect("unexpected failure");
+        ast.eval().expect("unexpected failure");
     }
     
     #[test]
     fn eval_addition() {
         let input = "let x : Nat = 1 + 2;";
         let mut parser = crate::lang_parser::LangParser::new(input.to_string());
-        let ast = parser.parse().expect("unexpected failure");
+        let mut ast = parser.parse().expect("unexpected failure");
         
-        let res = eval(ast.nodes[0].clone()).expect("unexpected failure");
-        println!("{:?}", res);
+        ast.eval().expect("unexpected failure");
+        
+        let res = ast.declarations.get("x").expect("unexpected failure").clone();
+        
+        assert_eq!(res.val(), Value::Int(3));
+    }
+    
+    #[test]
+    fn eval_variable_addition() {
+        let input = "let x : Nat = 1; let y : Nat = 2; let z : Nat = x + y;";
+        let mut parser = crate::lang_parser::LangParser::new(input.to_string());
+        let mut ast = parser.parse().expect("unexpected failure");
+        
+        ast.eval().expect("unexpected failure");
+
+        let res = ast.declarations.get("z").expect("unexpected failure").clone();
+        assert_eq!(res.val(), Value::Int(3));
     }
 }

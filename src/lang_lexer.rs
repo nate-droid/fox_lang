@@ -133,6 +133,7 @@ impl LangLexer {
                         kind: TokenKind::Number,
                     });
                 }
+                '\n' => {}
                 _ => {
                     panic!("Unknown character: {}", self.char);
                 }

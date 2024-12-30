@@ -2,6 +2,8 @@ mod lexer;
 mod parser;
 
 mod lang_lexer;
+mod lang_parser;
+mod lang_ast;
 
 mod metamath_lexer;
 
@@ -33,6 +35,10 @@ fn main() {
                 break;
             }
             _ => {
+                // call the lang parser
+                let mut parser = lang_parser::LangParser::new(input.to_string());
+                let ast = parser.parse().expect("unexpected failure");
+                
                 println!("Unknown command: {}", input);
                 println!("Type 'help' for a list of commands");
             }
