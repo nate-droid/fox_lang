@@ -172,7 +172,7 @@ mod tests {
     #[test]
     fn eval_addition() {
         let input = "let x : Nat = 1 + 2;";
-        let mut parser = crate::lang_parser::LangParser::new(input.to_string());
+        let mut parser = crate::lang_parser::LangParser::new(input);
         let mut ast = parser.parse().expect("unexpected failure");
         
         ast.eval().expect("unexpected failure");
@@ -185,7 +185,7 @@ mod tests {
     #[test]
     fn eval_variable_addition() {
         let input = "let x : Nat = 1; let y : Nat = 2; let z : Nat = x + y;";
-        let mut parser = crate::lang_parser::LangParser::new(input.to_string());
+        let mut parser = crate::lang_parser::LangParser::new(input);
         let mut ast = parser.parse().expect("unexpected failure");
         
         ast.eval().expect("unexpected failure");

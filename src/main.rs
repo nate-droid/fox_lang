@@ -36,7 +36,7 @@ fn main() {
             }
             _ => {
                 // call the lang parser
-                let mut parser = lang_parser::LangParser::new(input.to_string());
+                let mut parser = lang_parser::LangParser::new(&*input);
                 let ast = parser.parse().expect("unexpected failure");
                 
                 println!("Unknown command: {}", input);

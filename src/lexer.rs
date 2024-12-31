@@ -18,6 +18,7 @@ pub enum TokenKind {
     Identifier,
     End,
     Pipe,
+    Comment,
 
     // Logic
     Implies,
@@ -84,6 +85,7 @@ impl std::fmt::Display for TokenKind {
             TokenKind::Colon => write!(f, "Colon"),
             TokenKind::Nat => write!(f, "Nat"),
             TokenKind::Add => write!(f, "+"),
+            TokenKind::Comment => write!(f, "//"),
         }
     }
 }

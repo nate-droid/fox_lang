@@ -1,45 +1,61 @@
+use std::iter::Peekable;
+use std::str::Chars;
 use crate::lexer::{Token, TokenKind};
-use crate::parser::Lexer;
 
-pub struct LangLexer {
-    input: String,
-    position: usize,
-    char: char,
+pub struct LangLexer<'a> {
+    input: &'a str,
+    char: Option<char>,
     tokens: Vec<Token>,
+    iterator: Peekable<Chars<'a>>,
 }
 
-impl LangLexer {
-    pub fn new(input: String) -> Self {
-        let first_char = input.chars().nth(0).unwrap_or(' ');
-        
+impl <'a> LangLexer<'a> {
+    pub fn new(input: &'a str) -> Self {
+        let mut iterator = input.chars().peekable();
+
         Self {
             tokens: Vec::new(),
             input,
-            position: 0,
-            char: first_char,
+            char: iterator.next(),
+            iterator,
         }
     }
-    pub fn tokenize(&mut self) {
-        while self.position < self.input.len() {
-            match self.char {
+    
+    pub fn tokenize(&mut self) -> Result<(), String> {
+        // while self.position < self.input.len() {
+        while self.char.is_some() {
+            match self.current_char() {
                 ' ' => {}
+                '/' => {
+                    if self.peek() == '/' {
+                        while self.char.is_some() {
+                            self.next_char();
+                        }
+                        self.tokens.push(Token {
+                            value: self.current_char().to_string(),
+                            kind: TokenKind::Comment,
+                        });
+                    } else {
+                        return Err(format!("Expected '/' but found: {}", self.current_char()));
+                    }
+                }
                 '(' => {
                     self.tokens.push(Token {
-                        value: self.char.to_string(),
+                        value: self.current_char().to_string(),
                         kind: TokenKind::LeftParenthesis,
                     });
                 }
                 ')' => {
                     self.tokens.push(Token {
-                        value: self.char.to_string(),
+                        value: self.current_char().to_string(),
                         kind: TokenKind::RightParenthesis,
                     });
                 }
                 '\"' => {
                     let mut string = String::new();
                     self.next_char();
-                    while self.char != '\"' {
-                        string.push(self.char);
+                    while self.char != Some('\"') {
+                        string.push(self.current_char());
                         self.next_char();
                     }
                     self.tokens.push(Token {
@@ -49,37 +65,37 @@ impl LangLexer {
                 }
                 ';' => {
                     self.tokens.push(Token {
-                        value: self.char.to_string(),
+                        value: self.current_char().to_string(),
                         kind: TokenKind::Semicolon,
                     });
                 }
                 '=' => {
                     self.tokens.push(Token {
-                        value: self.char.to_string(),
+                        value: self.current_char().to_string(),
                         kind: TokenKind::Assign,
                     });
                 }
                 ':' => {
                     self.tokens.push(Token {
-                        value: self.char.to_string(),
+                        value: self.current_char().to_string(),
                         kind: TokenKind::Colon,
                     });
                 }
                 '+' => {
                     self.tokens.push(Token {
-                        value: self.char.to_string(),
+                        value: self.current_char().to_string(),
                         kind: TokenKind::Add,
                     })
                 }
                 // parse words
-                _ if self.char.is_alphabetic() => {
+                _ if self.current_char().is_alphabetic() => {
                     let mut word = String::new();
-                    word.push(self.char);
+                    word.push(self.current_char());
 
                     loop {
                         if self.peek().is_alphabetic() || self.peek() == '_' {
                             self.next_char();
-                            word.push(self.char);
+                            word.push(self.current_char());
                         } else {
                             break;
                         }
@@ -115,14 +131,14 @@ impl LangLexer {
 
                 }
                 // check for numbers
-                _ if self.char.is_digit(10) => {
+                _ if self.current_char().is_digit(10) => {
                     let mut number = String::new();
-                    number.push(self.char);
+                    number.push(self.current_char());
 
                     loop {
                         if self.peek().is_numeric() {
                             self.next_char();
-                            number.push(self.char);
+                            number.push(self.current_char());
                         } else {
                             break;
                         }
@@ -135,20 +151,25 @@ impl LangLexer {
                 }
                 '\n' => {}
                 _ => {
-                    panic!("Unknown character: {}", self.char);
+                    return Err(format!("Unknown character: {}", self.current_char()));
                 }
             }
             self.next_char();
         }
+
+        Ok(())
+    }
+    
+    pub fn current_char(&self) -> char {
+        self.char.unwrap_or_else(|| '\0')
     }
 
     pub fn next_char(&mut self) {
-        self.position += 1;
-        self.char = self.input.chars().nth(self.position).unwrap_or(' ');
+        self.char = self.iterator.next();
     }
 
-    fn peek(&self) -> char {
-        self.input.chars().nth(self.position + 1).unwrap_or(' ')
+    fn peek(&mut self) -> char {
+        self.iterator.peek().unwrap_or(&'\0').clone()
     }
 
     pub fn tokens(&self) -> Vec<Token> {
@@ -165,8 +186,8 @@ mod tests {
     #[test]
     fn basic_lex() {
         let input = "print(\"hello world!\");";
-        let mut lexer = LangLexer::new(input.to_string());
-        lexer.tokenize();
+        let mut lexer = LangLexer::new(input);
+        lexer.tokenize().expect("TODO: panic message");
         let tokens = lexer.tokens();
         println!("{:?}", tokens);
     }
@@ -174,8 +195,8 @@ mod tests {
     #[test]
     fn basic_types() {
         let input = "type x;";
-        let mut lexer = LangLexer::new(input.to_string());
-        lexer.tokenize();
+        let mut lexer = LangLexer::new(input);
+        lexer.tokenize().expect("TODO: panic message");
         let tokens = lexer.tokens();
         println!("{:?}", tokens);
     }
@@ -183,8 +204,8 @@ mod tests {
     #[test]
     fn basic_declarations() {
         let input = "let x : Nat = 10;";
-        let mut lexer = LangLexer::new(input.to_string());
-        lexer.tokenize();
+        let mut lexer = LangLexer::new(input);
+        lexer.tokenize().expect("TODO: panic message");
         let tokens = lexer.tokens();
         println!("{:?}", tokens);
     }

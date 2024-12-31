@@ -3,3 +3,6 @@ let y : Nat = 2;
 print(x);
 print(y);
 print(x + y);
+
+// expression syntax
+ 

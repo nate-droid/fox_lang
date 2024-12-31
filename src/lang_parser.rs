@@ -3,14 +3,14 @@ use crate::lang_lexer::LangLexer;
 use crate::lexer::{Token, TokenKind};
 use crate::parser::{Node, Value};
 
-pub(crate) struct LangParser {
-    lexer: LangLexer,
+pub(crate) struct LangParser<'a> {
+    lexer: LangLexer<'a>,
     tokens: Vec<Token>,
     position: usize,
 }
 
-impl LangParser {
-    pub(crate) fn new(input: String) -> Self {
+impl<'a> LangParser<'a> {
+    pub(crate) fn new(input: &'a str) -> Self {
         let mut lexer = LangLexer::new(input);
         lexer.tokenize();
 
@@ -97,6 +97,10 @@ impl LangParser {
                     self.consume(TokenKind::Semicolon)?;
                     continue;
                 }
+                TokenKind::Comment => {
+                    // skip comments
+                    println!("Skipping comment");
+                }
                 _ => {
                     println!("{:?}", self.tokens[self.position].kind);
                     println!("{:?}", self.tokens[self.position].value);
@@ -176,7 +180,17 @@ mod tests {
     fn print() {
         let input = "print(\"hello world!\");";
         
-        let mut parser = LangParser::new(input.to_string());
+        let mut parser = LangParser::new(input);
+        
+        let ast = parser.parse().expect("TODO: panic message");
+        println!("{:?}", ast);
+    }
+    
+    #[test]
+    fn ignore_comments() {
+        let input = "print(\"hello world!\"); // this is a comment";
+        
+        let mut parser = LangParser::new(input);
         
         let ast = parser.parse().expect("TODO: panic message");
         println!("{:?}", ast);
@@ -186,7 +200,7 @@ mod tests {
     fn variables() {
         let input = "let x : Nat = 10;";
         
-        let mut parser = LangParser::new(input.to_string());
+        let mut parser = LangParser::new(input);
         
         let ast = parser.parse().expect("TODO: panic message");
         println!("{:?}", ast);
@@ -196,7 +210,7 @@ mod tests {
     fn multi_line_variables() {
         let input = "let x : Nat = 1;\
         let y : Nat = 2;";
-        let mut parser = LangParser::new(input.to_string());
+        let mut parser = LangParser::new(input);
         println!("{:?}", parser.tokens);
         let ast = parser.parse().expect("unexpected failure");
         println!("{:?}", ast);
@@ -205,7 +219,7 @@ mod tests {
     #[test]
     fn addition() {
         let input = "let x : Nat = 1 + 2;";
-        let mut parser = LangParser::new(input.to_string());
+        let mut parser = LangParser::new(input);
         let ast = parser.parse().expect("unexpected failure");
         println!("{:?}", ast);
         
@@ -217,7 +231,7 @@ mod tests {
         let input = "let x : Nat = 1;\
         let y : Nat = 2;\
         let z : Nat = x + y;";
-        let mut parser = LangParser::new(input.to_string());
+        let mut parser = LangParser::new(input);
         let ast = parser.parse().expect("unexpected failure");
         println!("{:?}", ast);
         
