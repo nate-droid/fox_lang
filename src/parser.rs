@@ -19,9 +19,8 @@ pub trait Lexer {
 }
 
 use std::fmt;
+use crate::lang_lexer::LangLexer;
 use crate::lexer::TokenKind::{ForAll, Identifier, RightParenthesis};
-use crate::metamath_lexer::MetaMathLexer;
-// import MetaMathLexer
 
 use crate::parser::ParseError::{EmptyNode, UnhandledBehaviour};
 
@@ -188,7 +187,7 @@ impl Node {
             }
         }
     }
-    
+
     pub fn val(&self) -> Value {
         match self {
             Node::Atomic { value } => value.clone(),
@@ -212,11 +211,11 @@ impl Parser {
     }
 
     pub fn new_mm(input: String) -> Self {
-        let mut l = MetaMathLexer::new(input.clone());
-        l.tokenize();
+        let mut l = LangLexer::new(input.as_str());
+        l.tokenize().expect("Failed to tokenize");
 
         let tokens = l.tokens().clone();
-
+        
         Self {
             position: 0,
             tokens,

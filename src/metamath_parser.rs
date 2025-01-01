@@ -1,7 +1,6 @@
 #[cfg(test)]
 mod tests {
     use crate::cut::{reduce, Axiom};
-    use crate::metamath_lexer::MetaMathLexer;
     use crate::parser::{Node, Parser};
     use super::*;
 
@@ -80,25 +79,25 @@ mod tests {
         let input = "⊢ ((¬ 𝜑 → ¬ 𝜓) → (𝜓 → 𝜑))";
         
         let mut axiom = Axiom::new("ax-3".to_string(), input.to_string());
-        
+
         axiom.solve().unwrap_or_else(|e| panic!("Axiom solve resulted in an error: {:?}", e));
         axiom.print_steps();
-        
+
         assert_eq!(axiom.steps.len(), 7);
     }
-    
+
     #[test]
     fn test_ax_mp() {
         // test for modus ponens
-        
+
         let input = "⊢ 𝜑 & ⊢ (𝜑 → 𝜓) ⇒ ⊢ 𝜓";
-        
+
         let mut axiom = Axiom::new("ax-mp".to_string(), input.to_string());
-        
+
         axiom.solve().unwrap_or_else(|e| panic!("Axiom solve resulted in an error: {:?}", e));
         axiom.print_steps();
     }
-    
+
     #[test]
     fn test_ax_gen() {
         let input = "∀𝑥𝜑";
@@ -106,7 +105,7 @@ mod tests {
         axiom.solve().unwrap_or_else(|e| panic!("Axiom solve resulted in an error: {:?}", e));
         axiom.print_steps();
     }
-    
+
     #[test]
     fn test_ax_4() {
         let input = "⊢ (∀𝑥(𝜑 → 𝜓) → (∀𝑥𝜑 → ∀𝑥𝜓))";
@@ -114,7 +113,7 @@ mod tests {
         axiom.solve().unwrap_or_else(|e| panic!("Axiom solve resulted in an error: {:?}", e));
         axiom.print_steps();
     }
-    
+
     #[test]
     fn test_ax_5() {
         let input = "⊢ (𝜑 → ∀𝑥𝜑)";
@@ -122,18 +121,19 @@ mod tests {
         axiom.solve().unwrap_or_else(|e| panic!("Axiom solve resulted in an error: {:?}", e));
         axiom.print_steps();
     }
-    
+
     #[test]
     fn test_ax_6() {
         let input = "⊢ ¬ ∀𝑥 ¬ 𝑥 = 𝑦";
 
         let mut axiom = Axiom::new("ax-6".to_string(), input.to_string());
+        
         axiom.solve().unwrap_or_else(|e| panic!("Axiom solve resulted in an error: {:?}", e));
         axiom.print_steps();
-        
+
         assert_eq!(axiom.steps.len(), 6);
     }
-    
+
     #[test]
     fn test_ax_7() {
         let input = "⊢ (𝑥 = 𝑦 → (𝑥 = 𝑧 → 𝑦 = 𝑧))";
@@ -141,7 +141,7 @@ mod tests {
         axiom.solve().unwrap_or_else(|e| panic!("Axiom solve resulted in an error: {:?}", e));
         axiom.print_steps();
     }
-    
+
     #[test]
     fn test_ax_8() {
         let input = "⊢ (𝑥 = 𝑦 → (𝑥 ∈ 𝑧 → 𝑦 ∈ 𝑧))";
@@ -150,7 +150,7 @@ mod tests {
         axiom.print_steps();
         assert_eq!(axiom.steps.len(), 8);
     }
-    
+
     #[test]
     fn test_ax_9() {
         let input = "⊢ (𝑥 = 𝑦 → (𝑧 ∈ 𝑥 → 𝑧 ∈ 𝑦))";
@@ -160,17 +160,17 @@ mod tests {
         axiom.print_steps();
         assert_eq!(axiom.steps.len(), 8);
     }
-    
+
     #[test]
     fn test_ax_10() {
         let input = "⊢ (¬ ∀𝑥𝜑 → ∀𝑥 ¬ ∀𝑥𝜑)";
         let mut axiom = Axiom::new("ax-10".to_string(), input.to_string());
         axiom.solve().unwrap_or_else(|e| panic!("Axiom solve resulted in an error: {:?}", e));
         axiom.print_steps();
-        
+
         assert_eq!(axiom.steps.len(), 6);
     }
-    
+
     #[test]
     fn test_ax_11() {
         let input = "⊢ (∀𝑥∀𝑦𝜑 → ∀𝑦∀𝑥𝜑)";
@@ -180,7 +180,7 @@ mod tests {
         axiom.print_steps();
         assert_eq!(axiom.steps.len(), 8);
     }
-    
+
     #[test]
     fn test_ax_12() {
         let input = "⊢ (𝑥 = 𝑦 → (∀𝑦𝜑 → ∀𝑥(𝑥 = 𝑦 → 𝜑)))";
@@ -190,7 +190,7 @@ mod tests {
         // assert_eq!(axiom.steps.len(), 8);
         // TODO: Validate Length
     }
-    
+
     #[test]
     fn test_ax_13() {
         let input = "⊢ (¬ 𝑥 = 𝑦 → (𝑦 = 𝑧 → ∀𝑥 𝑦 = 𝑧))";
@@ -200,7 +200,7 @@ mod tests {
         // assert_eq!(axiom.steps.len(), 8);
         // TODO: Validate length
     }
-    
+
     // The axioms in the next section are related to Zermelo-Fraenkel set theory (ZFC)
     #[test]
     fn test_ax_ext() {
@@ -210,7 +210,7 @@ mod tests {
         let mut axiom = Axiom::new("ax-ext".to_string(), input.to_string());
         axiom.solve().unwrap_or_else(|e| panic!("Axiom solve resulted in an error: {:?}", e));
         axiom.print_steps();
-        
+
         // TODO: Pickup. Need to investigate how biconditional operators are being parsed.
         // seems like another case of incorrect levels of precedence
     }

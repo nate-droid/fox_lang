@@ -69,7 +69,7 @@ impl <'a> LangLexer<'a> {
                 '=' => {
                     self.tokens.push(Token {
                         value: self.current_char().to_string(),
-                        kind: TokenKind::Assign,
+                        kind: TokenKind::Equality,
                     });
                 }
                 ':' => {
@@ -85,6 +85,12 @@ impl <'a> LangLexer<'a> {
                     })
                 }
                 // for MetaMath specific cases
+                '⊢' => {
+                    self.tokens.push(Token {
+                        value: self.current_char().to_string(),
+                        kind: TokenKind::Turnstile,
+                    });
+                }
                 '→' => {
                     self.tokens.push(Token {
                         value: self.current_char().to_string(),
@@ -266,7 +272,6 @@ impl <'a> LangLexer<'a> {
 #[cfg(test)]
 mod tests {
     use crate::lang_lexer::LangLexer;
-    use crate::lang_parser::LangParser;
     use super::*;
 
     #[test]
@@ -303,5 +308,153 @@ mod tests {
         lexer.tokenize().expect("TODO: panic message");
         let tokens = lexer.tokens();
         println!("{:?}", tokens);
+    }
+    
+    // MM focused tests
+    #[test]
+    fn test_ax1() {
+        let input = "⊢ (𝜑 → (𝜓 → 𝜑))";
+        let mut lexer = LangLexer::new(input);
+        lexer.tokenize().expect("TODO: panic message");
+
+        let expected_tokens = vec![
+            TokenKind::Turnstile,
+            TokenKind::LeftParenthesis,
+            TokenKind::Identifier,
+            TokenKind::Implies,
+            TokenKind::LeftParenthesis,
+            TokenKind::Identifier,
+            TokenKind::Implies,
+            TokenKind::Identifier,
+            TokenKind::RightParenthesis,
+            TokenKind::RightParenthesis,
+        ];
+
+        for (i, expected_kind) in expected_tokens.iter().enumerate() {
+            assert_eq!(lexer.tokens[i].kind, *expected_kind);
+        }
+
+        println!("{:?}", lexer.tokens);
+    }
+
+    #[test]
+    fn test_ax2() {
+        let input = "⊢ ((𝜑 → (𝜓 → 𝜒)) → ((𝜑 → 𝜓) → (𝜑 → 𝜒)))";
+        let mut lexer = LangLexer::new(input);
+        lexer.tokenize().expect("TODO: panic message");
+
+        let expected_tokens = vec![
+            TokenKind::Turnstile,
+            TokenKind::LeftParenthesis,
+            TokenKind::LeftParenthesis,
+            TokenKind::Identifier,
+            TokenKind::Implies,
+            TokenKind::LeftParenthesis,
+            TokenKind::Identifier,
+            TokenKind::Implies,
+            TokenKind::Identifier,
+            TokenKind::RightParenthesis,
+            TokenKind::RightParenthesis,
+            TokenKind::Implies,
+            TokenKind::LeftParenthesis,
+            TokenKind::LeftParenthesis,
+            TokenKind::Identifier,
+            TokenKind::Implies,
+            TokenKind::Identifier,
+            TokenKind::RightParenthesis,
+            TokenKind::Implies,
+            TokenKind::LeftParenthesis,
+            TokenKind::Identifier,
+            TokenKind::Implies,
+            TokenKind::Identifier,
+            TokenKind::RightParenthesis,
+            TokenKind::RightParenthesis,
+        ];
+
+        for (i, expected_kind) in expected_tokens.iter().enumerate() {
+            assert_eq!(lexer.tokens[i].kind, *expected_kind);
+        }
+    }
+
+    #[test]
+    fn test_ax3() {
+        let input = "⊢ ((¬ 𝜑 → ¬ 𝜓) → (𝜓 → 𝜑))";
+        let mut lexer = LangLexer::new(input);
+        lexer.tokenize().expect("TODO: panic message");
+
+        let expected_tokens = vec![
+            TokenKind::Turnstile,
+            TokenKind::LeftParenthesis,
+            TokenKind::LeftParenthesis,
+            TokenKind::Negation,
+            TokenKind::Identifier,
+            TokenKind::Implies,
+            TokenKind::Negation,
+            TokenKind::Identifier,
+            TokenKind::RightParenthesis,
+            TokenKind::Implies,
+            TokenKind::LeftParenthesis,
+            TokenKind::Identifier,
+            TokenKind::Implies,
+            TokenKind::Identifier,
+            TokenKind::RightParenthesis,
+            TokenKind::RightParenthesis,
+        ];
+
+        for (i, expected_kind) in expected_tokens.iter().enumerate() {
+            assert_eq!(lexer.tokens[i].kind, *expected_kind);
+        }
+    }
+
+    #[test]
+    fn test_ax_gen() {
+        let input = "⊢ ∀𝑥𝜑";
+        let mut lexer = LangLexer::new(input);
+        lexer.tokenize().expect("TODO: panic message");
+
+        let expected_tokens = vec![
+            TokenKind::Turnstile,
+            TokenKind::ForAll,
+            TokenKind::Identifier,
+            TokenKind::Identifier,
+        ];
+
+        for (i, expected_kind) in expected_tokens.iter().enumerate() {
+            assert_eq!(lexer.tokens[i].kind, *expected_kind);
+        }
+    }
+
+    #[test]
+    fn test_ax_4() {
+        let input = "⊢ (∀𝑥(𝜑 → 𝜓) → (∀𝑥𝜑 → ∀𝑥𝜓))";
+        let mut lexer = LangLexer::new(input);
+        lexer.tokenize().expect("TODO: panic message");
+
+        let expected_tokens = vec![
+            TokenKind::Turnstile,
+            TokenKind::LeftParenthesis,
+            TokenKind::ForAll,
+            TokenKind::Identifier,
+            TokenKind::LeftParenthesis,
+            TokenKind::Identifier,
+            TokenKind::Implies,
+            TokenKind::Identifier,
+            TokenKind::RightParenthesis,
+            TokenKind::Implies,
+            TokenKind::LeftParenthesis,
+            TokenKind::ForAll,
+            TokenKind::Identifier,
+            TokenKind::Identifier,
+            TokenKind::Implies,
+            TokenKind::ForAll,
+            TokenKind::Identifier,
+            TokenKind::Identifier,
+            TokenKind::RightParenthesis,
+            TokenKind::RightParenthesis,
+        ];
+
+        for (i, expected_kind) in expected_tokens.iter().enumerate() {
+            assert_eq!(lexer.tokens[i].kind, *expected_kind);
+        }
     }
 }

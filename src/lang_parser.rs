@@ -60,7 +60,7 @@ impl<'a> LangParser<'a> {
 
                     self.consume(TokenKind::Nat)?;
 
-                    self.consume(TokenKind::Assign)?;
+                    self.consume(TokenKind::Equality)?;
                     
                     let left = self.parse_node()?;
 
@@ -244,6 +244,8 @@ mod tests {
         let mut parser = LangParser::new(input);
         // let ast = parser.parse().expect("unexpected failure");
         // println!("{:?}", ast);
+        
+        // TODO: When parsing a "let" statement, check if the type is "Expression", and call the mm parser
     }
     
     #[test]

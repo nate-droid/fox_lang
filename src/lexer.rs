@@ -43,7 +43,6 @@ pub enum TokenKind {
     Semicolon,
     Type,
     Let,
-    Assign,
     Colon,
     Nat,
     
@@ -81,7 +80,6 @@ impl std::fmt::Display for TokenKind {
             TokenKind::Semicolon => write!(f, "Semicolon"),
             TokenKind::Type => write!(f, "Type"),
             TokenKind::Let => write!(f, "Let"),
-            TokenKind::Assign => write!(f, "Assign"),
             TokenKind::Colon => write!(f, "Colon"),
             TokenKind::Nat => write!(f, "Nat"),
             TokenKind::Add => write!(f, "+"),
