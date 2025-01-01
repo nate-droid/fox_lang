@@ -12,7 +12,7 @@ pub(crate) struct LangParser<'a> {
 impl<'a> LangParser<'a> {
     pub(crate) fn new(input: &'a str) -> Self {
         let mut lexer = LangLexer::new(input);
-        lexer.tokenize();
+        lexer.tokenize().expect("TODO: panic message");
 
         let tokens = lexer.tokens().clone();
         
@@ -236,6 +236,14 @@ mod tests {
         println!("{:?}", ast);
         
         assert_eq!(ast.nodes.len(), 3);
+    }
+    
+    #[test]
+    fn mm_expressions_in_fox() {
+        let input = "let ax1 : Expr = (𝜓 → 𝜑);";
+        let mut parser = LangParser::new(input);
+        // let ast = parser.parse().expect("unexpected failure");
+        // println!("{:?}", ast);
     }
     
     #[test]

@@ -3,7 +3,6 @@ use std::str::Chars;
 use crate::lexer::{Token, TokenKind};
 
 pub struct LangLexer<'a> {
-    input: &'a str,
     char: Option<char>,
     tokens: Vec<Token>,
     iterator: Peekable<Chars<'a>>,
@@ -15,14 +14,12 @@ impl <'a> LangLexer<'a> {
 
         Self {
             tokens: Vec::new(),
-            input,
             char: iterator.next(),
             iterator,
         }
     }
     
     pub fn tokenize(&mut self) -> Result<(), String> {
-        // while self.position < self.input.len() {
         while self.char.is_some() {
             match self.current_char() {
                 ' ' => {}
@@ -86,6 +83,95 @@ impl <'a> LangLexer<'a> {
                         value: self.current_char().to_string(),
                         kind: TokenKind::Add,
                     })
+                }
+                // for MetaMath specific cases
+                '→' => {
+                    self.tokens.push(Token {
+                        value: self.current_char().to_string(),
+                        kind: TokenKind::Implies,
+                    });
+                }
+                '¬' => {
+                    self.tokens.push(Token {
+                        value: self.current_char().to_string(),
+                        kind: TokenKind::Negation,
+                    });
+                }
+                '∀' => {
+                    self.tokens.push(Token {
+                        value: self.current_char().to_string(),
+                        kind: TokenKind::ForAll,
+                    });
+                }
+                '∃' => {
+                    self.tokens.push(Token {
+                        value: self.current_char().to_string(),
+                        kind: TokenKind::Exists,
+                    });
+                }
+                '𝑥' => {
+                    self.tokens.push(Token {
+                        value: self.current_char().to_string(),
+                        // kind: TokenKind::BoundX,
+                        kind: TokenKind::Identifier, // changing this to an identifier in order to simplify the early stages
+                    });
+                }
+                '𝜑' => {
+                    self.tokens.push(Token {
+                        value: self.current_char().to_string(),
+                        // kind: TokenKind::Phi,
+                        kind: TokenKind::Identifier,
+                    });
+                }
+                '𝜓' => {
+                    self.tokens.push(Token {
+                        value: self.current_char().to_string(),
+                        // kind: TokenKind::Psi,
+                        kind: TokenKind::Identifier,
+                    });
+                }
+                '𝜒' => {
+                    self.tokens.push(Token {
+                        value: self.current_char().to_string(),
+                        // kind: TokenKind::Chi,
+                        kind: TokenKind::Identifier,
+                    });
+                }
+                '&' => {
+                    self.tokens.push(Token {
+                        value: self.current_char().to_string(),
+                        kind: TokenKind::HypothesisConjunction,
+                    });
+                }
+                '⇒' => {
+                    self.tokens.push(Token {
+                        value: self.current_char().to_string(),
+                        kind: TokenKind::HypothesisEnd,
+                    });
+                }
+                'A' | 'B' | 'C' => {
+                    self.tokens.push(Token {
+                        value: self.current_char().to_string(),
+                        kind: TokenKind::Identifier,
+                    });
+                }
+                '𝑦' | '𝑧' => {
+                    self.tokens.push(Token {
+                        value: self.current_char().to_string(),
+                        kind: TokenKind::Identifier,
+                    });
+                }
+                '∈' => {
+                    self.tokens.push(Token {
+                        value: self.current_char().to_string(),
+                        kind: TokenKind::ElementOf,
+                    });
+                }
+                '↔' => {
+                    self.tokens.push(Token {
+                        value: self.current_char().to_string(),
+                        kind: TokenKind::Biconditional,
+                    });
                 }
                 // parse words
                 _ if self.current_char().is_alphabetic() => {
@@ -180,7 +266,7 @@ impl <'a> LangLexer<'a> {
 #[cfg(test)]
 mod tests {
     use crate::lang_lexer::LangLexer;
-    use crate::lexer::DefaultLexer;
+    use crate::lang_parser::LangParser;
     use super::*;
 
     #[test]
@@ -204,6 +290,15 @@ mod tests {
     #[test]
     fn basic_declarations() {
         let input = "let x : Nat = 10;";
+        let mut lexer = LangLexer::new(input);
+        lexer.tokenize().expect("TODO: panic message");
+        let tokens = lexer.tokens();
+        println!("{:?}", tokens);
+    }
+
+    #[test]
+    fn mm_expressions_in_fox() {
+        let input = "let ax1 : Expr = (𝜓 → 𝜑);";
         let mut lexer = LangLexer::new(input);
         lexer.tokenize().expect("TODO: panic message");
         let tokens = lexer.tokens();

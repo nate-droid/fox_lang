@@ -5,4 +5,4 @@ print(y);
 print(x + y);
 
 // expression syntax
- 
+let ax1 : Expr = (𝜓 → 𝜑);

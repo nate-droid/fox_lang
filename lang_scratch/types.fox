@@ -1,0 +1,3 @@
+type Nat; // natural numbers
+type Expr; // expressions
+type Bool; // booleans
