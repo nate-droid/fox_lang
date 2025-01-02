@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use crate::cut::Axiom;
 use crate::lexer::{Token, TokenKind};
 use crate::parser::{Node, Value};
 use crate::parser::Node::EmptyNode;
@@ -8,6 +9,7 @@ pub struct Ast {
     pub nodes: Vec<Node>,
     declarations: HashMap<String, Node>,
 }
+
 
 
 impl Ast {
@@ -47,6 +49,9 @@ impl Ast {
                 Node::Atomic { value } => {
 
                 }
+                Node::MMExpression { expression } => {
+                    todo!("MMExpression");
+                }
                 EmptyNode => {}
             }
         }
@@ -74,6 +79,11 @@ impl Ast {
             }
             Node::Atomic { value } => {
                 return Ok(Node::Atomic { value });
+            }
+            Node::MMExpression { expression } => {
+                let mut axiom = Axiom::new("ax-1".to_string(), expression);
+                axiom.solve().expect("unexpected failure");
+                println!("{:?}", axiom.steps);
             }
             EmptyNode => {
                 todo!("Empty node");
@@ -128,6 +138,9 @@ fn eval_call(name: String, arguments: Vec<Token>) -> Result<(), String> {
         "print" => {
             println!("{:?}", arguments[0].value);
         }
+        "reduce" => {
+            println!("{:?}", arguments[0].value);
+        }
         "add" => {
             
         }
@@ -138,6 +151,7 @@ fn eval_call(name: String, arguments: Vec<Token>) -> Result<(), String> {
 
 #[cfg(test)]
 mod tests {
+    use crate::lang_parser::LangParser;
     use super::*;
     use crate::lexer::{Token, TokenKind};
     use crate::parser::{Node, Value};
@@ -192,5 +206,17 @@ mod tests {
 
         let res = ast.declarations.get("z").expect("unexpected failure").clone();
         assert_eq!(res.val(), Value::Int(3));
+    }
+    
+    #[test]
+    fn reduce_expression() {
+        let input = "let x : Expr = (𝜑 → (𝜓 → 𝜑));";
+        let mut parser = LangParser::new(input);
+        let mut ast = parser.parse().expect("unexpected failure");
+        println!("{:?}", ast);
+        ast.eval().expect("unexpected failure");
+        
+        // TODO: Bug if there is a missing ;
+        
     }
 }

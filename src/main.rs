@@ -5,8 +5,6 @@ mod lang_lexer;
 mod lang_parser;
 mod lang_ast;
 
-mod metamath_lexer;
-
 mod cut;
 
 mod combinator;

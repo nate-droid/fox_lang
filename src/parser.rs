@@ -104,6 +104,9 @@ pub enum Node {
         arguments: Vec<Token>,
         returns: Vec<Node>,
     },
+    MMExpression {
+      expression: String,  
+    },
     EmptyNode,
 }
 
@@ -181,6 +184,9 @@ impl Node {
             }
             Node::Call { name, arguments, returns } => {
                 format!("{}({:?})", name, arguments)
+            }
+            Node::MMExpression { expression } => {
+                expression.clone()
             }
             Node::EmptyNode => {
                 "".to_string()

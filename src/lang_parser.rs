@@ -1,3 +1,4 @@
+use crate::cut::Axiom;
 use crate::lang_ast::Ast;
 use crate::lang_lexer::LangLexer;
 use crate::lexer::{Token, TokenKind};
@@ -57,8 +58,8 @@ impl<'a> LangParser<'a> {
 
                     // TODO: write a function to grab "kind" from the tokens
                     let kind = self.current_token()?;
-
-                    self.consume(TokenKind::Nat)?;
+                    
+                    self.advance();
 
                     self.consume(TokenKind::Equality)?;
                     
@@ -97,6 +98,22 @@ impl<'a> LangParser<'a> {
                     self.consume(TokenKind::Semicolon)?;
                     continue;
                 }
+                // TokenKind::Turnstile => {
+                //     println!("Turnstile");
+                //     self.consume(TokenKind::Turnstile)?;
+                //     
+                //     let mut expression: String = "(".to_string();
+                //     self.consume(TokenKind::LeftParenthesis)?;
+                //     
+                //     while self.current_token()?.kind != TokenKind::Semicolon {
+                //         expression.push_str(&self.current_token()?.value);
+                //         self.advance();
+                //     }
+                //     
+                //     ast.add_node(Node::MMExpression {
+                //         expression
+                //     });
+                // }
                 TokenKind::Comment => {
                     // skip comments
                     println!("Skipping comment");
@@ -133,7 +150,30 @@ impl<'a> LangParser<'a> {
                     kind: "Nat".to_string(),
                 })
             }
+            TokenKind::LeftParenthesis => {
+                // at the moment, the language expects this to be an expression. This might need to be rethought as the language grows
+                let mut expression: String = "(".to_string();
+                self.consume(TokenKind::LeftParenthesis)?;
+                while self.current_token()?.kind != TokenKind::Semicolon {
+                    expression.push_str(&self.current_token()?.value);
+                    self.advance();
+                }
+                
+                Ok(Node::MMExpression {
+                    expression
+                })
+            }
+            TokenKind::Identifier => {
+                let name = self.current_token()?;
+                self.advance();
+                Ok(Node::Identity {
+                    name: name.value.clone(),
+                    value: Box::from(Node::Atomic { value: Value::Int(0) }),
+                    kind: "Nat".to_string(),
+                })
+            }
             _ => {
+                
                 println!("{:?}", self.current_token()?.kind);
                 Err("Unexpected token".to_string())
             }
@@ -240,10 +280,10 @@ mod tests {
     
     #[test]
     fn mm_expressions_in_fox() {
-        let input = "let ax1 : Expr = (𝜓 → 𝜑);";
+        let input = "let ax : Expr = (𝜓 → 𝜑);";
         let mut parser = LangParser::new(input);
-        // let ast = parser.parse().expect("unexpected failure");
-        // println!("{:?}", ast);
+        let ast = parser.parse().expect("unexpected failure");
+        println!("{:?}", ast);
         
         // TODO: When parsing a "let" statement, check if the type is "Expression", and call the mm parser
     }
