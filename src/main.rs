@@ -1,13 +1,11 @@
 mod lexer;
-mod parser;
+pub mod parser;
 
 mod lang_lexer;
 mod lang_parser;
-mod lang_ast;
+pub mod lang_ast;
 
-mod cut;
-
-mod combinator;
+pub mod cut;
 
 fn main() {
     println!("Welcome to the FoxLang REPL");

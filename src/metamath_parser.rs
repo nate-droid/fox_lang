@@ -2,7 +2,6 @@
 mod tests {
     use crate::cut::{reduce, Axiom};
     use crate::parser::{Node, Parser};
-    use super::*;
 
     #[test]
     fn test_node_print() {

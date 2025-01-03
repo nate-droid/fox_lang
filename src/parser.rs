@@ -22,7 +22,7 @@ use std::fmt;
 use crate::lang_lexer::LangLexer;
 use crate::lexer::TokenKind::{ForAll, Identifier, RightParenthesis};
 
-use crate::parser::ParseError::{EmptyNode, UnhandledBehaviour};
+use crate::parser::ParseError::{EmptyNode};
 
 #[derive(Debug)]
 pub enum ParseError {
@@ -37,7 +37,7 @@ impl fmt::Display for ParseError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             ParseError::UnexpectedToken => write!(f, "Unexpected token"),
-            ParseError::EmptyNode => write!(f, "Empty node"),
+            EmptyNode => write!(f, "Empty node"),
             ParseError::AccessOutOfBoundsToken { position, total_tokens } => write!(f, "Access out of bounds token at position {} with total tokens {}", position, total_tokens),
             ParseError::UnhandledBehaviour => write!(f, "Unhandled behaviour"),
             ParseError::UnclosedParenthesis => write!(f, "Unclosed parenthesis"),
@@ -111,38 +111,22 @@ pub enum Node {
 }
 
 impl Node {
-    fn evaluate(&self) -> bool {
-        if let Node::BinaryExpression { left, operator, right } = self {
-            match operator {
-                _ => false
-            }
-        } else if let Node::UnaryExpression { operator, right } = self {
-            match operator {
-                _ => false
-            }
-        } else if let Node::Identifier { value } = self {
-            false
-        } else {
-            false
-        }
-
-    }
 
     pub fn operator(&self) -> TokenKind {
         match self {
-            Node::BinaryExpression { left, operator, right } => {
+            Node::BinaryExpression { left: _left, operator, right: _right } => {
                 operator.clone()
             }
-            Node::UnaryExpression { operator, right } => {
+            Node::UnaryExpression { operator, right: _right } => {
                 operator.clone()
             }
-            Node::Identifier { value } => {
+            Node::Identifier { value: _value } => {
                 Identifier
             }
-            Node::MMExpression { expression } => {
+            Node::MMExpression { expression: _expression } => {
                 TokenKind::MMExpression
             }
-            Node::Identity { name, value, kind } => {
+            Node::Identity { name: _name, value: _value, kind: _kind } => {
                 TokenKind::Word
             }
             _ => {
@@ -171,7 +155,7 @@ impl Node {
     pub fn to_string(&self) -> String {
         match self {
             Node::BinaryExpression { left, operator, right } => {
-                if *operator == TokenKind::ForAll {
+                if *operator == ForAll {
                     format!("∀{}{}", left.to_string(), right.to_string())
                 } else {
                     format!("({} {} {})", left.to_string(), operator, right.to_string())
@@ -189,7 +173,7 @@ impl Node {
             Node::Atomic { value } => {
                 value.to_string()
             }
-            Node::Call { name, arguments, returns } => {
+            Node::Call { name, arguments, returns: _returns } => {
                 format!("{}({:?})", name, arguments)
             }
             Node::MMExpression { expression } => {
@@ -239,7 +223,7 @@ impl Parser {
         while self.position < self.tokens.len() {
 
             match self.tokens[self.position].kind {
-                TokenKind::LeftParenthesis | TokenKind::ForAll => {
+                TokenKind::LeftParenthesis | ForAll => {
                     return self.parse_expression()
                 }
                 RightParenthesis => {
@@ -365,11 +349,11 @@ impl Parser {
                     let right = self.parse_expression()?;
                     // self.consume(RightParenthesis)?;
 
-                    return Ok(Node::BinaryExpression {
+                    Ok(Node::BinaryExpression {
                         left: Box::new(left),
                         operator,
                         right: Box::new(right),
-                    });
+                    })
                 } else if self.peek().kind == RightParenthesis {
                     self.consume(RightParenthesis)?;
                     return Ok(left);
@@ -427,10 +411,10 @@ impl Parser {
                 }
                 Ok(node)
             }
-            TokenKind::ForAll => {
+            ForAll => {
 
                 let operator = self.get_operator()?;
-                self.consume(TokenKind::ForAll)?;
+                self.consume(ForAll)?;
 
                 let first = self.parse_identifier()?;
 
@@ -445,12 +429,11 @@ impl Parser {
 
                 let second = self.parse_identifier()?;
 
-                return Ok(Node::BinaryExpression {
+                Ok(Node::BinaryExpression {
                     left: Box::new(first),
                     operator,
                     right: Box::new(second),
-                });
-
+                })
             }
             _ => {
                 if self.current()?.kind.is_unary_operator() {

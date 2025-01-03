@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use crate::parser::{Node, ParseError, Parser};
 use crate::lexer::TokenKind;
 
@@ -104,8 +103,8 @@ impl Axiom {
             
             let (reduce_left, reduce_right) = reduce(node).unwrap();
             
-            let left_index = self.add_step(reduce_left.clone());
-            let right_index = self.add_step(reduce_right.clone());
+            let _ = self.add_step(reduce_left.clone());
+            let _ = self.add_step(reduce_right.clone());
             
             i += 1;
         }
@@ -128,23 +127,6 @@ pub(crate) struct Step {
     expression: String,
 }
 
-impl Step {
-    pub(crate) fn new(node: Node) -> Self {
-        let index = 0;
-        let hypothesis = (0, 0);
-        let reference = "".to_string();
-        let expression = node.to_string();
-
-        Self {
-            index,
-            hypothesis,
-            reference,
-            expression,
-        }
-    }
-}
-
-
 #[derive(Debug)]
 pub enum ReduceError {
     EmptyNode,
@@ -161,8 +143,8 @@ impl std::error::Error for ReduceError {}
 
 // This function should return a box of nodes or an error
 pub fn reduce(node: Node) -> Result<(Node, Node), ReduceError>{
-    return match node.clone() {
-        Node::UnaryExpression { operator, .. } => {
+    match node.clone() {
+        Node::UnaryExpression { operator: _operator, .. } => {
             match node.operator() {
                 TokenKind::Negation => {
                     // |- ¬A becomes A |- ⊥
@@ -175,7 +157,7 @@ pub fn reduce(node: Node) -> Result<(Node, Node), ReduceError>{
                 }
             }
         }
-        Node::BinaryExpression { left, operator, right } => {
+        Node::BinaryExpression { left, operator: _operator, right } => {
             match node.operator() {
                 TokenKind::Implies | TokenKind::Biconditional => {
                     // |- A -> B becomes A |- B
@@ -193,21 +175,18 @@ pub fn reduce(node: Node) -> Result<(Node, Node), ReduceError>{
                 }
             }
         }
-        Node::Identifier { value } => {
+        Node::Identifier { value: _value } => {
             // found a single node, can't reduce any further
             Ok((node.clone(), node.clone()))
         }
         _ => {
             Err(ReduceError::Unimplemented)
         }
-    };
-
-    Err(ReduceError::EmptyNode)
+    }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::lexer::DefaultLexer;
     use super::*;
 
     #[test]

@@ -29,27 +29,27 @@ impl Ast {
             println!("{:?}", node.operator());
             match node {
                 Node::BinaryExpression { left, operator, right } => {
-                    let res = self.eval_binary_expression(*left, operator, *right)?;
+                    let _ = self.eval_binary_expression(*left, operator, *right)?;
                     return Ok(())
                 }
-                Node::UnaryExpression { operator, right } => {
+                Node::UnaryExpression { operator: _operator, right: _right } => {
 
                 }
-                Node::Identifier { value, .. } => {
+                Node::Identifier { value: _value, .. } => {
 
                 }
-                Node::Identity { name, value, kind} => {
+                Node::Identity { name, value, kind: _kind } => {
                     let res = self.eval_node(*value)?;
                     
                     self.declarations.insert(name, res);
                 }
-                Node::Call { name, arguments, returns } => {
+                Node::Call { name, arguments, returns: _returns } => {
                     eval_call(name, arguments)?;
                 }
-                Node::Atomic { value } => {
+                Node::Atomic { value: _value } => {
 
                 }
-                Node::MMExpression { expression } => {
+                Node::MMExpression { expression: _expression } => {
                     todo!("MMExpression");
                 }
                 EmptyNode => {}
@@ -65,16 +65,16 @@ impl Ast {
                 let res = self.eval_binary_expression(*left, operator, *right)?;
                 return Ok(res);
             }
-            Node::UnaryExpression { operator, right } => {
+            Node::UnaryExpression { operator: _operator, right: _right } => {
                 todo!("Unary expressions");
             }
-            Node::Identifier { value, .. } => {
+            Node::Identifier { value: _value, .. } => {
                 todo!("Identifiers");
             }
-            Node::Identity { name, value, kind} => {
+            Node::Identity { name: _name, value, kind: _kind } => {
                 return self.eval_node(*value);
             }
-            Node::Call { name, arguments, returns } => {
+            Node::Call { name, arguments, returns: _returns } => {
                 eval_call(name, arguments)?;
             }
             Node::Atomic { value } => {
@@ -94,7 +94,7 @@ impl Ast {
     }
 
     fn replace_var(&mut self, mut node: Node) -> Result<Node, String> {
-        if let Node::Identity { value: left_val, name, .. } = node.clone() {
+        if let Node::Identity { value: _left_val, name, .. } = node.clone() {
             let res = self.declarations.get(&name).expect("unexpected failure").clone();
             node = res;
         }
@@ -104,22 +104,22 @@ impl Ast {
     fn eval_binary_expression(&mut self, mut left: Node, operator: TokenKind, mut right: Node) -> Result<Node, String> {
         match operator {
             TokenKind::Add => {
-                if let Node::Identity { value: left_val, name, .. } = left.clone() {
+                if let Node::Identity { value: _left_val, name: _name, .. } = left.clone() {
                     left = self.replace_var(left)?;
                 }
-                if let Node::Identity { value: right_val, name, .. } = right.clone() {
+                if let Node::Identity { value: _right_val, name: _name, .. } = right.clone() {
                     right = self.replace_var(right)?;
                 }
 
                 if let Node::Atomic { value: left_val } = left {
                     if let Node::Atomic { value: right_val } = right {
-                        match (left_val, right_val) {
+                        return match (left_val, right_val) {
                             (Value::Int(left), Value::Int(right)) => {
-                                return Ok(Node::Atomic {
+                                Ok(Node::Atomic {
                                     value: Value::Int(left + right),
-                                });
+                                })
                             }
-                            _ => return Err("Invalid types".to_string()),
+                            _ => Err("Invalid types".to_string()),
                         }
                     }
                 }
@@ -197,7 +197,7 @@ mod tests {
     #[test]
     fn eval_addition() {
         let input = "let x : Nat = 1 + 2;";
-        let mut parser = crate::lang_parser::LangParser::new(input);
+        let mut parser = LangParser::new(input);
         let mut ast = parser.parse().expect("unexpected failure");
         
         ast.eval().expect("unexpected failure");
@@ -210,7 +210,7 @@ mod tests {
     #[test]
     fn eval_variable_addition() {
         let input = "let x : Nat = 1; let y : Nat = 2; let z : Nat = x + y;";
-        let mut parser = crate::lang_parser::LangParser::new(input);
+        let mut parser = LangParser::new(input);
         let mut ast = parser.parse().expect("unexpected failure");
         
         ast.eval().expect("unexpected failure");
