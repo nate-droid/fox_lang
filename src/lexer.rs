@@ -45,6 +45,7 @@ pub enum TokenKind {
     Let,
     Colon,
     Nat,
+    MMExpression,
     
     Add,
 }
@@ -84,6 +85,7 @@ impl std::fmt::Display for TokenKind {
             TokenKind::Nat => write!(f, "Nat"),
             TokenKind::Add => write!(f, "+"),
             TokenKind::Comment => write!(f, "//"),
+            TokenKind::MMExpression => write!(f, "MMExpression"),
         }
     }
 }

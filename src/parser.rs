@@ -139,7 +139,14 @@ impl Node {
             Node::Identifier { value } => {
                 Identifier
             }
+            Node::MMExpression { expression } => {
+                TokenKind::MMExpression
+            }
+            Node::Identity { name, value, kind } => {
+                TokenKind::Word
+            }
             _ => {
+                println!("{:?}", self);
                 TokenKind::End
             }
         }

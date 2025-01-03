@@ -12,13 +12,14 @@ mod combinator;
 fn main() {
     println!("Welcome to the FoxLang REPL");
     println!("Type 'help' for a list of commands");
-
+    let mut ast = lang_ast::Ast::new();
+    
     loop {
         let mut input = String::new();
         std::io::stdin().read_line(&mut input).unwrap();
         let mut parts = input.trim().split_whitespace();
         let command = parts.next().unwrap();
-
+        
         match command {
             "solve" => {
                 println!("Solving...");
@@ -34,8 +35,12 @@ fn main() {
             }
             _ => {
                 // call the lang parser
-                let mut parser = lang_parser::LangParser::new(&*input);
-                let ast = parser.parse().expect("unexpected failure");
+                ast.parse(input.trim()).expect("unexpected failure");
+                
+                // ast.eval().expect("unexpected failure");
+                println!("{:?}", ast.nodes);
+                println!("{:?}", ast.nodes.len());
+                // TODO: refactor this after working on multi parsing
                 
                 println!("Unknown command: {}", input);
                 println!("Type 'help' for a list of commands");

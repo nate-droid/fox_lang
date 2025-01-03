@@ -26,7 +26,7 @@ impl Ast {
     
     pub fn eval(&mut self) -> Result<(), String> {
         for node in self.nodes.clone() {
-
+            println!("{:?}", node.operator());
             match node {
                 Node::BinaryExpression { left, operator, right } => {
                     let res = self.eval_binary_expression(*left, operator, *right)?;
@@ -129,6 +129,17 @@ impl Ast {
 
         Ok(EmptyNode)
     }
+    
+    pub fn parse(&mut self, input: &str) -> Result<(), String> {
+        let mut parser = crate::lang_parser::LangParser::new(input);
+        let ast = parser.parse().expect("unexpected failure");
+
+        for node in ast.nodes {
+            self.add_node(node);
+        }
+        
+        Ok(())
+    }
 }
 
 fn eval_call(name: String, arguments: Vec<Token>) -> Result<(), String> {
@@ -215,8 +226,15 @@ mod tests {
         let mut ast = parser.parse().expect("unexpected failure");
         println!("{:?}", ast);
         ast.eval().expect("unexpected failure");
-        
-        // TODO: Bug if there is a missing ;
-        
+    }
+    
+    #[test]
+    fn parse_several() {
+        let input = "let x : Nat = 1;";
+        let mut ast = Ast::new();
+        ast.parse(input).expect("unexpected failure");
+        let input2 = "let y : Nat = 2;";
+        ast.parse(input2).expect("unexpected failure");
+        println!("{:?}", ast.nodes);
     }
 }
