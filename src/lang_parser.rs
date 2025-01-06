@@ -59,6 +59,8 @@ impl<'a> LangParser<'a> {
                     // TODO: write a function to grab "kind" from the tokens
                     let kind = self.current_token()?;
                     
+                    println!("{:?}", kind);
+                    
                     self.advance();
 
                     self.consume(TokenKind::Equality)?;
@@ -71,6 +73,9 @@ impl<'a> LangParser<'a> {
                         
                         let right = self.parse_node()?;
 
+                        println!("{:?}", left);
+                        println!("{:?}", right);
+                        
                         let n = Node::BinaryExpression {
                             left: Box::from(left),
                             operator: TokenKind::Add,

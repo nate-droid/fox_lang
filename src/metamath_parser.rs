@@ -204,13 +204,35 @@ mod tests {
     #[test]
     fn test_ax_ext() {
         // Axiom of Extensionality
-        // let input = "⊢ (∀𝑧(𝑧 ∈ 𝑥 ↔ 𝑧 ∈ 𝑦) → 𝑥 = 𝑦)";
-        let input = "⊢ ¬ (((𝜑 ↔ 𝜓) → ¬ ((𝜑 → 𝜓) → ¬ (𝜓 → 𝜑))) → ¬ (¬ ((𝜑 → 𝜓) → ¬ (𝜓 → 𝜑)) → (𝜑 ↔ 𝜓)))";
+        let input = "⊢ (∀𝑧(𝑧 ∈ 𝑥 ↔ 𝑧 ∈ 𝑦) → 𝑥 = 𝑦)";
+        // let input = "⊢ ¬ (((𝜑 ↔ 𝜓) → ¬ ((𝜑 → 𝜓) → ¬ (𝜓 → 𝜑))) → ¬ (¬ ((𝜑 → 𝜓) → ¬ (𝜓 → 𝜑)) → (𝜑 ↔ 𝜓)))";
         let mut axiom = Axiom::new("ax-ext".to_string(), input.to_string());
         axiom.solve().unwrap_or_else(|e| panic!("Axiom solve resulted in an error: {:?}", e));
         axiom.print_steps();
 
         // TODO: Pickup. Need to investigate how biconditional operators are being parsed.
         // seems like another case of incorrect levels of precedence
+        
+        let axiom = "Detailed syntax breakdown of Axiom ax-ext
+Step	Hyp	Ref	Expression
+1	 	vz	. . . . 5 setvar 𝑧
+2	 	vx	. . . . 5 setvar 𝑥
+3	1, 2	wel 2105	. . . 4 wff 𝑧 ∈ 𝑥
+4	 	vy	. . . . 5 setvar 𝑦
+5	1, 4	wel 2105	. . . 4 wff 𝑧 ∈ 𝑦
+6	3, 5	wb 205	. . 3 wff (𝑧 ∈ 𝑥 ↔ 𝑧 ∈ 𝑦)
+7	6, 1	wal 1537	. 2 wff ∀𝑧(𝑧 ∈ 𝑥 ↔ 𝑧 ∈ 𝑦)
+8	2, 4	weq 1964	. 2 wff 𝑥 = 𝑦
+9	7, 8	wi 4	1 wff (∀𝑧(𝑧 ∈ 𝑥 ↔ 𝑧 ∈ 𝑦) → 𝑥 = 𝑦)
+";
+        for line in axiom.lines() {
+            let columns: Vec<&str> = line.split_whitespace().collect();
+            let step = columns[0];
+            let hyp = columns[1];
+            let r#ref = columns[2];
+            let expression = columns[3..].join(" ");
+            println!("Step: {}, Hyp: {}, Ref: {}, Expression: {}", step, hyp, r#ref, expression);   
+        }
+        
     }
 }

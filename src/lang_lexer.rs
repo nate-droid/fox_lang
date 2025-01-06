@@ -183,9 +183,9 @@ impl <'a> LangLexer<'a> {
                 _ if self.current_char().is_alphabetic() => {
                     let mut word = String::new();
                     word.push(self.current_char());
-
+                    
                     loop {
-                        if self.peek().is_alphabetic() || self.peek() == '_' {
+                        if self.peek().is_alphanumeric() || self.peek() == '_' {
                             self.next_char();
                             word.push(self.current_char());
                         } else {
