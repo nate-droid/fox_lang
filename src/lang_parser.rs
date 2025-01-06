@@ -29,96 +29,88 @@ impl<'a> LangParser<'a> {
         let mut ast = Ast::new();
         
         while self.position < self.tokens.len() {
-            match self.tokens[self.position].kind {
-                TokenKind::Print => {
-                    self.consume(TokenKind::Print)?;
-                    self.consume(TokenKind::LeftParenthesis)?;
+            match self.tokens[self.position].kind {  // TODO: refactor this to use self.current_token()?
+                TokenKind::Word => {
+                    let t = self.current_token()?;
+                    match t.value.as_str() {
+                        "print" => {
+                            self.consume(TokenKind::Word)?;
+                            self.consume(TokenKind::LeftParenthesis)?;
 
-                    let input = self.current_token()?;
-                    
-                    self.advance();
-                    self.consume(TokenKind::RightParenthesis)?;
-                    self.consume(TokenKind::Semicolon)?;
-                    
-                    let node = Node::Call {
-                        name: "print".to_string(),
-                        arguments: vec![input],
-                        returns: vec![],
-                    };
-                    ast.add_node(node);
-                }
-                TokenKind::Let => {
-                    self.consume(TokenKind::Let)?;
-                    globals.push(self.current_token()?);
+                            let input = self.current_token()?;
 
-                    let name = self.current_token()?;
+                            self.advance();
+                            self.consume(TokenKind::RightParenthesis)?;
+                            self.consume(TokenKind::Semicolon)?;
 
-                    self.consume(TokenKind::Word)?;
-                    self.consume(TokenKind::Colon)?;
+                            let node = Node::Call {
+                                name: "print".to_string(),
+                                arguments: vec![input],
+                                returns: vec![],
+                            };
+                            ast.add_node(node);
+                        }
+                        "let" => {
+                            self.consume(TokenKind::Word)?;
+                            globals.push(self.current_token()?);
 
-                    // TODO: write a function to grab "kind" from the tokens
-                    let kind = self.current_token()?;
-                    
-                    println!("{:?}", kind);
-                    
-                    self.advance();
+                            let name = self.current_token()?;
 
-                    self.consume(TokenKind::Equality)?;
-                    
-                    let left = self.parse_node()?;
+                            self.consume(TokenKind::Word)?;
+                            self.consume(TokenKind::Colon)?;
 
-                    // TODO: Will need a more robust way to handle expressions in the future
-                    if self.current_token()?.kind == TokenKind::Add {
-                        self.consume(TokenKind::Add)?;
-                        
-                        let right = self.parse_node()?;
+                            // TODO: write a function to grab "kind" from the tokens
+                            let kind = self.current_token()?;
 
-                        println!("{:?}", left);
-                        println!("{:?}", right);
-                        
-                        let n = Node::BinaryExpression {
-                            left: Box::from(left),
-                            operator: TokenKind::Add,
-                            right: Box::from(right),
-                        };
+                            println!("{:?}", kind);
 
-                        let ident = Node::Identity {
-                            name: name.value.to_string(),
-                            value: Box::from(n),
-                            kind: kind.value,
-                        };
+                            self.advance();
 
-                        ast.add_node(ident);
-                        self.consume(TokenKind::Semicolon)?;
-                        continue;
+                            self.consume(TokenKind::Equality)?;
+
+                            let left = self.parse_node()?;
+
+                            // TODO: Will need a more robust way to handle expressions in the future
+                            if self.current_token()?.kind == TokenKind::Add {
+                                self.consume(TokenKind::Add)?;
+
+                                let right = self.parse_node()?;
+
+                                println!("{:?}", left);
+                                println!("{:?}", right);
+
+                                let n = Node::BinaryExpression {
+                                    left: Box::from(left),
+                                    operator: TokenKind::Add,
+                                    right: Box::from(right),
+                                };
+
+                                let ident = Node::Identity {
+                                    name: name.value.to_string(),
+                                    value: Box::from(n),
+                                    kind: kind.value,
+                                };
+
+                                ast.add_node(ident);
+                                self.consume(TokenKind::Semicolon)?;
+                                continue;
+                            }
+
+                            let ident = Node::Identity {
+                                name: name.value.to_string(),
+                                value: Box::from(left),
+                                kind: kind.value,
+                            };
+
+                            ast.add_node(ident);
+                            self.consume(TokenKind::Semicolon)?;
+                            continue;
+                        }
+                        _ => {
+                            println!("{:?}", self.tokens[self.position].kind);
+                        }
                     }
-
-                    let ident = Node::Identity {
-                        name: name.value.to_string(),
-                        value: Box::from(left),
-                        kind: kind.value,
-                    };
-
-                    ast.add_node(ident);
-                    self.consume(TokenKind::Semicolon)?;
-                    continue;
                 }
-                // TokenKind::Turnstile => {
-                //     println!("Turnstile");
-                //     self.consume(TokenKind::Turnstile)?;
-                //     
-                //     let mut expression: String = "(".to_string();
-                //     self.consume(TokenKind::LeftParenthesis)?;
-                //     
-                //     while self.current_token()?.kind != TokenKind::Semicolon {
-                //         expression.push_str(&self.current_token()?.value);
-                //         self.advance();
-                //     }
-                //     
-                //     ast.add_node(Node::MMExpression {
-                //         expression
-                //     });
-                // }
                 TokenKind::Comment => {
                     // skip comments
                     println!("Skipping comment");

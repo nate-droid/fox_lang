@@ -179,6 +179,7 @@ impl <'a> LangLexer<'a> {
                         kind: TokenKind::Biconditional,
                     });
                 }
+                
                 // parse words
                 _ if self.current_char().is_alphabetic() => {
                     let mut word = String::new();
@@ -192,36 +193,13 @@ impl <'a> LangLexer<'a> {
                             break;
                         }
                     }
-
-                    // if builtin:
-                    if word == "print" {
-                        self.tokens.push(Token {
-                            value: word,
-                            kind: TokenKind::Print,
-                        });
-                    } else if word == "type" {
-                        self.tokens.push(Token {
-                            value: word,
-                            kind: TokenKind::Type,
-                        });
-                    } else if word == "let" {
-                        self.tokens.push(Token {
-                            value: word,
-                            kind: TokenKind::Let,
-                        });
-                    } else if word == "Nat" {
-                        self.tokens.push(Token {
-                            value: word,
-                            kind: TokenKind::Nat,
-                        });
-                    } else {
-                        self.tokens.push(Token {
-                            value: word,
-                            kind: TokenKind::Word,
-                        });
-                    }
-
+                    
+                    self.tokens.push(Token {
+                        value: word,
+                        kind: TokenKind::Word,
+                    });
                 }
+                
                 // check for numbers
                 _ if self.current_char().is_digit(10) => {
                     let mut number = String::new();
