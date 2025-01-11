@@ -27,7 +27,7 @@ impl Ast {
     pub fn eval(&mut self) -> Result<(), String> {
         for node in self.nodes.clone() {
             println!("{:?}", node.operator());
-            match node {
+            match node.clone() {
                 Node::BinaryExpression { left, operator, right } => {
                     let _ = self.eval_binary_expression(*left, operator, *right)?;
                     return Ok(())
@@ -51,6 +51,10 @@ impl Ast {
                 }
                 Node::MMExpression { expression: _expression } => {
                     todo!("MMExpression");
+                }
+                Node::Type { name} => {
+                    
+                    self.declarations.insert(name, node.clone());
                 }
                 EmptyNode => {}
             }
@@ -84,6 +88,9 @@ impl Ast {
                 let mut axiom = Axiom::new("ax-1".to_string(), expression);
                 axiom.solve().expect("unexpected failure");
                 println!("{:?}", axiom.steps);
+            }
+            Node::Type { name: _name } => {
+                return Ok(EmptyNode);
             }
             EmptyNode => {
                 todo!("Empty node");
@@ -214,7 +221,7 @@ mod tests {
         let mut ast = parser.parse().expect("unexpected failure");
         
         ast.eval().expect("unexpected failure");
-
+        println!("{:?}", ast);
         let res = ast.declarations.get("z").expect("unexpected failure").clone();
         assert_eq!(res.val(), Value::Int(3));
     }
@@ -238,5 +245,12 @@ mod tests {
         println!("{:?}", ast.nodes);
     }
     
-
+    #[test]
+    fn custom_types() {
+        let input = "type nat;";
+        let mut ast = Ast::new();
+        ast.parse(input).expect("unexpected failure");
+        ast.eval().expect("unexpected failure");
+        println!("{:?}", ast);
+    }
 }

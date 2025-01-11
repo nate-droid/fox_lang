@@ -107,6 +107,9 @@ pub enum Node {
     MMExpression {
       expression: String,  
     },
+    Type {
+        name: String,
+    },
     EmptyNode,
 }
 
@@ -178,6 +181,9 @@ impl Node {
             }
             Node::MMExpression { expression } => {
                 expression.clone()
+            }
+            Node::Type { name } => {
+                name.clone()
             }
             Node::EmptyNode => {
                 "".to_string()

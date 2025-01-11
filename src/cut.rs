@@ -116,6 +116,9 @@ impl Axiom {
         for step in self.steps.iter() {
             println!("{:?}", step);
         }
+        for step in self.steps.iter() {
+            println!("{}", step.expression);
+        }
     }
 }
 

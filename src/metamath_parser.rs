@@ -188,6 +188,8 @@ mod tests {
         axiom.print_steps();
         // assert_eq!(axiom.steps.len(), 8);
         // TODO: Validate Length
+        
+        // TODO: Missing ∀𝑥(𝑥 = 𝑦 → 𝜑) in the steps
     }
 
     #[test]

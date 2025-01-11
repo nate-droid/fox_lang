@@ -29,7 +29,7 @@ impl<'a> LangParser<'a> {
         let mut ast = Ast::new();
         
         while self.position < self.tokens.len() {
-            match self.tokens[self.position].kind {  // TODO: refactor this to use self.current_token()?
+            match self.current_token()?.kind {
                 TokenKind::Word => {
                     let t = self.current_token()?;
                     match t.value.as_str() {
@@ -104,6 +104,18 @@ impl<'a> LangParser<'a> {
 
                             ast.add_node(ident);
                             self.consume(TokenKind::Semicolon)?;
+                            continue;
+                        }
+                        "type" => {
+                            self.consume(TokenKind::Word)?;
+                            let type_name = self.current_token()?;
+                            self.consume(TokenKind::Word)?;
+                            
+                            self.consume(TokenKind::Semicolon)?;
+
+                            ast.add_node(Node::Type {
+                                name: type_name.value.clone(),
+                            });
                             continue;
                         }
                         _ => {
@@ -235,10 +247,18 @@ mod tests {
     
     #[test]
     fn variables() {
-        let input = "let x : Nat = 10;";
+        let input = "let x : nat = 10;";
         
         let mut parser = LangParser::new(input);
         
+        let ast = parser.parse().expect("TODO: panic message");
+        println!("{:?}", ast);
+    }
+    
+    #[test]
+    fn custom_types() {
+        let input = "type nat;";
+        let mut parser = LangParser::new(input);
         let ast = parser.parse().expect("TODO: panic message");
         println!("{:?}", ast);
     }
