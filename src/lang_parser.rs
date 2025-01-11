@@ -15,7 +15,7 @@ impl<'a> LangParser<'a> {
         let mut lexer = LangLexer::new(input);
         lexer.tokenize().expect("TODO: panic message");
 
-        let tokens = lexer.tokens().clone();
+        let tokens = lexer.tokens();
         
         Self {
             lexer,
@@ -114,7 +114,7 @@ impl<'a> LangParser<'a> {
                             self.consume(TokenKind::Semicolon)?;
 
                             ast.add_node(Node::Type {
-                                name: type_name.value.clone(),
+                                name: type_name.value,
                             });
                             continue;
                         }
@@ -144,7 +144,7 @@ impl<'a> LangParser<'a> {
     fn parse_node(&mut self) -> Result<Node, String> {
         match self.current_token()?.kind {
             TokenKind::Number => {
-                let val = Value::from_string(self.current_token()?.value.clone());
+                let val = Value::from_string(self.current_token()?.value);
                 self.advance();
                 Ok(Node::Atomic {
                     value: val,
@@ -154,7 +154,7 @@ impl<'a> LangParser<'a> {
                 let name = self.current_token()?;
                 self.advance();
                 Ok(Node::Identity {
-                    name: name.value.clone(),
+                    name: name.value,
                     value: Box::from(Node::Atomic { value: Value::Int(0) }),
                     kind: "Nat".to_string(),
                 })
@@ -176,7 +176,7 @@ impl<'a> LangParser<'a> {
                 let name = self.current_token()?;
                 self.advance();
                 Ok(Node::Identity {
-                    name: name.value.clone(),
+                    name: name.value,
                     value: Box::from(Node::Atomic { value: Value::Int(0) }),
                     kind: "Nat".to_string(),
                 })

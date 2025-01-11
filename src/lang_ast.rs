@@ -53,8 +53,8 @@ impl Ast {
                     todo!("MMExpression");
                 }
                 Node::Type { name} => {
-                    
-                    self.declarations.insert(name, node.clone());
+
+                    self.declarations.insert(name, node);
                 }
                 EmptyNode => {}
             }
@@ -136,7 +136,7 @@ impl Ast {
 
         Ok(EmptyNode)
     }
-    
+
     pub fn parse(&mut self, input: &str) -> Result<(), String> {
         let mut parser = crate::lang_parser::LangParser::new(input);
         let ast = parser.parse().expect("unexpected failure");
@@ -144,7 +144,7 @@ impl Ast {
         for node in ast.nodes {
             self.add_node(node);
         }
-        
+
         Ok(())
     }
 }
@@ -209,7 +209,7 @@ mod tests {
         
         ast.eval().expect("unexpected failure");
         
-        let res = ast.declarations.get("x").expect("unexpected failure").clone();
+        let res = ast.declarations.get("x").expect("unexpected failure");
         
         assert_eq!(res.val(), Value::Int(3));
     }
@@ -222,7 +222,7 @@ mod tests {
         
         ast.eval().expect("unexpected failure");
         println!("{:?}", ast);
-        let res = ast.declarations.get("z").expect("unexpected failure").clone();
+        let res = ast.declarations.get("z").expect("unexpected failure");
         assert_eq!(res.val(), Value::Int(3));
     }
     
@@ -234,7 +234,7 @@ mod tests {
         println!("{:?}", ast);
         ast.eval().expect("unexpected failure");
     }
-    
+
     #[test]
     fn parse_several() {
         let input = "let x : Nat = 1;";
@@ -244,7 +244,7 @@ mod tests {
         ast.parse(input2).expect("unexpected failure");
         println!("{:?}", ast.nodes);
     }
-    
+
     #[test]
     fn custom_types() {
         let input = "type nat;";

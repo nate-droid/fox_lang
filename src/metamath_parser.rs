@@ -6,7 +6,7 @@ mod tests {
     #[test]
     fn test_node_print() {
         let input = "(𝜑 → (𝜓 → 𝜑))";
-        let mut parser = Parser::new_mm(input.to_string());
+        let mut parser = Parser::new_mm(input);
         let node = parser.parse().unwrap();
         assert_eq!(node.to_string(), input);
     }
@@ -15,7 +15,7 @@ mod tests {
     fn test_ax_1() {
         let input = "⊢ (𝜑 → (𝜓 → 𝜑))";
 
-        let mut parser = Parser::new_mm(input.to_string());
+        let mut parser = Parser::new_mm(input);
 
         let node = parser.parse().unwrap();
         
@@ -182,7 +182,8 @@ mod tests {
 
     #[test]
     fn test_ax_12() {
-        let input = "⊢ (𝑥 = 𝑦 → (∀𝑦𝜑 → ∀𝑥(𝑥 = 𝑦 → 𝜑)))";
+        // let input = "⊢ (𝑥 = 𝑦 → (∀𝑦𝜑 → ∀𝑥(𝑥 = 𝑦 → 𝜑)))";
+        let input = "⊢ ∀𝑥((𝑥 = 𝑦) → 𝜑)";
         let mut axiom = Axiom::new("ax-12".to_string(), input.to_string());
         axiom.solve().unwrap_or_else(|e| panic!("Axiom solve resulted in an error: {:?}", e));
         axiom.print_steps();

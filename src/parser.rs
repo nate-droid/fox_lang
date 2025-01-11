@@ -213,8 +213,8 @@ impl Parser {
         }
     }
 
-    pub fn new_mm(input: String) -> Self {
-        let mut l = LangLexer::new(input.as_str());
+    pub fn new_mm(input: &str) -> Self {
+        let mut l = LangLexer::new(input);
         l.tokenize().expect("Failed to tokenize");
 
         let tokens = l.tokens().clone();
@@ -506,7 +506,7 @@ impl Parser {
             return Err(ParseError::UnexpectedToken);
         }
         let left_node = Node::Identifier {
-            value: self.current()?.value.clone(),
+            value: self.current()?.value,
         };
         self.consume(Identifier)?;
 
@@ -530,7 +530,7 @@ impl Parser {
         }
         
         let right_node = Node::Identifier {
-            value: self.current()?.value.clone(),
+            value: self.current()?.value,
         };
         
         if self.current()?.kind.is_unary_operator() {
@@ -554,7 +554,7 @@ impl Parser {
 
     fn get_operator(&self) -> Result<TokenKind, ParseError> {
         match self.current() {
-            Ok(token) => Ok(token.kind.clone()),
+            Ok(token) => Ok(token.kind),
             Err(e) => {
                 println!("Error retrieving current token: {:?}", e);
                 Err(e)

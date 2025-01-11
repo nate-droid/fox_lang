@@ -37,7 +37,7 @@ impl Axiom {
             initial_assertion = assertion.to_string();
         }
         
-        let parser = Parser::new_mm(initial_assertion.clone());
+        let parser = Parser::new_mm(&initial_assertion);
         
         Self {
             index: 0,
@@ -83,9 +83,9 @@ impl Axiom {
 
         let (reduce_left, reduce_right) = reduce(node.clone()).unwrap();
         
-        self.add_step(node.clone());
-        self.add_step(reduce_left.clone());
-        self.add_step(reduce_right.clone());
+        self.add_step(node);
+        self.add_step(reduce_left);
+        self.add_step(reduce_right);
         
         println!("initial assertion: {}", self.initial_assertion);
         let mut i = 0;
@@ -97,7 +97,7 @@ impl Axiom {
             let step = &self.steps[i];
             // println!("Step: {:?}", step);
             
-            let mut parser = Parser::new_mm(step.expression.clone());
+            let mut parser = Parser::new_mm(step.expression.as_str());
             
             let node = parser.parse()?;
             
