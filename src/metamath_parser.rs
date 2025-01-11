@@ -168,6 +168,7 @@ mod tests {
         axiom.print_steps();
 
         assert_eq!(axiom.steps.len(), 6);
+        // TODO: Have different tokens for wffs and setvars
     }
 
     #[test]
@@ -182,15 +183,11 @@ mod tests {
 
     #[test]
     fn test_ax_12() {
-        // let input = "⊢ (𝑥 = 𝑦 → (∀𝑦𝜑 → ∀𝑥(𝑥 = 𝑦 → 𝜑)))";
-        let input = "⊢ ∀𝑥((𝑥 = 𝑦) → 𝜑)";
+        let input = "⊢ (𝑥 = 𝑦 → (∀𝑦𝜑 → ∀𝑥(𝑥 = 𝑦 → 𝜑)))";
         let mut axiom = Axiom::new("ax-12".to_string(), input.to_string());
         axiom.solve().unwrap_or_else(|e| panic!("Axiom solve resulted in an error: {:?}", e));
         axiom.print_steps();
-        // assert_eq!(axiom.steps.len(), 8);
-        // TODO: Validate Length
-        
-        // TODO: Missing ∀𝑥(𝑥 = 𝑦 → 𝜑) in the steps
+        assert_eq!(axiom.steps.len(), 9);
     }
 
     #[test]
@@ -199,8 +196,10 @@ mod tests {
         let mut axiom = Axiom::new("ax-13".to_string(), input.to_string());
         axiom.solve().unwrap_or_else(|e| panic!("Axiom solve resulted in an error: {:?}", e));
         axiom.print_steps();
-        // assert_eq!(axiom.steps.len(), 8);
+        assert_eq!(axiom.steps.len(), 9);
         // TODO: Validate length
+        
+        // TODO: need to parse ∀𝑥 𝑦 = 𝑧 as ∀𝑥 (𝑦    = 𝑧)
     }
 
     // The axioms in the next section are related to Zermelo-Fraenkel set theory (ZFC)

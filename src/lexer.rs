@@ -20,6 +20,9 @@ pub enum TokenKind {
     Pipe,
     Comment,
 
+    WFF, // Well-formed formula
+    SetVar, // Set variable
+    
     // Logic
     Implies,
     Negation,
@@ -86,6 +89,8 @@ impl std::fmt::Display for TokenKind {
             TokenKind::Add => write!(f, "+"),
             TokenKind::Comment => write!(f, "//"),
             TokenKind::MMExpression => write!(f, "MMExpression"),
+            TokenKind::WFF => write!(f, "WFF"),
+            TokenKind::SetVar => write!(f, "SetVar"),
         }
     }
 }
@@ -211,6 +216,12 @@ impl Lexer for DefaultLexer {
                         value: self.char.to_string(),
                         kind: TokenKind::ForAll,
                     });
+                }
+                '𝜑' | '𝜓' | '𝜒' => {
+                   self.tokens.push(Token {
+                       value: self.char.to_string(),
+                       kind: TokenKind::WFF,
+                   }); 
                 }
                 // test if alphabetic
                 ch if ch.is_alphanumeric() => {

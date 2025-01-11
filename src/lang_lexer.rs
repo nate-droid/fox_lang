@@ -115,32 +115,25 @@ impl <'a> LangLexer<'a> {
                         kind: TokenKind::Exists,
                     });
                 }
-                '𝑥' => {
-                    self.tokens.push(Token {
-                        value: self.current_char().to_string(),
-                        // kind: TokenKind::BoundX,
-                        kind: TokenKind::Identifier, // changing this to an identifier in order to simplify the early stages
-                    });
-                }
                 '𝜑' => {
                     self.tokens.push(Token {
                         value: self.current_char().to_string(),
                         // kind: TokenKind::Phi,
-                        kind: TokenKind::Identifier,
+                        kind: TokenKind::WFF,
                     });
                 }
                 '𝜓' => {
                     self.tokens.push(Token {
                         value: self.current_char().to_string(),
                         // kind: TokenKind::Psi,
-                        kind: TokenKind::Identifier,
+                        kind: TokenKind::WFF,
                     });
                 }
                 '𝜒' => {
                     self.tokens.push(Token {
                         value: self.current_char().to_string(),
                         // kind: TokenKind::Chi,
-                        kind: TokenKind::Identifier,
+                        kind: TokenKind::WFF,
                     });
                 }
                 '&' => {
@@ -161,10 +154,10 @@ impl <'a> LangLexer<'a> {
                         kind: TokenKind::Identifier,
                     });
                 }
-                '𝑦' | '𝑧' => {
+                '𝑥' | '𝑦' | '𝑧' => {
                     self.tokens.push(Token {
                         value: self.current_char().to_string(),
-                        kind: TokenKind::Identifier,
+                        kind: TokenKind::SetVar,
                     });
                 }
                 '∈' => {
@@ -298,12 +291,12 @@ mod tests {
         let expected_tokens = vec![
             TokenKind::Turnstile,
             TokenKind::LeftParenthesis,
-            TokenKind::Identifier,
+            TokenKind::WFF,
             TokenKind::Implies,
             TokenKind::LeftParenthesis,
-            TokenKind::Identifier,
+            TokenKind::WFF,
             TokenKind::Implies,
-            TokenKind::Identifier,
+            TokenKind::WFF,
             TokenKind::RightParenthesis,
             TokenKind::RightParenthesis,
         ];
@@ -325,26 +318,26 @@ mod tests {
             TokenKind::Turnstile,
             TokenKind::LeftParenthesis,
             TokenKind::LeftParenthesis,
-            TokenKind::Identifier,
+            TokenKind::WFF,
             TokenKind::Implies,
             TokenKind::LeftParenthesis,
-            TokenKind::Identifier,
+            TokenKind::WFF,
             TokenKind::Implies,
-            TokenKind::Identifier,
+            TokenKind::WFF,
             TokenKind::RightParenthesis,
             TokenKind::RightParenthesis,
             TokenKind::Implies,
             TokenKind::LeftParenthesis,
             TokenKind::LeftParenthesis,
-            TokenKind::Identifier,
+            TokenKind::WFF,
             TokenKind::Implies,
-            TokenKind::Identifier,
+            TokenKind::WFF,
             TokenKind::RightParenthesis,
             TokenKind::Implies,
             TokenKind::LeftParenthesis,
-            TokenKind::Identifier,
+            TokenKind::WFF,
             TokenKind::Implies,
-            TokenKind::Identifier,
+            TokenKind::WFF,
             TokenKind::RightParenthesis,
             TokenKind::RightParenthesis,
         ];
@@ -365,16 +358,16 @@ mod tests {
             TokenKind::LeftParenthesis,
             TokenKind::LeftParenthesis,
             TokenKind::Negation,
-            TokenKind::Identifier,
+            TokenKind::WFF,
             TokenKind::Implies,
             TokenKind::Negation,
-            TokenKind::Identifier,
+            TokenKind::WFF,
             TokenKind::RightParenthesis,
             TokenKind::Implies,
             TokenKind::LeftParenthesis,
-            TokenKind::Identifier,
+            TokenKind::WFF,
             TokenKind::Implies,
-            TokenKind::Identifier,
+            TokenKind::WFF,
             TokenKind::RightParenthesis,
             TokenKind::RightParenthesis,
         ];
@@ -393,8 +386,8 @@ mod tests {
         let expected_tokens = vec![
             TokenKind::Turnstile,
             TokenKind::ForAll,
-            TokenKind::Identifier,
-            TokenKind::Identifier,
+            TokenKind::SetVar,
+            TokenKind::WFF,
         ];
 
         for (i, expected_kind) in expected_tokens.iter().enumerate() {
@@ -412,21 +405,21 @@ mod tests {
             TokenKind::Turnstile,
             TokenKind::LeftParenthesis,
             TokenKind::ForAll,
-            TokenKind::Identifier,
+            TokenKind::SetVar,
             TokenKind::LeftParenthesis,
-            TokenKind::Identifier,
+            TokenKind::WFF,
             TokenKind::Implies,
-            TokenKind::Identifier,
+            TokenKind::WFF,
             TokenKind::RightParenthesis,
             TokenKind::Implies,
             TokenKind::LeftParenthesis,
             TokenKind::ForAll,
-            TokenKind::Identifier,
-            TokenKind::Identifier,
+            TokenKind::SetVar,
+            TokenKind::WFF,
             TokenKind::Implies,
             TokenKind::ForAll,
-            TokenKind::Identifier,
-            TokenKind::Identifier,
+            TokenKind::SetVar,
+            TokenKind::WFF,
             TokenKind::RightParenthesis,
             TokenKind::RightParenthesis,
         ];
