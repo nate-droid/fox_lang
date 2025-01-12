@@ -407,7 +407,7 @@ impl Parser {
                     if operator == TokenKind::Equality {
                         // TODO: this needs to be parsed as a right and left, but not wrapped by ()
                         let right = self.parse_equality_right()?;
-                        println!("right: {:?}", right);
+                        
                         return Ok(Node::BinaryExpression {
                             left: Box::new(ident),
                             operator,
@@ -510,8 +510,6 @@ impl Parser {
                 let right = Node::Identifier {
                     value: self.current()?.value.clone(),
                 };
-
-                println!("right: {:?}", right);
 
                 self.consume(SetVar)?;
                 let parent_left = Node::BinaryExpression {

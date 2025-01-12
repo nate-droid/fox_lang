@@ -189,8 +189,8 @@ mod tests {
         axiom.solve().unwrap_or_else(|e| panic!("Axiom solve resulted in an error: {:?}", e));
         axiom.print_steps();
         assert_eq!(axiom.steps.len(), 9);
-        
-        
+
+
     }
 
     #[test]
@@ -214,7 +214,7 @@ mod tests {
 
         // TODO: Pickup. Need to investigate how biconditional operators are being parsed.
         // seems like another case of incorrect levels of precedence
-        
+
         let axiom = "Detailed syntax breakdown of Axiom ax-ext
 Step	Hyp	Ref	Expression
 1	 	vz	. . . . 5 setvar 𝑧
@@ -233,11 +233,11 @@ Step	Hyp	Ref	Expression
             let hyp = columns[1];
             let r#ref = columns[2];
             let expression = columns[3..].join(" ");
-            println!("Step: {}, Hyp: {}, Ref: {}, Expression: {}", step, hyp, r#ref, expression);   
+            println!("Step: {}, Hyp: {}, Ref: {}, Expression: {}", step, hyp, r#ref, expression);
         }
-        
+
     }
-    
+
     #[test]
     fn ax_rep() {
         // Axiom of Replacement
@@ -246,5 +246,54 @@ Step	Hyp	Ref	Expression
         let mut axiom = Axiom::new("ax-rep".to_string(), input.to_string());
         axiom.solve().unwrap_or_else(|e| panic!("Axiom solve resulted in an error: {:?}", e));
         axiom.print_steps();
+        assert_eq!(axiom.steps.len(), 19);
+    }
+
+    #[test]
+    fn ax_pow() {
+        let input = "⊢ ∃𝑦∀𝑧(∀𝑤(𝑤 ∈ 𝑧 → 𝑤 ∈ 𝑥) → 𝑧 ∈ 𝑦)";
+        let mut axiom = Axiom::new("ax-pow".to_string(), input.to_string());
+        axiom.solve().unwrap_or_else(|e| panic!("Axiom solve resulted in an error: {:?}", e));
+        axiom.print_steps();
+        assert_eq!(axiom.steps.len(), 12);
+    }
+
+    #[test]
+    fn ax_un() {
+        let input = "⊢ ∃𝑦∀𝑧(∃𝑤(𝑧 ∈ 𝑤 ∧ 𝑤 ∈ 𝑥) → 𝑧 ∈ 𝑦)";
+        let mut axiom = Axiom::new("ax-un".to_string(), input.to_string());
+        axiom.solve().unwrap_or_else(|e| panic!("Axiom solve resulted in an error: {:?}", e));
+        axiom.print_steps();
+        assert_eq!(axiom.steps.len(), 12);
+    }
+
+    #[test]
+    fn ax_reg() {
+        let input = "⊢ (∃𝑦 𝑦 ∈ 𝑥 → ∃𝑦(𝑦 ∈ 𝑥 ∧ ∀𝑧(𝑧 ∈ 𝑦 → ¬ 𝑧 ∈ 𝑥)))";
+        let mut axiom = Axiom::new("ax-reg".to_string(), input.to_string());
+        axiom.solve().unwrap_or_else(|e| panic!("Axiom solve resulted in an error: {:?}", e));
+        axiom.print_steps();
+        assert_eq!(axiom.steps.len(), 13);
+    }
+
+    #[test]
+    fn ax_inf() {
+        let input = "⊢ ∃𝑦(𝑥 ∈ 𝑦 ∧ ∀𝑧(𝑧 ∈ 𝑦 → ∃𝑤(𝑧 ∈ 𝑤 ∧ 𝑤 ∈ 𝑦)))";
+        let mut axiom = Axiom::new("ax-inf".to_string(), input.to_string());
+        axiom.solve().unwrap_or_else(|e| panic!("Axiom solve resulted in an error: {:?}", e));
+        axiom.print_steps();
+        assert_eq!(axiom.steps.len(), 14);
+    }
+
+    #[test]
+    fn ax_ac() {
+        let input = "⊢ ∃𝑦∀𝑧∀𝑤((𝑧 ∈ 𝑤 ∧ 𝑤 ∈ 𝑥) → ∃𝑣∀𝑢(∃𝑡((𝑢 ∈ 𝑤 ∧ 𝑤 ∈ 𝑡) ∧ (𝑢 ∈ 𝑡 ∧ 𝑡 ∈ 𝑦)) ↔ 𝑢 = 𝑣))";
+        let mut axiom = Axiom::new("ax-ac".to_string(), input.to_string());
+        axiom.solve().unwrap_or_else(|e| panic!("Axiom solve resulted in an error: {:?}", e));
+        axiom.print_steps();
+        
+        // TODO: Missing 2 steps, length should be 26, but am getting 24
+        
+        // ∃𝑣∀𝑢∃𝑡(... should be parsed as ∃𝑣∀𝑢(∃𝑡(...
     }
 }

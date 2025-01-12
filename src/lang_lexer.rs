@@ -154,7 +154,7 @@ impl <'a> LangLexer<'a> {
                         kind: TokenKind::Identifier,
                     });
                 }
-                '𝑥' | '𝑦' | '𝑧' | '𝑤' => {
+                '𝑡' | '𝑢' | '𝑣' | '𝑥' | '𝑦' | '𝑧' | '𝑤' => {
                     self.tokens.push(Token {
                         value: self.current_char().to_string(),
                         kind: TokenKind::SetVar,
