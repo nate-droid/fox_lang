@@ -28,7 +28,7 @@ use crate::parser::ParseError::{EmptyNode};
 pub enum ParseError {
     UnexpectedToken,
     EmptyNode, // this is when there is no node to parse
-    AccessOutOfBoundsToken { position: usize, total_tokens: usize },
+    AccessOutOfBoundsToken { position: usize, total_tokens: usize, caller: String },
     UnhandledBehaviour,
     UnclosedParenthesis,
 }
@@ -38,7 +38,7 @@ impl fmt::Display for ParseError {
         match self {
             ParseError::UnexpectedToken => write!(f, "Unexpected token"),
             EmptyNode => write!(f, "Empty node"),
-            ParseError::AccessOutOfBoundsToken { position, total_tokens } => write!(f, "Access out of bounds token at position {} with total tokens {}", position, total_tokens),
+            ParseError::AccessOutOfBoundsToken { position, total_tokens, caller } => write!(f, "Access out of bounds token; called by {} at position {} with total tokens {}", caller, position, total_tokens),
             ParseError::UnhandledBehaviour => write!(f, "Unhandled behaviour"),
             ParseError::UnclosedParenthesis => write!(f, "Unclosed parenthesis"),
         }
@@ -160,10 +160,14 @@ impl Node {
             Node::BinaryExpression { left, operator, right } => {
                 match operator {
                     TokenKind::ForAll => {
+                        // TODO: Needs logic to print the right side with a ( ) around it if it is a binary expression
                         format!("∀{}{}", left.to_string(), right.to_string())
                     }
                     TokenKind::Equality => {
                         format!("{} = {}", left.to_string(), right.to_string())
+                    }
+                    TokenKind::ElementOf => {
+                        format!("{} ∈ {}", left.to_string(), right.to_string())
                     }
                     _ => { 
                         format!("({} {} {})", left.to_string(), operator, right.to_string())
@@ -235,7 +239,7 @@ impl Parser {
         while self.position < self.tokens.len() {
 
             match self.tokens[self.position].kind {
-                TokenKind::LeftParenthesis | ForAll => {
+                TokenKind::LeftParenthesis => {
                     return self.parse_expression()
                 }
                 RightParenthesis => {
@@ -262,6 +266,9 @@ impl Parser {
                         value: self.current()?.value.clone(),
                     });
                 }
+                ForAll => {
+                    return self.parse_for_all();
+                }
                 TokenKind::Turnstile => {
                     // For now, not doing anything with the turnstile, so just consume and continue
                     println!("skipping turnstile");
@@ -270,25 +277,7 @@ impl Parser {
                     return self.parse_wff();
                 }
                 SetVar => {
-                    let ident = self.parse_setvar()?;
-                    if self.position >= self.tokens.len() {
-                        return Ok(ident);
-                    }
-
-                    if self.current()?.kind == RightParenthesis {
-                        self.consume(RightParenthesis)?;
-                        return Ok(ident)
-                    }
-                    
-                    let operator = self.get_operator()?;
-                    self.advance();
-                    let right = self.parse_expression()?;
-                    
-                    return Ok(Node::BinaryExpression {
-                        left: Box::new(ident),
-                        operator,
-                        right: Box::new(right),
-                    });
+                    return self.parse_expression();
                 }
                 _ => {
                     if self.current()?.kind.is_unary_operator() {
@@ -353,6 +342,7 @@ impl Parser {
             Err(ParseError::AccessOutOfBoundsToken {
                 position: self.position,
                 total_tokens: self.tokens.len(),
+                caller: "current".to_string(),
             })
         }
     }
@@ -366,7 +356,7 @@ impl Parser {
 
                 // this could happen by parsing for a "left" expression
                 // that expression could be either unary, binary, or simply an identifier
-
+                
                 let left = self.parse_expression()?;
 
                 if self.position >= self.tokens.len() {
@@ -449,7 +439,10 @@ impl Parser {
                 let operator = self.get_operator()?;
                 self.consume(ForAll)?;
 
-                let first = self.parse_setvar()?;
+                let first = Node::Identifier {
+                    value: self.current()?.value.clone(),
+                };
+                self.consume(SetVar)?;
 
                 if self.current()?.kind == TokenKind::WFF {
                     let second = self.parse_wff()?;
@@ -469,34 +462,49 @@ impl Parser {
                 })
             }
             SetVar => {
-                let ident = self.parse_setvar()?;
+                // focus on parsing (x = y -> ....)
+                let left = Node::Identifier {
+                    value: self.current()?.value.clone(),
+                };
+                self.consume(SetVar)?;
+                
                 if self.position >= self.tokens.len() {
-                    return Ok(ident);
-                }
-
-                if self.current()?.kind == RightParenthesis {
-                    self.consume(RightParenthesis)?;
-                    return Ok(ident)
+                    return Ok(left);
                 }
                 
                 let operator = self.get_operator()?;
                 self.advance();
-               
-                // TODO: Needs better parsing for MM syntax
-                if operator == TokenKind::Equality && self.current()?.kind == SetVar {
-                    let right = self.parse_equality_right()?;
-                    return Ok(Node::BinaryExpression {
-                        left: Box::new(ident),
-                        operator,
-                        right: Box::new(right),
-                    });
-                }
-                let right = self.parse_expression()?;
                 
-                Ok(Node::BinaryExpression {
-                    left: Box::new(ident),
+                let right = Node::Identifier {
+                    value: self.current()?.value.clone(),
+                };
+                
+                println!("right: {:?}", right);
+                
+                self.consume(SetVar)?;
+                let parent_left = Node::BinaryExpression {
+                    left: Box::new(left.clone()),
                     operator,
                     right: Box::new(right),
+                };
+
+                if self.position >= self.tokens.len() {
+                    return Ok(parent_left);
+                } else if self.current()?.kind == RightParenthesis {
+                    self.consume(RightParenthesis)?;
+                    return Ok(parent_left);
+                }
+                
+                
+                let parent_op = self.get_operator()?;
+                self.consume(TokenKind::BinaryOperator)?;
+
+                let parent_right = self.parse_expression()?;
+
+                Ok(Node::BinaryExpression {
+                    left: Box::new(parent_left),
+                    operator: parent_op,
+                    right: Box::new(parent_right),
                 })
             }
             TokenKind::WFF => {
@@ -546,10 +554,30 @@ impl Parser {
         }
     }
     
+    fn parse_for_all(&mut self) -> Result<Node, ParseError> {
+        let operator = self.get_operator()?;
+        self.consume(ForAll)?;
+        
+        let left = Node::Identifier {
+            value: self.current()?.value.clone(),
+        };
+        self.consume(SetVar)?;
+        let right = self.parse_expression()?;
+        
+        Ok(Node::BinaryExpression {
+            left: Box::new(left),
+            operator,
+            right: Box::new(right),
+        })
+    }
+    
     fn parse_equality_right(&mut self) -> Result<Node, ParseError> {
         // this will be 99% of the initial cases
         if self.current()?.kind == SetVar {
-            let right = self.parse_setvar()?;
+            // let right = self.parse_setvar()?;
+            let right = Node::Identifier {
+                value: self.current()?.value.clone(),
+            };
             return Ok(right)
         }
         
@@ -589,18 +617,65 @@ impl Parser {
     }
     
     fn parse_setvar(&mut self) -> Result<Node, ParseError> {
+        // let ident = self.parse_setvar()?;
+        // if self.position >= self.tokens.len() {
+        //     return Ok(ident);
+        // }
+
+        // if self.current()?.kind == RightParenthesis {
+        //     self.consume(RightParenthesis)?;
+        //     return Ok(ident)
+        // }
+        // 
+        // let operator = self.get_operator()?;
+        // self.advance();
+        // let right = self.parse_expression()?;
+        
         if self.current()?.kind != SetVar {
             println!("Unexpected token: {:?}", self.current());
             return Err(ParseError::UnexpectedToken);
         }
 
-        let identifier = Node::Identifier {
-            value: self.current()?.value.clone(),
+        let left = Node::Identifier {
+            value: self.current()?.value,
         };
-
+        
         self.consume(SetVar)?;
+        
+        if self.position >= self.tokens.len() {
+            return Ok(left);
+        }
 
-        Ok(identifier)
+        if self.current()?.kind == RightParenthesis {
+            self.consume(RightParenthesis)?;
+            return Ok(left)
+        }
+
+        if self.current()?.kind.is_binary_operator() {
+            let operator = self.get_operator()?;
+            self.consume(TokenKind::BinaryOperator)?;
+            
+            if self.current()?.kind == SetVar {
+                let right = Node::Identifier {
+                    value: self.current()?.value,
+                };
+                return Ok(Node::BinaryExpression {
+                    left: Box::new(left),
+                    operator,
+                    right: Box::new(right),
+                });
+            }
+            
+            let right = self.parse_expression()?;
+            
+            return Ok(Node::BinaryExpression {
+                left: Box::new(left),
+                operator,
+                right: Box::new(right),
+            });
+        }
+        
+        Ok(left)
     }
     
     fn parse_wff(&mut self) -> Result<Node, ParseError> {
@@ -654,6 +729,7 @@ impl Parser {
             return         Err(ParseError::AccessOutOfBoundsToken {
                 position: self.position,
                 total_tokens: self.tokens.len(),
+                caller: "parse_binary_expression".to_string(),
             });
         }
         

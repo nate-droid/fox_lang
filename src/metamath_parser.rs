@@ -184,10 +184,13 @@ mod tests {
     #[test]
     fn test_ax_12() {
         let input = "⊢ (𝑥 = 𝑦 → (∀𝑦𝜑 → ∀𝑥(𝑥 = 𝑦 → 𝜑)))";
+
         let mut axiom = Axiom::new("ax-12".to_string(), input.to_string());
         axiom.solve().unwrap_or_else(|e| panic!("Axiom solve resulted in an error: {:?}", e));
         axiom.print_steps();
         assert_eq!(axiom.steps.len(), 9);
+        
+        
     }
 
     #[test]
