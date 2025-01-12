@@ -200,9 +200,6 @@ mod tests {
         axiom.solve().unwrap_or_else(|e| panic!("Axiom solve resulted in an error: {:?}", e));
         axiom.print_steps();
         assert_eq!(axiom.steps.len(), 9);
-        // TODO: Validate length
-        
-        // TODO: need to parse ∀𝑥 𝑦 = 𝑧 as ∀𝑥 (𝑦    = 𝑧)
     }
 
     // The axioms in the next section are related to Zermelo-Fraenkel set theory (ZFC)
@@ -239,5 +236,15 @@ Step	Hyp	Ref	Expression
             println!("Step: {}, Hyp: {}, Ref: {}, Expression: {}", step, hyp, r#ref, expression);   
         }
         
+    }
+    
+    #[test]
+    fn ax_rep() {
+        // Axiom of Replacement
+        let input = "⊢ (∀𝑤∃𝑦∀𝑧(∀𝑦𝜑 → 𝑧 = 𝑦) → ∃𝑦∀𝑧(𝑧 ∈ 𝑦 ↔ ∃𝑤(𝑤 ∈ 𝑥 ∧ ∀𝑦𝜑)))";
+        // let input = "∃𝑥𝜑";
+        let mut axiom = Axiom::new("ax-rep".to_string(), input.to_string());
+        axiom.solve().unwrap_or_else(|e| panic!("Axiom solve resulted in an error: {:?}", e));
+        axiom.print_steps();
     }
 }

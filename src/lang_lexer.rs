@@ -154,7 +154,7 @@ impl <'a> LangLexer<'a> {
                         kind: TokenKind::Identifier,
                     });
                 }
-                '𝑥' | '𝑦' | '𝑧' => {
+                '𝑥' | '𝑦' | '𝑧' | '𝑤' => {
                     self.tokens.push(Token {
                         value: self.current_char().to_string(),
                         kind: TokenKind::SetVar,
@@ -170,6 +170,12 @@ impl <'a> LangLexer<'a> {
                     self.tokens.push(Token {
                         value: self.current_char().to_string(),
                         kind: TokenKind::Biconditional,
+                    });
+                }
+                '∧' => {
+                    self.tokens.push(Token {
+                        value: self.current_char().to_string(),
+                        kind: TokenKind::Conjunction,
                     });
                 }
                 

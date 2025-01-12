@@ -38,6 +38,7 @@ pub enum TokenKind {
     Equality, // =
     ElementOf, // ∈
     Biconditional, // ↔
+    Conjunction, // ∧
 
     // builtins
     Print,
@@ -71,7 +72,7 @@ impl std::fmt::Display for TokenKind {
             TokenKind::Turnstile => write!(f, "Turnstile"),
             TokenKind::And => write!(f, "And"),
             TokenKind::ForAll => write!(f, "ForAll"),
-            TokenKind::Exists => write!(f, "Exists"),
+            TokenKind::Exists => write!(f, "∃"),
             TokenKind::BoundX => write!(f, "BoundX"),
             TokenKind::HypothesisConjunction => write!(f, "&"),
             TokenKind::HypothesisEnd => write!(f, "⇒"),
@@ -91,6 +92,7 @@ impl std::fmt::Display for TokenKind {
             TokenKind::MMExpression => write!(f, "MMExpression"),
             TokenKind::WFF => write!(f, "WFF"),
             TokenKind::SetVar => write!(f, "SetVar"),
+            TokenKind::Conjunction => write!(f, "∧"),
         }
     }
 }
@@ -103,6 +105,7 @@ impl TokenKind {
             TokenKind::Equality => true,
             TokenKind::ElementOf => true,
             TokenKind::Biconditional => true,
+            TokenKind::Conjunction => true,
             _ => false,
         }
     }

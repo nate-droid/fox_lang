@@ -169,7 +169,10 @@ impl Node {
                     TokenKind::ElementOf => {
                         format!("{} ∈ {}", left.to_string(), right.to_string())
                     }
-                    _ => { 
+                    TokenKind::Exists => {
+                        format!("∃{}{}", left.to_string(), right.to_string())
+                    }
+                    _ => {
                         format!("({} {} {})", left.to_string(), operator, right.to_string())
                     }
                 }
@@ -269,6 +272,9 @@ impl Parser {
                 ForAll => {
                     return self.parse_for_all();
                 }
+                TokenKind::Exists => {
+                    return self.parse_exists();
+                }
                 TokenKind::Turnstile => {
                     // For now, not doing anything with the turnstile, so just consume and continue
                     println!("skipping turnstile");
@@ -356,7 +362,7 @@ impl Parser {
 
                 // this could happen by parsing for a "left" expression
                 // that expression could be either unary, binary, or simply an identifier
-                
+
                 let left = self.parse_expression()?;
 
                 if self.position >= self.tokens.len() {
@@ -452,7 +458,33 @@ impl Parser {
                         right: Box::new(second),
                     });
                 }
-                
+
+                let second = self.parse_expression()?;
+
+                Ok(Node::BinaryExpression {
+                    left: Box::new(first),
+                    operator,
+                    right: Box::new(second),
+                })
+            }
+            TokenKind::Exists => {
+                let operator = self.get_operator()?;
+                self.consume(TokenKind::Exists)?;
+
+                let first = Node::Identifier {
+                    value: self.current()?.value.clone(),
+                };
+                self.consume(SetVar)?;
+
+                if self.current()?.kind == TokenKind::WFF {
+                    let second = self.parse_wff()?;
+                    return Ok(Node::BinaryExpression {
+                        left: Box::new(first),
+                        operator,
+                        right: Box::new(second),
+                    });
+                }
+
                 let second = self.parse_expression()?;
 
                 Ok(Node::BinaryExpression {
@@ -467,20 +499,20 @@ impl Parser {
                     value: self.current()?.value.clone(),
                 };
                 self.consume(SetVar)?;
-                
+
                 if self.position >= self.tokens.len() {
                     return Ok(left);
                 }
-                
+
                 let operator = self.get_operator()?;
                 self.advance();
-                
+
                 let right = Node::Identifier {
                     value: self.current()?.value.clone(),
                 };
-                
+
                 println!("right: {:?}", right);
-                
+
                 self.consume(SetVar)?;
                 let parent_left = Node::BinaryExpression {
                     left: Box::new(left.clone()),
@@ -494,8 +526,8 @@ impl Parser {
                     self.consume(RightParenthesis)?;
                     return Ok(parent_left);
                 }
-                
-                
+
+
                 let parent_op = self.get_operator()?;
                 self.consume(TokenKind::BinaryOperator)?;
 
@@ -525,7 +557,7 @@ impl Parser {
 
                     if operator == TokenKind::Equality {
                         let right = self.parse_equality_right()?;
-                        
+
                         return Ok(Node::BinaryExpression {
                             left: Box::new(ident),
                             operator,
@@ -553,17 +585,17 @@ impl Parser {
             }
         }
     }
-    
+
     fn parse_for_all(&mut self) -> Result<Node, ParseError> {
         let operator = self.get_operator()?;
         self.consume(ForAll)?;
-        
+
         let left = Node::Identifier {
             value: self.current()?.value.clone(),
         };
         self.consume(SetVar)?;
         let right = self.parse_expression()?;
-        
+
         Ok(Node::BinaryExpression {
             left: Box::new(left),
             operator,
@@ -571,6 +603,23 @@ impl Parser {
         })
     }
     
+    fn parse_exists(&mut self) -> Result<Node, ParseError> {
+        let operator = self.get_operator()?;
+        self.consume(TokenKind::Exists)?;
+
+        let left = Node::Identifier {
+            value: self.current()?.value.clone(),
+        };
+        self.consume(SetVar)?;
+        let right = self.parse_expression()?;
+
+        Ok(Node::BinaryExpression {
+            left: Box::new(left),
+            operator,
+            right: Box::new(right),
+        })
+    }
+
     fn parse_equality_right(&mut self) -> Result<Node, ParseError> {
         // this will be 99% of the initial cases
         if self.current()?.kind == SetVar {
@@ -580,12 +629,12 @@ impl Parser {
             };
             return Ok(right)
         }
-        
+
         let right = self.parse_expression()?;
-        
+
         Ok(right)
     }
-    
+
     fn is_unary_expression(&self) -> bool {
         if let Ok(current) = self.current() {
             return current.kind.is_unary_operator()
@@ -615,7 +664,7 @@ impl Parser {
 
         Ok(identifier)
     }
-    
+
     fn parse_setvar(&mut self) -> Result<Node, ParseError> {
         // let ident = self.parse_setvar()?;
         // if self.position >= self.tokens.len() {
@@ -626,11 +675,11 @@ impl Parser {
         //     self.consume(RightParenthesis)?;
         //     return Ok(ident)
         // }
-        // 
+        //
         // let operator = self.get_operator()?;
         // self.advance();
         // let right = self.parse_expression()?;
-        
+
         if self.current()?.kind != SetVar {
             println!("Unexpected token: {:?}", self.current());
             return Err(ParseError::UnexpectedToken);
@@ -639,9 +688,9 @@ impl Parser {
         let left = Node::Identifier {
             value: self.current()?.value,
         };
-        
+
         self.consume(SetVar)?;
-        
+
         if self.position >= self.tokens.len() {
             return Ok(left);
         }
@@ -654,7 +703,7 @@ impl Parser {
         if self.current()?.kind.is_binary_operator() {
             let operator = self.get_operator()?;
             self.consume(TokenKind::BinaryOperator)?;
-            
+
             if self.current()?.kind == SetVar {
                 let right = Node::Identifier {
                     value: self.current()?.value,
@@ -665,19 +714,19 @@ impl Parser {
                     right: Box::new(right),
                 });
             }
-            
+
             let right = self.parse_expression()?;
-            
+
             return Ok(Node::BinaryExpression {
                 left: Box::new(left),
                 operator,
                 right: Box::new(right),
             });
         }
-        
+
         Ok(left)
     }
-    
+
     fn parse_wff(&mut self) -> Result<Node, ParseError> {
         if self.current()?.kind != TokenKind::WFF {
             println!("Unexpected token: {:?}", self.current());
