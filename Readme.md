@@ -27,6 +27,54 @@ as much as possible, meaning that running all tests should always pass.
 Initial drafts of the language can be found in 'lang_scratch/'. As implied in the naming, these are only rough initial drafts
 and are subject to change.
 
+## Theorem Prover Examples
+
+You can, for example, prove theorems by using the MetaMath format. Here is an example of a proof of the Axiom of Choice:
+
+```rust
+#[test]
+    fn ax_ac() {
+        let input = "⊢ ∃𝑦∀𝑧∀𝑤((𝑧 ∈ 𝑤 ∧ 𝑤 ∈ 𝑥) → ∃𝑣∀𝑢(∃𝑡((𝑢 ∈ 𝑤 ∧ 𝑤 ∈ 𝑡) ∧ (𝑢 ∈ 𝑡 ∧ 𝑡 ∈ 𝑦)) ↔ 𝑢 = 𝑣))";
+
+        let mut axiom = Axiom::new("ax-ac".to_string(), input.to_string());
+        axiom.solve().unwrap_or_else(|e| panic!("Axiom solve resulted in an error: {:?}", e));
+        axiom.print_steps();
+    }
+```
+
+Which will return the following steps:
+
+```
+initial assertion: ⊢ ∃𝑦∀𝑧∀𝑤((𝑧 ∈ 𝑤 ∧ 𝑤 ∈ 𝑥) → ∃𝑣∀𝑢(∃𝑡((𝑢 ∈ 𝑤 ∧ 𝑤 ∈ 𝑡) ∧ (𝑢 ∈ 𝑡 ∧ 𝑡 ∈ 𝑦)) ↔ 𝑢 = 𝑣))
+Step { index: 0, hypothesis: (0, 0), reference: "", expression: "∃𝑦∀𝑧∀𝑤(((𝑧 ∈ 𝑤 ∧ 𝑤 ∈ 𝑥) → ∃𝑣∀𝑢((∃𝑡((𝑢 ∈ 𝑤 ∧ 𝑤 ∈ 𝑡) ∧ (𝑢 ∈ 𝑡 ∧ 𝑡 ∈ 𝑦)) ↔ 𝑢 = 𝑣))))" }
+Step { index: 1, hypothesis: (0, 0), reference: "", expression: "𝑦" }
+Step { index: 2, hypothesis: (0, 0), reference: "", expression: "∀𝑧∀𝑤(((𝑧 ∈ 𝑤 ∧ 𝑤 ∈ 𝑥) → ∃𝑣∀𝑢((∃𝑡((𝑢 ∈ 𝑤 ∧ 𝑤 ∈ 𝑡) ∧ (𝑢 ∈ 𝑡 ∧ 𝑡 ∈ 𝑦)) ↔ 𝑢 = 𝑣))))" }
+Step { index: 3, hypothesis: (0, 0), reference: "", expression: "𝑧" }
+Step { index: 4, hypothesis: (0, 0), reference: "", expression: "∀𝑤(((𝑧 ∈ 𝑤 ∧ 𝑤 ∈ 𝑥) → ∃𝑣∀𝑢((∃𝑡((𝑢 ∈ 𝑤 ∧ 𝑤 ∈ 𝑡) ∧ (𝑢 ∈ 𝑡 ∧ 𝑡 ∈ 𝑦)) ↔ 𝑢 = 𝑣))))" }
+Step { index: 5, hypothesis: (0, 0), reference: "", expression: "𝑤" }
+Step { index: 6, hypothesis: (0, 0), reference: "", expression: "((𝑧 ∈ 𝑤 ∧ 𝑤 ∈ 𝑥) → ∃𝑣∀𝑢((∃𝑡((𝑢 ∈ 𝑤 ∧ 𝑤 ∈ 𝑡) ∧ (𝑢 ∈ 𝑡 ∧ 𝑡 ∈ 𝑦)) ↔ 𝑢 = 𝑣)))" }
+Step { index: 7, hypothesis: (0, 0), reference: "", expression: "(𝑧 ∈ 𝑤 ∧ 𝑤 ∈ 𝑥)" }
+Step { index: 8, hypothesis: (0, 0), reference: "", expression: "∃𝑣∀𝑢((∃𝑡((𝑢 ∈ 𝑤 ∧ 𝑤 ∈ 𝑡) ∧ (𝑢 ∈ 𝑡 ∧ 𝑡 ∈ 𝑦)) ↔ 𝑢 = 𝑣))" }
+Step { index: 9, hypothesis: (0, 0), reference: "", expression: "𝑧 ∈ 𝑤" }
+Step { index: 10, hypothesis: (0, 0), reference: "", expression: "𝑤 ∈ 𝑥" }
+Step { index: 11, hypothesis: (0, 0), reference: "", expression: "𝑣" }
+Step { index: 12, hypothesis: (0, 0), reference: "", expression: "∀𝑢((∃𝑡((𝑢 ∈ 𝑤 ∧ 𝑤 ∈ 𝑡) ∧ (𝑢 ∈ 𝑡 ∧ 𝑡 ∈ 𝑦)) ↔ 𝑢 = 𝑣))" }
+Step { index: 13, hypothesis: (0, 0), reference: "", expression: "𝑥" }
+Step { index: 14, hypothesis: (0, 0), reference: "", expression: "𝑢" }
+Step { index: 15, hypothesis: (0, 0), reference: "", expression: "(∃𝑡((𝑢 ∈ 𝑤 ∧ 𝑤 ∈ 𝑡) ∧ (𝑢 ∈ 𝑡 ∧ 𝑡 ∈ 𝑦)) ↔ 𝑢 = 𝑣)" }
+Step { index: 16, hypothesis: (0, 0), reference: "", expression: "∃𝑡((𝑢 ∈ 𝑤 ∧ 𝑤 ∈ 𝑡) ∧ (𝑢 ∈ 𝑡 ∧ 𝑡 ∈ 𝑦))" }
+Step { index: 17, hypothesis: (0, 0), reference: "", expression: "𝑢 = 𝑣" }
+Step { index: 18, hypothesis: (0, 0), reference: "", expression: "𝑡" }
+Step { index: 19, hypothesis: (0, 0), reference: "", expression: "((𝑢 ∈ 𝑤 ∧ 𝑤 ∈ 𝑡) ∧ (𝑢 ∈ 𝑡 ∧ 𝑡 ∈ 𝑦))" }
+Step { index: 20, hypothesis: (0, 0), reference: "", expression: "(𝑢 ∈ 𝑤 ∧ 𝑤 ∈ 𝑡)" }
+Step { index: 21, hypothesis: (0, 0), reference: "", expression: "(𝑢 ∈ 𝑡 ∧ 𝑡 ∈ 𝑦)" }
+Step { index: 22, hypothesis: (0, 0), reference: "", expression: "𝑢 ∈ 𝑤" }
+Step { index: 23, hypothesis: (0, 0), reference: "", expression: "𝑤 ∈ 𝑡" }
+Step { index: 24, hypothesis: (0, 0), reference: "", expression: "𝑢 ∈ 𝑡" }
+Step { index: 25, hypothesis: (0, 0), reference: "", expression: "𝑡 ∈ 𝑦" }
+```
+
+
 # Coming Up
 
 I've managed to complete the first 8 axioms from MetaMath, along with things like Modus Ponens and Generalization. 

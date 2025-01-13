@@ -288,12 +288,13 @@ Step	Hyp	Ref	Expression
     #[test]
     fn ax_ac() {
         let input = "⊢ ∃𝑦∀𝑧∀𝑤((𝑧 ∈ 𝑤 ∧ 𝑤 ∈ 𝑥) → ∃𝑣∀𝑢(∃𝑡((𝑢 ∈ 𝑤 ∧ 𝑤 ∈ 𝑡) ∧ (𝑢 ∈ 𝑡 ∧ 𝑡 ∈ 𝑦)) ↔ 𝑢 = 𝑣))";
+        // let input = "⊢ (∃𝑡((𝑢 ∈ 𝑤 ∧ 𝑤 ∈ 𝑡) ∧ (𝑢 ∈ 𝑡 ∧ 𝑡 ∈ 𝑦)) ↔ 𝑢 = 𝑣)";
         let mut axiom = Axiom::new("ax-ac".to_string(), input.to_string());
         axiom.solve().unwrap_or_else(|e| panic!("Axiom solve resulted in an error: {:?}", e));
         axiom.print_steps();
         
-        // TODO: Missing 2 steps, length should be 26, but am getting 24
-        
         // ∃𝑣∀𝑢∃𝑡(... should be parsed as ∃𝑣∀𝑢(∃𝑡(...
+        
+        // ∀x(expr)
     }
 }

@@ -161,7 +161,20 @@ impl Node {
                 match operator {
                     TokenKind::ForAll => {
                         // TODO: Needs logic to print the right side with a ( ) around it if it is a binary expression
-                        format!("∀{}{}", left.to_string(), right.to_string())
+                        let x = right.clone();
+                        match *x {
+                            Node::BinaryExpression { left: _left, operator: _operator, right: _right } => {
+                                if _operator != ForAll {
+                                    format!("∀{}({})", left.to_string(), right.to_string())    
+                                } else {
+                                    format!("∀{}{}", left.to_string(), right.to_string())
+                                }
+                            }
+                            _ => {
+                                format!("∀{}{}", left.to_string(), right.to_string())
+                            }
+                        }
+                        
                     }
                     TokenKind::Equality => {
                         format!("{} = {}", left.to_string(), right.to_string())
@@ -484,9 +497,32 @@ impl Parser {
                         right: Box::new(second),
                     });
                 }
+                
+                // TODO: make sure to handle potential parenthesis correctly
 
                 let second = self.parse_expression()?;
 
+                // TODO: check and see if the next token is a binary operator, if yes, parse additionally
+                
+                if self.peek().kind.is_binary_operator() {
+                    self.consume(TokenKind::RightParenthesis)?;
+                    let parent_left = Node::BinaryExpression {
+                        left: Box::new(first.clone()),
+                        operator,
+                        right: Box::new(second),
+                    };
+                    
+                    let parent_operator = self.get_operator()?;
+                    self.consume(TokenKind::BinaryOperator)?;
+
+                    let parent_right = self.parse_expression()?;
+                    return Ok(Node::BinaryExpression {
+                        left: Box::new(parent_left),
+                        operator: parent_operator,
+                        right: Box::new(parent_right),
+                    });
+                }
+                
                 Ok(Node::BinaryExpression {
                     left: Box::new(first),
                     operator,
