@@ -170,7 +170,7 @@ pub fn reduce(node: Node) -> Result<(Node, Node), ReduceError>{
 
                     Ok((node_left, node_right))
                 }
-                TokenKind::ForAll | TokenKind::Equality | TokenKind::ElementOf | TokenKind::Conjunction | TokenKind::Exists => {
+                TokenKind::ForAll | TokenKind::Equality | TokenKind::ElementOf | TokenKind::Conjunction | TokenKind::Exists | TokenKind::Disjunction => {
                     Ok((*left, *right))
                 }
                 _ => {

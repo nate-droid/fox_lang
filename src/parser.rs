@@ -159,22 +159,8 @@ impl Node {
         match self {
             Node::BinaryExpression { left, operator, right } => {
                 match operator {
-                    TokenKind::ForAll => {
-                        // TODO: Needs logic to print the right side with a ( ) around it if it is a binary expression
-                        let x = right.clone();
-                        match *x {
-                            Node::BinaryExpression { left: _left, operator: _operator, right: _right } => {
-                                if _operator != ForAll {
-                                    format!("∀{}({})", left.to_string(), right.to_string())    
-                                } else {
-                                    format!("∀{}{}", left.to_string(), right.to_string())
-                                }
-                            }
-                            _ => {
-                                format!("∀{}{}", left.to_string(), right.to_string())
-                            }
-                        }
-                        
+                    ForAll => {
+                        format!("∀{}{}", left.to_string(), right.to_string())
                     }
                     TokenKind::Equality => {
                         format!("{} = {}", left.to_string(), right.to_string())
@@ -185,7 +171,11 @@ impl Node {
                     TokenKind::Exists => {
                         format!("∃{}{}", left.to_string(), right.to_string())
                     }
+                    TokenKind::Implies => {
+                        format!("({} → {})", left.to_string(), right.to_string())
+                    }
                     _ => {
+                        println!("operator: {:?}", operator);
                         format!("({} {} {})", left.to_string(), operator, right.to_string())
                     }
                 }

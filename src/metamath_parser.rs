@@ -242,7 +242,6 @@ Step	Hyp	Ref	Expression
     fn ax_rep() {
         // Axiom of Replacement
         let input = "⊢ (∀𝑤∃𝑦∀𝑧(∀𝑦𝜑 → 𝑧 = 𝑦) → ∃𝑦∀𝑧(𝑧 ∈ 𝑦 ↔ ∃𝑤(𝑤 ∈ 𝑥 ∧ ∀𝑦𝜑)))";
-        // let input = "∃𝑥𝜑";
         let mut axiom = Axiom::new("ax-rep".to_string(), input.to_string());
         axiom.solve().unwrap_or_else(|e| panic!("Axiom solve resulted in an error: {:?}", e));
         axiom.print_steps();
@@ -296,5 +295,15 @@ Step	Hyp	Ref	Expression
         // ∃𝑣∀𝑢∃𝑡(... should be parsed as ∃𝑣∀𝑢(∃𝑡(...
         
         // ∀x(expr)
+    }
+    
+    #[test]
+    fn ax_ac2() {
+        let input = "⊢ ∃𝑦∀𝑧∃𝑣∀𝑢((𝑦 ∈ 𝑥 ∧ (𝑧 ∈ 𝑦 → ((𝑣 ∈ 𝑥 ∧ ¬ 𝑦 = 𝑣) ∧ 𝑧 ∈ 𝑣))) ∨ (¬ 𝑦 ∈ 𝑥 ∧ (𝑧 ∈ 𝑥 → ((𝑣 ∈ 𝑧 ∧ 𝑣 ∈ 𝑦) ∧ ((𝑢 ∈ 𝑧 ∧ 𝑢 ∈ 𝑦) → 𝑢 = 𝑣)))))";
+        let mut axiom = Axiom::new("ax-ac2".to_string(), input.to_string());
+        axiom.solve().unwrap_or_else(|e| panic!("Axiom solve resulted in an error: {:?}", e));
+        axiom.print_steps();
+        
+        // TODO: Needs to be length 33
     }
 }

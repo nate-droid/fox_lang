@@ -178,6 +178,12 @@ impl <'a> LangLexer<'a> {
                         kind: TokenKind::Conjunction,
                     });
                 }
+                '∨' => {
+                    self.tokens.push(Token {
+                        value: self.current_char().to_string(),
+                        kind: TokenKind::Disjunction,
+                    });
+                }
                 
                 // parse words
                 _ if self.current_char().is_alphabetic() => {

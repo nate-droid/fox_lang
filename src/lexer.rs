@@ -39,6 +39,7 @@ pub enum TokenKind {
     ElementOf, // ∈
     Biconditional, // ↔
     Conjunction, // ∧
+    Disjunction, // ∨
 
     // builtins
     Print,
@@ -93,6 +94,7 @@ impl std::fmt::Display for TokenKind {
             TokenKind::WFF => write!(f, "WFF"),
             TokenKind::SetVar => write!(f, "SetVar"),
             TokenKind::Conjunction => write!(f, "∧"),
+            TokenKind::Disjunction => write!(f, "∨"),
         }
     }
 }
@@ -106,6 +108,7 @@ impl TokenKind {
             TokenKind::ElementOf => true,
             TokenKind::Biconditional => true,
             TokenKind::Conjunction => true,
+            TokenKind::Disjunction => true,
             _ => false,
         }
     }
