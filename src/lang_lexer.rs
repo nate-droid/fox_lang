@@ -48,6 +48,18 @@ impl <'a> LangLexer<'a> {
                         kind: TokenKind::RightParenthesis,
                     });
                 }
+                '{' => {
+                    self.tokens.push(Token {
+                        value: self.current_char().to_string(),
+                        kind: TokenKind::LBracket,
+                    });
+                }
+                '}' => {
+                    self.tokens.push(Token {
+                        value: self.current_char().to_string(),
+                        kind: TokenKind::RBracket,
+                    });
+                }
                 '\"' => {
                     let mut string = String::new();
                     self.next_char();
@@ -184,7 +196,19 @@ impl <'a> LangLexer<'a> {
                         kind: TokenKind::Disjunction,
                     });
                 }
-                
+                '⊆' => {
+                    self.tokens.push(Token {
+                        value: self.current_char().to_string(),
+                        kind: TokenKind::Subset,
+                    });
+                }
+                '≈' => {
+                    self.tokens.push(Token {
+                        value: self.current_char().to_string(),
+                        kind: TokenKind::Equinumerosity,
+                    });
+                }
+
                 // parse words
                 _ if self.current_char().is_alphabetic() => {
                     let mut word = String::new();
@@ -198,13 +222,13 @@ impl <'a> LangLexer<'a> {
                             break;
                         }
                     }
-                    
+
                     self.tokens.push(Token {
                         value: word,
                         kind: TokenKind::Word,
                     });
                 }
-                
+
                 // check for numbers
                 _ if self.current_char().is_digit(10) => {
                     let mut number = String::new();

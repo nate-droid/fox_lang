@@ -53,6 +53,7 @@ pub enum Value {
     Int(i32),
     Float(f64),
     Str(String),
+    Bool(bool),
     // Add other types as needed
 }
 
@@ -73,6 +74,7 @@ impl fmt::Display for Value {
             Value::Int (i) => write!(f, "{}", i),
             Value::Float(fl) => write!(f, "{}", fl),
             Value::Str(s) => write!(f, "{}", s),
+            Value::Bool(b) => write!(f, "{}", b),
         }
     }
 }
@@ -109,6 +111,11 @@ pub enum Node {
     },
     Type {
         name: String,
+    },
+    Conditional {
+        condition: Box<Node>,
+        consequence: Vec<Node>,
+        alternative: Vec<Node>,
     },
     EmptyNode,
 }
@@ -174,8 +181,10 @@ impl Node {
                     TokenKind::Implies => {
                         format!("({} → {})", left.to_string(), right.to_string())
                     }
+                    TokenKind::Disjunction => {
+                        format!("{} ∨ {}", left.to_string(), right.to_string())
+                    }
                     _ => {
-                        println!("operator: {:?}", operator);
                         format!("({} {} {})", left.to_string(), operator, right.to_string())
                     }
                 }
@@ -200,6 +209,9 @@ impl Node {
             }
             Node::Type { name } => {
                 name.clone()
+            }
+            Node::Conditional { condition, consequence, alternative } => {
+                todo!()
             }
             Node::EmptyNode => {
                 "".to_string()
@@ -604,6 +616,8 @@ impl Parser {
                     let node = self.parse_unary_expression()?;
                     return Ok(node);
                 }
+                // TODO: Print the string up until this point for easier debugging
+                
                 println!("Unexpected token: {:?}", self.current());
                 Err(ParseError::UnexpectedToken)
             }

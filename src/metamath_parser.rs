@@ -291,10 +291,8 @@ Step	Hyp	Ref	Expression
         let mut axiom = Axiom::new("ax-ac".to_string(), input.to_string());
         axiom.solve().unwrap_or_else(|e| panic!("Axiom solve resulted in an error: {:?}", e));
         axiom.print_steps();
-        
-        // ∃𝑣∀𝑢∃𝑡(... should be parsed as ∃𝑣∀𝑢(∃𝑡(...
-        
-        // ∀x(expr)
+
+        assert_eq!(axiom.steps.len(), 26);
     }
     
     #[test]
@@ -303,7 +301,21 @@ Step	Hyp	Ref	Expression
         let mut axiom = Axiom::new("ax-ac2".to_string(), input.to_string());
         axiom.solve().unwrap_or_else(|e| panic!("Axiom solve resulted in an error: {:?}", e));
         axiom.print_steps();
-        
-        // TODO: Needs to be length 33
+        // TODO: Checkout the double (( with disjunction
+    }
+    
+    #[test]
+    fn ax_groth() {
+        let input = "⊢ ∃𝑦(𝑥 ∈ 𝑦 ∧ ∀𝑧 ∈ 𝑦 (∀𝑤(𝑤 ⊆ 𝑧 → 𝑤 ∈ 𝑦) ∧ ∃𝑤 ∈ 𝑦 ∀𝑣(𝑣 ⊆ 𝑧 → 𝑣 ∈ 𝑤)) ∧ ∀𝑧(𝑧 ⊆ 𝑦 → (𝑧 ≈ 𝑦 ∨ 𝑧 ∈ 𝑦)))";
+        let mut axiom = Axiom::new("ax-groth".to_string(), input.to_string());
+        // axiom.solve().unwrap_or_else(|e| panic!("Axiom solve resulted in an error: {:?}", e));
+        // axiom.print_steps();
+    }
+    
+    #[test]
+    fn df_clab() {
+        let input = "(𝑥 ∈ {𝑦 ∣ 𝜑} ↔ [𝑥 / 𝑦]𝜑)";
+        // let mut axiom = Axiom::new("df-clab".to_string(), input.to_string());
+        // axiom.solve().unwrap_or_else(|e| panic!("Axiom solve resulted in an error: {:?}", e));
     }
 }

@@ -40,6 +40,8 @@ pub enum TokenKind {
     Biconditional, // ↔
     Conjunction, // ∧
     Disjunction, // ∨
+    Subset, // ⊆
+    Equinumerosity, // ≈
 
     // builtins
     Print,
@@ -53,6 +55,9 @@ pub enum TokenKind {
     MMExpression,
     
     Add,
+    
+    LBracket,
+    RBracket,
 }
 
 impl std::fmt::Display for TokenKind {
@@ -95,6 +100,10 @@ impl std::fmt::Display for TokenKind {
             TokenKind::SetVar => write!(f, "SetVar"),
             TokenKind::Conjunction => write!(f, "∧"),
             TokenKind::Disjunction => write!(f, "∨"),
+            TokenKind::Subset => write!(f, "⊆"),
+            TokenKind::Equinumerosity => write!(f, "≈"),
+            TokenKind::LBracket => write!(f, "LBracket"),
+            TokenKind::RBracket => write!(f, "RBracket"),
         }
     }
 }

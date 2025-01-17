@@ -56,6 +56,19 @@ impl Ast {
 
                     self.declarations.insert(name, node);
                 }
+                Node::Conditional {condition, consequence, alternative, } => {
+                    // test condition
+                    
+                    if condition.val() == Value::Bool(true) {
+                        for node in consequence {
+                            self.eval_node(node)?;
+                        }
+                    } else {
+                        for node in alternative {
+                            self.eval_node(node)?;
+                        }
+                    }
+                }
                 EmptyNode => {}
             }
         }
@@ -91,6 +104,9 @@ impl Ast {
             }
             Node::Type { name: _name } => {
                 return Ok(EmptyNode);
+            }
+            Node::Conditional {condition, consequence, alternative, } => {
+                todo!("Conditionals");
             }
             EmptyNode => {
                 todo!("Empty node");

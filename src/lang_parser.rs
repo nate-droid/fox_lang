@@ -4,14 +4,14 @@ use crate::lang_lexer::LangLexer;
 use crate::lexer::{Token, TokenKind};
 use crate::parser::{Node, Value};
 
-pub(crate) struct LangParser<'a> {
+pub struct LangParser<'a> {
     lexer: LangLexer<'a>,
     tokens: Vec<Token>,
     position: usize,
 }
 
 impl<'a> LangParser<'a> {
-    pub(crate) fn new(input: &'a str) -> Self {
+    pub fn new(input: &'a str) -> Self {
         let mut lexer = LangLexer::new(input);
         lexer.tokenize().expect("TODO: panic message");
 
@@ -24,7 +24,7 @@ impl<'a> LangParser<'a> {
         }
     }
     
-    pub(crate) fn parse(&mut self) -> Result<Ast, String> {
+    pub fn parse(&mut self) -> Result<Ast, String> {
         let mut globals = Vec::new();
         let mut ast = Ast::new();
         
@@ -34,20 +34,7 @@ impl<'a> LangParser<'a> {
                     let t = self.current_token()?;
                     match t.value.as_str() {
                         "print" => {
-                            self.consume(TokenKind::Word)?;
-                            self.consume(TokenKind::LeftParenthesis)?;
-
-                            let input = self.current_token()?;
-
-                            self.advance();
-                            self.consume(TokenKind::RightParenthesis)?;
-                            self.consume(TokenKind::Semicolon)?;
-
-                            let node = Node::Call {
-                                name: "print".to_string(),
-                                arguments: vec![input],
-                                returns: vec![],
-                            };
+                            let node = self.parse_print()?;
                             ast.add_node(node);
                         }
                         "let" => {
@@ -118,6 +105,31 @@ impl<'a> LangParser<'a> {
                             });
                             continue;
                         }
+                        "if" => {
+                            self.consume(TokenKind::Word)?;
+                            let condition = self.parse_condition()?;
+                            self.consume(TokenKind::LBracket)?;
+                            
+                            // parse consequence
+                            let consequence = self.parse_consequence()?;
+                            if self.current_token()?.value != "else" {
+                                ast.add_node(Node::Conditional {
+                                    condition: Box::from(condition),
+                                    consequence,
+                                    alternative: vec![],
+                                });
+                                continue;
+                            }
+                            self.consume(TokenKind::Word)?;
+                            self.consume(TokenKind::LBracket)?;
+                            let alternative = self.parse_consequence()?;
+                            
+                            ast.add_node(Node::Conditional {
+                                condition: Box::from(condition),
+                                consequence,
+                                alternative,
+                            });
+                        }
                         _ => {
                             println!("{:?}", self.tokens[self.position].kind);
                         }
@@ -152,7 +164,11 @@ impl<'a> LangParser<'a> {
             }
             TokenKind::Word => {
                 let name = self.current_token()?;
+                if name.value == "print" {
+                    return self.parse_print();
+                }
                 self.advance();
+
                 Ok(Node::Identity {
                     name: name.value,
                     value: Box::from(Node::Atomic { value: Value::Int(0) }),
@@ -187,6 +203,58 @@ impl<'a> LangParser<'a> {
                 Err("Unexpected token".to_string())
             }
         }
+    }
+    
+    fn parse_condition(&mut self) -> Result<Node, String> {
+        match self.current_token()?.kind {
+            TokenKind::Word => {
+                let name = self.current_token()?;
+                self.advance();
+                if name.value == "true" {
+                    Ok(Node::Atomic {
+                        value: Value::Bool(true),
+                    })
+                } else if name.value == "false" {
+                    Ok(Node::Atomic {
+                        value: Value::Bool(false),
+                    })
+                } else {
+                    Err("Invalid conditional".to_string())
+                }
+            }
+            _ => {
+                println!("{:?}", self.current_token()?.kind);
+                Err("Invalid conditional".to_string())
+            }
+        }
+    }
+    
+    fn parse_consequence(&mut self) -> Result<Vec<Node>, String> {
+        let mut nodes = Vec::new();
+        while self.current_token()?.kind != TokenKind::RBracket {
+            let node = self.parse_node()?;
+            nodes.push(node);
+        }
+        self.consume(TokenKind::RBracket)?;
+        Ok(nodes)
+    }
+    
+    fn parse_print(&mut self) -> Result<Node, String> {
+        self.consume(TokenKind::Word)?;
+        self.consume(TokenKind::LeftParenthesis)?;
+
+        let input = self.current_token()?;
+
+        self.advance();
+        self.consume(TokenKind::RightParenthesis)?;
+        self.consume(TokenKind::Semicolon)?;
+
+        let node = Node::Call {
+            name: "print".to_string(),
+            arguments: vec![input],
+            returns: vec![],
+        };
+        Ok(node)
     }
 
     fn consume(&mut self, kind: TokenKind) -> Result<(), String> {
