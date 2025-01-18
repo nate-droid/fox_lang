@@ -34,6 +34,7 @@ impl<'a> LangParser<'a> {
                     let t = self.current_token()?;
                     match t.value.as_str() {
                         "print" => {
+                            self.consume(TokenKind::Word)?;
                             let node = self.parse_print()?;
                             ast.add_node(node);
                         }
@@ -131,6 +132,19 @@ impl<'a> LangParser<'a> {
                             });
                         }
                         _ => {
+                            // TODO: check if the next character is an assignment
+                            let ident = self.current_token()?;
+                            self.consume(TokenKind::Word)?;
+                            if self.current_token()?.kind == TokenKind::Equality {
+                                self.consume(TokenKind::Equality)?;
+                                let value = self.parse_node()?;
+                                ast.add_node(Node::Identity {
+                                    name: ident.value,
+                                    value: Box::from(value),
+                                    kind: "Nat".to_string(),
+                                });
+                            }
+                            
                             println!("{:?}", self.tokens[self.position].kind);
                         }
                     }
@@ -164,16 +178,44 @@ impl<'a> LangParser<'a> {
             }
             TokenKind::Word => {
                 let name = self.current_token()?;
+                self.advance();
+                
                 if name.value == "print" {
                     return self.parse_print();
                 }
-                self.advance();
-
-                Ok(Node::Identity {
-                    name: name.value,
-                    value: Box::from(Node::Atomic { value: Value::Int(0) }),
-                    kind: "Nat".to_string(),
-                })
+                
+                match self.current_token()?.kind {
+                    TokenKind::Equality => {
+                        self.consume(TokenKind::Equality)?;
+                        let value = self.parse_node()?;
+                        self.consume(TokenKind::Semicolon)?;
+                        Ok(Node::Identity {
+                            name: name.value,
+                            value: Box::from(value),
+                            kind: "Nat".to_string(),
+                        })
+                    }
+                    TokenKind::Add => {
+                        self.consume(TokenKind::Add)?;
+                        let right = self.parse_node()?;
+                        Ok(Node::BinaryExpression {
+                            left: Box::from(Node::Identity {
+                                name: name.value,
+                                value: Box::from(Node::Atomic { value: Value::Int(0) }),
+                                kind: "Nat".to_string(),
+                            }),
+                            operator: TokenKind::Add,
+                            right: Box::from(right),
+                        })
+                    }
+                    _ => {
+                         Ok(Node::Identity {
+                            name: name.value,
+                            value: Box::from(Node::Atomic { value: Value::Int(0) }),
+                            kind: "Nat".to_string(),
+                        })
+                    }
+                }
             }
             TokenKind::LeftParenthesis => {
                 // at the moment, the language expects this to be an expression. This might need to be rethought as the language grows
@@ -240,7 +282,6 @@ impl<'a> LangParser<'a> {
     }
     
     fn parse_print(&mut self) -> Result<Node, String> {
-        self.consume(TokenKind::Word)?;
         self.consume(TokenKind::LeftParenthesis)?;
 
         let input = self.current_token()?;

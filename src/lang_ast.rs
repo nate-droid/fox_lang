@@ -7,7 +7,7 @@ use crate::parser::Node::EmptyNode;
 #[derive(Debug)]
 pub struct Ast {
     pub nodes: Vec<Node>,
-    declarations: HashMap<String, Node>,
+    pub declarations: HashMap<String, Node>,
 }
 
 
@@ -20,13 +20,29 @@ impl Ast {
         }
     }
     
+    pub fn upsert_declaration(&mut self, node: Node) -> Result<(), String> {
+        match node {
+            Node::Identity { name, value, kind } => {
+                self.declarations.insert(name, *value);
+            }
+            EmptyNode => {}
+            Node::Atomic { value } => {
+                println!("{:?}", value);
+            }
+            _ => {
+                println!("{:?}", node);
+                return Err("Invalid node type".to_string());
+            }
+        }
+        Ok(())
+    }
+    
     pub fn add_node(&mut self, node: Node) {
         self.nodes.push(node);
     }
     
     pub fn eval(&mut self) -> Result<(), String> {
         for node in self.nodes.clone() {
-            println!("{:?}", node.operator());
             match node.clone() {
                 Node::BinaryExpression { left, operator, right } => {
                     let _ = self.eval_binary_expression(*left, operator, *right)?;
@@ -39,6 +55,7 @@ impl Ast {
 
                 }
                 Node::Identity { name, value, kind: _kind } => {
+                    
                     let res = self.eval_node(*value)?;
                     
                     self.declarations.insert(name, res);
@@ -47,7 +64,7 @@ impl Ast {
                     eval_call(name, arguments)?;
                 }
                 Node::Atomic { value: _value } => {
-
+                    println!("{:?}", _value);
                 }
                 Node::MMExpression { expression: _expression } => {
                     todo!("MMExpression");
@@ -61,7 +78,10 @@ impl Ast {
                     
                     if condition.val() == Value::Bool(true) {
                         for node in consequence {
-                            self.eval_node(node)?;
+                            
+                            let res = self.eval_node(node)?;
+                            
+                            self.upsert_declaration(res)?
                         }
                     } else {
                         for node in alternative {
@@ -79,7 +99,24 @@ impl Ast {
         // traverse and evaluate the AST
         match ast {
             Node::BinaryExpression { left, operator, right } => {
-                let res = self.eval_binary_expression(*left, operator, *right)?;
+                let res = self.eval_binary_expression(*left.clone(), operator, *right)?;
+                
+                match *left.clone() {
+                    Node::Identity { name, value, kind } => {
+                        self.upsert_declaration(Node::Identity {
+                            name,
+                            value: Box::from(res.clone()),
+                            kind,
+                        })?;
+                    }
+                    _ => {}
+                }
+                
+                // self.upsert_declaration(Node::Identity {
+                //     name: left.val().to_string(),
+                //     value: Box::from(res.clone()),
+                //     kind: "Nat".to_string(),
+                // })?;
                 return Ok(res);
             }
             Node::UnaryExpression { operator: _operator, right: _right } => {
@@ -145,7 +182,7 @@ impl Ast {
                             _ => Err("Invalid types".to_string()),
                         }
                     }
-                }
+                } 
             }
             _ => return Err("Unknown operator".to_string()),
         }
