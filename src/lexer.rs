@@ -55,9 +55,11 @@ pub enum TokenKind {
     MMExpression,
     
     Add,
+    Modulo,
     
     LBracket,
     RBracket,
+    Range,
 }
 
 impl std::fmt::Display for TokenKind {
@@ -94,6 +96,7 @@ impl std::fmt::Display for TokenKind {
             TokenKind::Colon => write!(f, "Colon"),
             TokenKind::Nat => write!(f, "Nat"),
             TokenKind::Add => write!(f, "+"),
+            TokenKind::Modulo => write!(f, "%"),
             TokenKind::Comment => write!(f, "//"),
             TokenKind::MMExpression => write!(f, "MMExpression"),
             TokenKind::WFF => write!(f, "WFF"),
@@ -104,6 +107,7 @@ impl std::fmt::Display for TokenKind {
             TokenKind::Equinumerosity => write!(f, "≈"),
             TokenKind::LBracket => write!(f, "LBracket"),
             TokenKind::RBracket => write!(f, "RBracket"),
+            TokenKind::Range => write!(f, "Range"),
         }
     }
 }

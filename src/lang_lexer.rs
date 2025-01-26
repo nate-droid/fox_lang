@@ -96,6 +96,12 @@ impl <'a> LangLexer<'a> {
                         kind: TokenKind::Add,
                     })
                 }
+                '%' => {
+                    self.tokens.push(Token {
+                        value: self.current_char().to_string(),
+                        kind: TokenKind::Modulo,
+                    });
+                }
                 // for MetaMath specific cases
                 '⊢' => {
                     self.tokens.push(Token {
@@ -248,6 +254,18 @@ impl <'a> LangLexer<'a> {
                         kind: TokenKind::Number,
                     });
                 }
+                '.' => {
+                    self.next_char();
+                    
+                    if self.current_char() != '.' {
+                        return Err(format!("Expected '.' but found: {}", self.current_char()));
+                    }
+                    
+                    self.tokens.push(Token {
+                        value: self.current_char().to_string(),
+                        kind: TokenKind::Range,
+                    });
+                } 
                 '\n' => {}
                 _ => {
                     return Err(format!("Unknown character: {}", self.current_char()));

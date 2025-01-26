@@ -117,6 +117,16 @@ pub enum Node {
         consequence: Vec<Node>,
         alternative: Vec<Node>,
     },
+    Comparison {
+        left: Box<Node>,
+        operator: TokenKind,
+        right: Box<Node>,
+    },
+    ForLoop {
+        variable: String,
+        range: (i32, i32),
+        body: Vec<Node>,
+    },
     EmptyNode,
 }
 
@@ -139,6 +149,7 @@ impl Node {
             Node::Identity { name: _name, value: _value, kind: _kind } => {
                 TokenKind::Word
             }
+
             _ => {
                 println!("{:?}", self);
                 TokenKind::End
@@ -150,7 +161,11 @@ impl Node {
 
         match self {
             Node::BinaryExpression { left, .. } => Some(left),
-            _ => None,
+            Node::Comparison { left, .. } => Some(left),
+            _ => {
+                println!("boo {:?}", self);
+                None 
+            },
         }
     }
 
@@ -212,6 +227,12 @@ impl Node {
             }
             Node::Conditional { condition, consequence, alternative } => {
                 todo!()
+            }
+            Node::ForLoop { variable, range, body } => {
+                format!("for {} in {}..{} {{ {:?} }}", variable, range.0, range.1, body)
+            }
+            Node::Comparison { left, operator, right } => {
+                format!("{} {} {}", left.to_string(), operator, right.to_string())
             }
             Node::EmptyNode => {
                 "".to_string()
@@ -422,7 +443,7 @@ impl Parser {
                     if operator == TokenKind::Equality {
                         // TODO: this needs to be parsed as a right and left, but not wrapped by ()
                         let right = self.parse_equality_right()?;
-                        
+
                         return Ok(Node::BinaryExpression {
                             left: Box::new(ident),
                             operator,
@@ -499,13 +520,13 @@ impl Parser {
                         right: Box::new(second),
                     });
                 }
-                
+
                 // TODO: make sure to handle potential parenthesis correctly
 
                 let second = self.parse_expression()?;
 
                 // TODO: check and see if the next token is a binary operator, if yes, parse additionally
-                
+
                 if self.peek().kind.is_binary_operator() {
                     self.consume(TokenKind::RightParenthesis)?;
                     let parent_left = Node::BinaryExpression {
@@ -513,7 +534,7 @@ impl Parser {
                         operator,
                         right: Box::new(second),
                     };
-                    
+
                     let parent_operator = self.get_operator()?;
                     self.consume(TokenKind::BinaryOperator)?;
 
@@ -524,7 +545,7 @@ impl Parser {
                         right: Box::new(parent_right),
                     });
                 }
-                
+
                 Ok(Node::BinaryExpression {
                     left: Box::new(first),
                     operator,
@@ -617,7 +638,7 @@ impl Parser {
                     return Ok(node);
                 }
                 // TODO: Print the string up until this point for easier debugging
-                
+
                 println!("Unexpected token: {:?}", self.current());
                 Err(ParseError::UnexpectedToken)
             }
@@ -640,7 +661,7 @@ impl Parser {
             right: Box::new(right),
         })
     }
-    
+
     fn parse_exists(&mut self) -> Result<Node, ParseError> {
         let operator = self.get_operator()?;
         self.consume(TokenKind::Exists)?;
@@ -867,6 +888,17 @@ impl Parser {
     }
 }
 
+
+pub fn compare_value(first: &Value, second: &Value) -> bool {
+    match (first, second) {
+        (Value::Int(i), Value::Int(j)) => i == j,
+        (Value::Float(f), Value::Float(g)) => f == g,
+        (Value::Str(s), Value::Str(t)) => s == t,
+        (Value::Bool(b), Value::Bool(c)) => b == c,
+        _ => false,
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -884,6 +916,8 @@ mod tests {
         let x = res.unwrap();
         println!("{:?}", x);
     }
+
+    
     
     #[test]
     fn test_nested_balanced() {
