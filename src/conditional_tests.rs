@@ -82,3 +82,18 @@ fn compare_expressions() {
     }
     println!("{:?}", ast.declarations);
 }
+
+#[test]
+fn conditions_with_conjunctions() {
+    let input = "let x : Nat = 15 % 5; let y : Nat = 15 % 3; if (x == 0 && y == 0) { print(\"x is zero\"); } else { print(\"x is not zero\"); }";
+    let mut ast = LangParser::new(input);
+    let mut ast = ast.parse().expect("unexpected failure");
+
+    match ast.eval() {
+        Ok(_) => {
+            println!("{:?}", ast.declarations);
+        },
+        Err(e) => panic!("{:?}", e),
+    }
+    println!("{:?}", ast.declarations);
+}

@@ -97,7 +97,7 @@ impl Ast {
                     match *condition.clone() {
                         Node::Comparison {
                             left,
-                            operator,
+                            operator: _operator,
                             right,
                         } => {
                             let best = compare_value(&left.val(), &right.val());
@@ -112,7 +112,7 @@ impl Ast {
                                 }
                             }
                         }
-                        Node::Atomic {
+                        Atomic {
                             value
                         } => {
                             if value == Value::Bool(true){
@@ -128,42 +128,6 @@ impl Ast {
                         }
                         
                     }
-                    // let t = condition.left().expect("unexpected failure");
-                    // let tt = t.clone();
-                    //
-                    // let replaced = self.replace_var(*tt)?;
-                    //
-                    // if condition.val() == Value::Bool(true) {
-                    //     for node in consequence {
-                    //
-                    //         let res = self.eval_node(node)?;
-                    //
-                    //         self.upsert_declaration(res)?
-                    //     }
-                    // } else if condition.val() == Value::Bool(false) {
-                    //     for node in alternative {
-                    //         self.eval_node(node)?;
-                    //     }
-                    // } else {
-                    //     // true
-                    //     match *condition {
-                    //         Node::Comparison { left, operator, right, } => {
-                    //
-                    //             let best = compare_value(&replaced.val(), &right.val());
-                    //             if best {
-                    //                 for node in consequence {
-                    //
-                    //                     let res = self.eval_node(node)?;
-                    //
-                    //                     self.upsert_declaration(res)?
-                    //                 }
-                    //             }
-                    //
-                    //         }
-                    //         _ => {}
-                    //     }
-                    //     // false
-                    // }
                 }
                 Node::ForLoop {
                     variable,

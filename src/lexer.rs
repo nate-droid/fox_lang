@@ -60,6 +60,8 @@ pub enum TokenKind {
     LBracket,
     RBracket,
     Range,
+    
+    IsEqual, // ==
 }
 
 impl std::fmt::Display for TokenKind {
@@ -108,6 +110,7 @@ impl std::fmt::Display for TokenKind {
             TokenKind::LBracket => write!(f, "LBracket"),
             TokenKind::RBracket => write!(f, "RBracket"),
             TokenKind::Range => write!(f, "Range"),
+            TokenKind::IsEqual => write!(f, "=="),
         }
     }
 }
@@ -219,10 +222,18 @@ impl Lexer for DefaultLexer {
                     });
                 }
                 '&' => {
-                    self.tokens.push(Token {
-                        value: self.char.to_string(),
-                        kind: TokenKind::HypothesisConjunction,
-                    });
+                    if self.peek() == '&' {
+                        self.tokens.push(Token {
+                            value: "&&".to_string(),
+                            kind: TokenKind::Conjunction,
+                        });
+                        self.next_char();
+                    } else {
+                        self.tokens.push(Token {
+                            value: self.char.to_string(),
+                            kind: TokenKind::HypothesisConjunction,
+                        });
+                    }
                 }
                 '⇒' => {
                     self.tokens.push(Token {

@@ -1,6 +1,6 @@
+use crate::lexer::{Token, TokenKind};
 use std::iter::Peekable;
 use std::str::Chars;
-use crate::lexer::{Token, TokenKind};
 
 pub struct LangLexer<'a> {
     char: Option<char>,
@@ -8,7 +8,7 @@ pub struct LangLexer<'a> {
     iterator: Peekable<Chars<'a>>,
 }
 
-impl <'a> LangLexer<'a> {
+impl<'a> LangLexer<'a> {
     pub fn new(input: &'a str) -> Self {
         let mut iterator = input.chars().peekable();
 
@@ -18,7 +18,7 @@ impl <'a> LangLexer<'a> {
             iterator,
         }
     }
-    
+
     pub fn tokenize(&mut self) -> Result<(), String> {
         while self.char.is_some() {
             match self.current_char() {
@@ -79,10 +79,19 @@ impl <'a> LangLexer<'a> {
                     });
                 }
                 '=' => {
-                    self.tokens.push(Token {
-                        value: self.current_char().to_string(),
-                        kind: TokenKind::Equality,
-                    });
+                    // CHeck if next char is '='
+                    if self.peek() == '=' {
+                        self.next_char();
+                        self.tokens.push(Token {
+                            value: "==".to_string(),
+                            kind: TokenKind::IsEqual,
+                        });
+                    } else {
+                        self.tokens.push(Token {
+                            value: self.current_char().to_string(),
+                            kind: TokenKind::Equality,
+                        });
+                    }
                 }
                 ':' => {
                     self.tokens.push(Token {
@@ -90,12 +99,10 @@ impl <'a> LangLexer<'a> {
                         kind: TokenKind::Colon,
                     });
                 }
-                '+' => {
-                    self.tokens.push(Token {
-                        value: self.current_char().to_string(),
-                        kind: TokenKind::Add,
-                    })
-                }
+                '+' => self.tokens.push(Token {
+                    value: self.current_char().to_string(),
+                    kind: TokenKind::Add,
+                }),
                 '%' => {
                     self.tokens.push(Token {
                         value: self.current_char().to_string(),
@@ -155,10 +162,18 @@ impl <'a> LangLexer<'a> {
                     });
                 }
                 '&' => {
-                    self.tokens.push(Token {
-                        value: self.current_char().to_string(),
-                        kind: TokenKind::HypothesisConjunction,
-                    });
+                    if self.peek() == '&' {
+                        self.next_char();
+                        self.tokens.push(Token {
+                            value: "&&".to_string(),
+                            kind: TokenKind::And,
+                        });
+                    } else {
+                        self.tokens.push(Token {
+                            value: self.current_char().to_string(),
+                            kind: TokenKind::HypothesisConjunction,
+                        });
+                    }
                 }
                 '⇒' => {
                     self.tokens.push(Token {
@@ -219,7 +234,7 @@ impl <'a> LangLexer<'a> {
                 _ if self.current_char().is_alphabetic() => {
                     let mut word = String::new();
                     word.push(self.current_char());
-                    
+
                     loop {
                         if self.peek().is_alphanumeric() || self.peek() == '_' {
                             self.next_char();
@@ -256,16 +271,16 @@ impl <'a> LangLexer<'a> {
                 }
                 '.' => {
                     self.next_char();
-                    
+
                     if self.current_char() != '.' {
                         return Err(format!("Expected '.' but found: {}", self.current_char()));
                     }
-                    
+
                     self.tokens.push(Token {
                         value: self.current_char().to_string(),
                         kind: TokenKind::Range,
                     });
-                } 
+                }
                 '\n' => {}
                 _ => {
                     return Err(format!("Unknown character: {}", self.current_char()));
@@ -276,7 +291,7 @@ impl <'a> LangLexer<'a> {
 
         Ok(())
     }
-    
+
     pub fn current_char(&self) -> char {
         self.char.unwrap_or_else(|| '\0')
     }
@@ -296,8 +311,8 @@ impl <'a> LangLexer<'a> {
 
 #[cfg(test)]
 mod tests {
-    use crate::lang_lexer::LangLexer;
     use super::*;
+    use crate::lang_lexer::LangLexer;
 
     #[test]
     fn basic_lex() {
@@ -307,7 +322,7 @@ mod tests {
         let tokens = lexer.tokens();
         println!("{:?}", tokens);
     }
-    
+
     #[test]
     fn basic_types() {
         let input = "type x;";
@@ -316,7 +331,7 @@ mod tests {
         let tokens = lexer.tokens();
         println!("{:?}", tokens);
     }
-    
+
     #[test]
     fn basic_declarations() {
         let input = "let x : Nat = 10;";
@@ -334,7 +349,7 @@ mod tests {
         let tokens = lexer.tokens();
         println!("{:?}", tokens);
     }
-    
+
     // MM focused tests
     #[test]
     fn test_ax1() {

@@ -1,6 +1,7 @@
 use crate::cut::Axiom;
 use crate::lang_ast::Ast;
 use crate::lang_lexer::LangLexer;
+use crate::lexer::TokenKind::{And, HypothesisConjunction};
 use crate::lexer::{Token, TokenKind};
 use crate::parser::{Node, Value};
 
@@ -20,18 +21,18 @@ impl<'a> LangParser<'a> {
         }
 
         let tokens = lexer.tokens();
-        
+
         Self {
             lexer,
             tokens,
             position: 0,
         }
     }
-    
+
     pub fn parse(&mut self) -> Result<Ast, String> {
         let mut globals = Vec::new();
         let mut ast = Ast::new();
-        
+
         while self.position < self.tokens.len() {
             match self.current_token()?.kind {
                 TokenKind::Word => {
@@ -61,7 +62,9 @@ impl<'a> LangParser<'a> {
                             let left = self.parse_node()?;
 
                             // TODO: Will need a more robust way to handle expressions in the future
-                            if self.current_token()?.kind == TokenKind::Add || self.current_token()?.kind == TokenKind::Modulo {
+                            if self.current_token()?.kind == TokenKind::Add
+                                || self.current_token()?.kind == TokenKind::Modulo
+                            {
                                 let op = self.current_token()?;
                                 self.advance();
 
@@ -109,7 +112,7 @@ impl<'a> LangParser<'a> {
                         }
                         "if" => {
                             self.consume(TokenKind::Word)?;
-                            let condition = self.parse_condition()?;
+                            let condition = self.parse_condition_header()?;
                             self.consume(TokenKind::LBracket)?;
 
                             // parse consequence
@@ -134,10 +137,10 @@ impl<'a> LangParser<'a> {
                         }
                         "for" => {
                             self.consume(TokenKind::Word)?;
-                            
+
                             let variable = self.current_token()?;
                             self.consume(TokenKind::Word)?;
-                            
+
                             self.consume(TokenKind::Word)?;
                             let start = self.current_token()?;
                             self.consume(TokenKind::Number)?;
@@ -155,15 +158,17 @@ impl<'a> LangParser<'a> {
 
                             ast.add_node(Node::ForLoop {
                                 variable: variable.value,
-                                range: (start.value.parse::<i32>().unwrap(), end.value.parse::<i32>().unwrap()),
+                                range: (
+                                    start.value.parse::<i32>().unwrap(),
+                                    end.value.parse::<i32>().unwrap(),
+                                ),
                                 body: nodes,
                             });
                         }
                         _ => {
                             // TODO: check if the next character is an assignment
                             let ident = self.current_token()?;
-                            
-                            
+
                             self.consume(TokenKind::Word)?;
                             if self.current_token()?.kind == TokenKind::Equality {
                                 self.consume(TokenKind::Equality)?;
@@ -182,6 +187,12 @@ impl<'a> LangParser<'a> {
                 TokenKind::Comment => {
                     // skip comments
                     println!("Skipping comment");
+                }
+                TokenKind::HypothesisConjunction => {
+                    self.consume(TokenKind::HypothesisConjunction)?;
+                    if self.current_token()?.kind != TokenKind::HypothesisConjunction {
+                        return Err("Expected another hypothesis conjunction".to_string());
+                    }
                 }
                 _ => {
                     println!("{:?}", self.tokens[self.position].kind);
@@ -202,9 +213,7 @@ impl<'a> LangParser<'a> {
             TokenKind::Number => {
                 let val = Value::from_string(self.current_token()?.value);
                 self.advance();
-                Ok(Node::Atomic {
-                    value: val,
-                })
+                Ok(Node::Atomic { value: val })
             }
             TokenKind::Word => {
                 let name = self.current_token()?;
@@ -231,20 +240,22 @@ impl<'a> LangParser<'a> {
                         Ok(Node::BinaryExpression {
                             left: Box::from(Node::Identity {
                                 name: name.value,
-                                value: Box::from(Node::Atomic { value: Value::Int(0) }),
+                                value: Box::from(Node::Atomic {
+                                    value: Value::Int(0),
+                                }),
                                 kind: "Nat".to_string(),
                             }),
                             operator: TokenKind::Add,
                             right: Box::from(right),
                         })
                     }
-                    _ => {
-                         Ok(Node::Identity {
-                            name: name.value,
-                            value: Box::from(Node::Atomic { value: Value::Int(0) }),
-                            kind: "Nat".to_string(),
-                        })
-                    }
+                    _ => Ok(Node::Identity {
+                        name: name.value,
+                        value: Box::from(Node::Atomic {
+                            value: Value::Int(0),
+                        }),
+                        kind: "Nat".to_string(),
+                    }),
                 }
             }
             TokenKind::LeftParenthesis => {
@@ -255,38 +266,42 @@ impl<'a> LangParser<'a> {
                     expression.push_str(&self.current_token()?.value);
                     self.advance();
                 }
-                
-                Ok(Node::MMExpression {
-                    expression
-                })
+
+                Ok(Node::MMExpression { expression })
             }
             TokenKind::Identifier => {
                 let name = self.current_token()?;
                 self.advance();
                 Ok(Node::Identity {
                     name: name.value,
-                    value: Box::from(Node::Atomic { value: Value::Int(0) }),
+                    value: Box::from(Node::Atomic {
+                        value: Value::Int(0),
+                    }),
                     kind: "Nat".to_string(),
                 })
             }
             _ => {
-                
                 println!("{:?}", self.current_token()?.kind);
                 Err("Unexpected token".to_string())
             }
         }
     }
 
-    fn parse_condition(&mut self) -> Result<Node, String> {
+    fn parse_condition_header(&mut self) -> Result<Node, String> {
         // conditions must be wrapped in parentheses
         self.consume(TokenKind::LeftParenthesis)?;
         match self.current_token()?.kind {
             TokenKind::Word => {
+                let n = self.parse_condition()?;
+                println!("n: {:?}", n);
+                self.consume(TokenKind::RightParenthesis)?;
+                return Ok(n);
+
                 let left_token = self.current_token()?;
                 self.advance();
-                
+
                 // TODO: Write a function to parse expressions/conditions
-                
+
                 if left_token.value == "true" {
                     self.consume(TokenKind::RightParenthesis)?;
                     Ok(Node::Atomic {
@@ -299,19 +314,32 @@ impl<'a> LangParser<'a> {
                     })
                 } else {
                     // TODO: will need to add support for "left" not being a variable
-                    
+                    let n = self.parse_condition()?;
+                    println!("n: {:?}", n);
+                    self.consume(TokenKind::RightParenthesis)?;
+                    return Ok(n);
+
                     self.consume(TokenKind::Equality)?;
                     self.consume(TokenKind::Equality)?;
                     let right = self.current_token()?;
                     self.advance();
-                    
-                    println!("left: {:?}", left_token.value);
-                    println!("right: {:?}", right.value);
-                    
+
+                    // TODO Check if there is another condition
+                    if self.current_token()?.kind == HypothesisConjunction {
+                        self.consume(HypothesisConjunction)?;
+                        self.consume(HypothesisConjunction)?;
+                        let left2 = self.current_token()?;
+                        self.advance();
+                        self.consume(TokenKind::Equality)?;
+                        self.consume(TokenKind::Equality)?;
+                        let right2 = self.current_token()?;
+                        self.advance();
+                    }
+
                     // TODO: Handle the left and right node types
                     // TODO: Maybe revisit the "parse_generic" and call that on left and right
                     self.consume(TokenKind::RightParenthesis)?;
-                    Ok(Node::Comparison{
+                    Ok(Node::Comparison {
                         left: Box::from(Node::Identity {
                             name: left_token.value.to_string(),
                             value: Box::new(Node::EmptyNode),
@@ -322,7 +350,6 @@ impl<'a> LangParser<'a> {
                             value: Value::Int(right.value.parse::<i32>().unwrap()),
                         }),
                     })
-                    
                 }
             }
             _ => {
@@ -330,6 +357,94 @@ impl<'a> LangParser<'a> {
                 Err("Invalid conditional".to_string())
             }
         }
+    }
+
+    fn parse_condition(&mut self) -> Result<Node, String> {
+        // conditions must be wrapped in parentheses
+        let left = self.current_token()?;
+        if left.value == "true" {
+            self.advance();
+            return Ok(Node::Atomic {
+                value: Value::Bool(true),
+            });
+        } else if left.value == "false" {
+            self.advance();
+            return Ok(Node::Atomic {
+                value: Value::Bool(false),
+            });
+        }
+
+        println!("left: {:?}", left);
+        self.advance();
+        let operator = self.current_token()?;
+        println!("operator: {:?}", operator);
+        self.advance();
+
+        let right = self.current_token()?;
+        self.advance();
+
+        let node = Node::Comparison {
+            left: Box::from(Node::Identity {
+                name: left.value,
+                value: Box::from(Node::Atomic {
+                    value: Value::Int(0),
+                }),
+                kind: "Nat".to_string(),
+            }),
+            operator: operator.kind,
+            right: Box::from(Node::Atomic {
+                value: Value::Int(right.value.parse::<i32>().unwrap()),
+            }),
+        };
+
+        if self.current_token()?.kind == And {
+            let op = self.current_token()?;
+            self.advance();
+            println!("current_token: {:?}", self.current_token());
+            let right2 = self.parse_condition()?;
+            println!("right2: {:?}", right2);
+            return Ok(Node::Comparison {
+                left: Box::from(node),
+                operator: op.kind,
+                right: Box::from(right2),
+            });
+        }
+        Ok(node)
+    }
+
+    fn parse_bool(&mut self) -> Result<Node, String> {
+        let left = self.current_token()?;
+        self.advance();
+        let operator = self.current_token()?;
+        self.advance();
+        let right = self.current_token()?;
+        self.advance();
+
+        let node = Node::Comparison {
+            left: Box::from(Node::Identity {
+                name: left.value,
+                value: Box::from(Node::Atomic {
+                    value: Value::Int(0),
+                }),
+                kind: "Nat".to_string(),
+            }),
+            operator: operator.kind,
+            right: Box::from(Node::Atomic {
+                value: Value::Int(right.value.parse::<i32>().unwrap()),
+            }),
+        };
+
+        if self.current_token()?.kind == And {
+            let op = self.current_token()?;
+            self.advance();
+            let right2 = self.parse_condition()?;
+            return Ok(Node::Comparison {
+                left: Box::from(node),
+                operator: op.kind,
+                right: Box::from(right2),
+            });
+        }
+        Ok(node)
     }
 
     fn parse_consequence(&mut self) -> Result<Vec<Node>, String> {
@@ -366,14 +481,17 @@ impl<'a> LangParser<'a> {
         } else {
             println!("{:?}", self.tokens[self.position].kind);
             println!("{:?}", self.tokens);
-            Err(format!("Expected {:?} but found {:?}", kind, self.tokens[self.position].kind))
+            Err(format!(
+                "Expected {:?} but found {:?}",
+                kind, self.tokens[self.position].kind
+            ))
         }
     }
-    
+
     fn advance(&mut self) {
         self.position += 1;
     }
-    
+
     fn current_token(&self) -> Result<Token, String> {
         if self.position < self.tokens.len() {
             Ok(self.tokens[self.position].clone())
@@ -381,7 +499,7 @@ impl<'a> LangParser<'a> {
             Err("No more tokens".to_string())
         }
     }
-    
+
     fn peek_token(&self) -> Result<Token, String> {
         if self.position + 1 < self.tokens.len() {
             Ok(self.tokens[self.position + 1].clone())
@@ -398,29 +516,29 @@ mod tests {
     #[test]
     fn print() {
         let input = "print(\"hello world!\");";
-        
+
         let mut parser = LangParser::new(input);
-        
+
         let ast = parser.parse().expect("TODO: panic message");
         println!("{:?}", ast);
     }
-    
+
     #[test]
     fn ignore_comments() {
         let input = "print(\"hello world!\"); // this is a comment";
-        
+
         let mut parser = LangParser::new(input);
-        
+
         let ast = parser.parse().expect("TODO: panic message");
         println!("{:?}", ast);
     }
-    
+
     #[test]
     fn variables() {
         let input = "let x : nat = 10;";
-        
+
         let mut parser = LangParser::new(input);
-        
+
         let ast = parser.parse().expect("TODO: panic message");
         println!("{:?}", ast);
     }
@@ -432,7 +550,7 @@ mod tests {
         let ast = parser.parse().expect("TODO: panic message");
         println!("{:?}", ast);
     }
-    
+
     #[test]
     fn multi_line_variables() {
         let input = "let x : Nat = 1;\
@@ -442,17 +560,17 @@ mod tests {
         let ast = parser.parse().expect("unexpected failure");
         println!("{:?}", ast);
     }
-    
+
     #[test]
     fn addition() {
         let input = "let x : Nat = 1 + 2;";
         let mut parser = LangParser::new(input);
         let ast = parser.parse().expect("unexpected failure");
         println!("{:?}", ast);
-        
+
         assert_eq!(ast.nodes.len(), 1);
     }
-    
+
     #[test]
     fn addition_with_variables() {
         let input = "let x : Nat = 1;\
@@ -461,20 +579,20 @@ mod tests {
         let mut parser = LangParser::new(input);
         let ast = parser.parse().expect("unexpected failure");
         println!("{:?}", ast);
-        
+
         assert_eq!(ast.nodes.len(), 3);
     }
-    
+
     #[test]
     fn mm_expressions_in_fox() {
         let input = "let ax : Expr = (𝜓 → 𝜑);";
         let mut parser = LangParser::new(input);
         let ast = parser.parse().expect("unexpected failure");
         println!("{:?}", ast);
-        
+
         // TODO: When parsing a "let" statement, check if the type is "Expression", and call the mm parser
     }
-    
+
     #[test]
     fn error_handling() {
         // add checks that the parser returns an error when it should
