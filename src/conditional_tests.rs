@@ -6,7 +6,7 @@ fn if_statement() {
     let input = "if (true) { print(\"hello, world\"); } else { print(\"goodbye, world\"); }";
     let mut parser = LangParser::new(input);
     let mut ast = parser.parse().expect("unexpected failure");
-    
+
     match ast.eval() {
         Ok(_) => (),
         Err(e) => panic!("{:?}", e),
@@ -18,7 +18,7 @@ fn longer_if_statement() {
     let input = "if (true) { print(\"hello, world\"); print(\"more hello!\"); } else { print(\"goodbye, world\"); }";
     let mut parser = LangParser::new(input);
     let mut ast = parser.parse().expect("unexpected failure");
-    
+
     match ast.eval() {
         Ok(_) => (),
         Err(e) => panic!("{:?}", e),
@@ -31,12 +31,12 @@ fn variables_in_conditionals() {
 
     let mut parser = LangParser::new(input);
     let mut ast = parser.parse().expect("unexpected failure");
-    
+
     match ast.eval() {
         Ok(_) => (),
         Err(e) => panic!("{:?}", e),
     }
-    
+
     let res = ast.declarations.get("x").expect("unexpected failure");
     assert_eq!(res.val(), Value::Int(7));
 }
@@ -46,7 +46,7 @@ fn simple_for_loop() {
     let input = "for i in 0..5 { print(i); }";
     let mut ast = LangParser::new(input);
     let mut ast = ast.parse().expect("unexpected failure");
-    
+
     match ast.eval() {
         Ok(_) => (),
         Err(e) => panic!("{:?}", e),
@@ -62,7 +62,7 @@ fn simple_modulo() {
     match ast.eval() {
         Ok(_) => {
             println!("{:?}", ast.declarations);
-        },
+        }
         Err(e) => panic!("{:?}", e),
     }
     assert_eq!(ast.declarations.get("x").unwrap().val(), Value::Int(1));
@@ -77,7 +77,7 @@ fn compare_expressions() {
     match ast.eval() {
         Ok(_) => {
             println!("{:?}", ast.declarations);
-        },
+        }
         Err(e) => panic!("{:?}", e),
     }
     println!("{:?}", ast.declarations);
@@ -92,8 +92,31 @@ fn conditions_with_conjunctions() {
     match ast.eval() {
         Ok(_) => {
             println!("{:?}", ast.declarations);
-        },
+        }
         Err(e) => panic!("{:?}", e),
     }
     println!("{:?}", ast.declarations);
+}
+
+#[test]
+fn sum_range() {
+    // let input = "for i in 0..1000 {
+    //     let x : Nat = i % 3;
+    //     let y : Nat = i % 5;
+    //     if (x == 0 && y == 0) {
+    //         print(i);
+    //     }
+    // }";
+    let input = "for i in 0..10 {
+        print(i);
+    }";
+    let mut ast = LangParser::new(input);
+    let mut ast = ast.parse().expect("unexpected failure");
+
+    match ast.eval() {
+        Ok(_) => (),
+        Err(e) => panic!("{:?}", e),
+    }
+    
+    // TODO: Pickup: parse header for range, and a body function
 }

@@ -3,7 +3,6 @@ use crate::lexer::{Token, TokenKind};
 use crate::parser::Node::{Atomic, EmptyNode};
 use crate::parser::{compare_value, Node, Value};
 use std::collections::HashMap;
-use std::ops::Deref;
 
 #[derive(Debug)]
 pub struct Ast {
@@ -112,10 +111,8 @@ impl Ast {
                                 }
                             }
                         }
-                        Atomic {
-                            value
-                        } => {
-                            if value == Value::Bool(true){
+                        Atomic { value } => {
+                            if value == Value::Bool(true) {
                                 for node in consequence.clone() {
                                     let res = self.eval_node(node)?;
                                     self.upsert_declaration(res)?
@@ -126,7 +123,6 @@ impl Ast {
                             println!("condition: {:?}", condition);
                             // TODO: Check if boolean
                         }
-                        
                     }
                 }
                 Node::ForLoop {
@@ -249,7 +245,8 @@ impl Ast {
                 consequence,
                 alternative,
             } => {
-                todo!("Conditionals");
+                println!("condition: {:?}", condition);
+                panic!("Conditional");
             }
             Node::ForLoop {
                 variable,
