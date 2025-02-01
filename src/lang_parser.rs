@@ -64,71 +64,40 @@ impl<'a> LangParser<'a> {
                         }
                         "if" => {
                             self.consume(TokenKind::Word)?;
-                            let condition = self.parse_condition_header()?;
-                            self.consume(TokenKind::LBracket)?;
-
-                            // parse consequence
-                            let consequence = self.parse_consequence()?;
-                            if self.current_token()?.value != "else" {
-                                ast.add_node(Node::Conditional {
-                                    condition: Box::from(condition),
-                                    consequence,
-                                    alternative: vec![],
-                                });
-                                continue;
-                            }
-                            self.consume(TokenKind::Word)?;
-                            self.consume(TokenKind::LBracket)?;
-                            let alternative = self.parse_consequence()?;
-
-                            ast.add_node(Node::Conditional {
-                                condition: Box::from(condition),
-                                consequence,
-                                alternative,
-                            });
+                            
+                            let node = self.parse_if()?;
+                            
+                            // let condition = self.parse_condition_header()?;
+                            // self.consume(TokenKind::LBracket)?;
+                            // 
+                            // // parse consequence
+                            // let consequence = self.parse_consequence()?;
+                            // if self.current_token()?.value != "else" {
+                            //     ast.add_node(Node::Conditional {
+                            //         condition: Box::from(condition),
+                            //         consequence,
+                            //         alternative: vec![],
+                            //     });
+                            //     continue;
+                            // }
+                            // self.consume(TokenKind::Word)?;
+                            // self.consume(TokenKind::LBracket)?;
+                            // let alternative = self.parse_consequence()?;
+                            // 
+                            // ast.add_node(Node::Conditional {
+                            //     condition: Box::from(condition),
+                            //     consequence,
+                            //     alternative,
+                            // });
+                            ast.add_node(node);
+                            continue;
                         }
                         "for" => {
                             self.consume(TokenKind::Word)?;
-
-                            // TODO: Parse range header
-                            // TODO: Use a more generic parseBody function
                             
-                            let variable = self.current_token()?;
-                            self.consume(TokenKind::Word)?;
-
-                            self.consume(TokenKind::Word)?;
-                            let start = self.current_token()?;
-                            self.consume(TokenKind::Number)?;
-                            self.consume(TokenKind::Range)?;
-                            let end = self.current_token()?;
-                            self.consume(TokenKind::Number)?;
-                            self.consume(TokenKind::LBracket)?;
-
+                            let node = self.parse_for_loop()?;
                             
-                            let mut bracket_count = 1;
-                            
-                            let mut nodes = Vec::new();
-                            //while self.current_token()?.kind != TokenKind::RBracket {
-                            while bracket_count > 0 {
-                                println!("{:?}", self.current_token()?.kind);
-                                let node = self.parse_node()?;
-                                nodes.push(node);
-                                if self.current_token()?.kind == TokenKind::LBracket {
-                                    bracket_count += 1;
-                                } else if self.current_token()?.kind == TokenKind::RBracket {
-                                    bracket_count -= 1;
-                                }
-                            }
-                            self.consume(TokenKind::RBracket)?;
-
-                            ast.add_node(Node::ForLoop {
-                                variable: variable.value,
-                                range: (
-                                    start.value.parse::<i32>().unwrap(),
-                                    end.value.parse::<i32>().unwrap(),
-                                ),
-                                body: nodes,
-                            });
+                            ast.add_node(node);
                         }
                         _ => {
                             // TODO: check if the next character is an assignment
@@ -160,8 +129,9 @@ impl<'a> LangParser<'a> {
                     }
                 }
                 _ => {
-                    println!("{:?}", self.tokens[self.position].kind);
-                    println!("{:?}", self.tokens[self.position].value);
+                    println!("current: {:?}", self.current_token()?);
+                    println!("peek: {:?}", self.tokens[self.position + 1].kind);
+                    println!("peek value: {:?}", self.tokens[self.position + 1].value);
                     return Err("Unexpected token".to_string());
                 }
             }
@@ -185,6 +155,8 @@ impl<'a> LangParser<'a> {
                 self.advance();
 
                 if name.value == "print" {
+                    println!("current2: {:?}", self.current_token()?.value);
+                    println!("peek2: {:?}", self.peek_token()?.value);
                     return self.parse_print();
                 } else if name.value == "let" {
                     let ident = self.parse_let()?;
@@ -267,7 +239,10 @@ impl<'a> LangParser<'a> {
 
         // parse consequence
         let consequence = self.parse_consequence()?;
+        println!("consequence: {:?}", consequence);
         if self.current_token()?.value != "else" {
+            println!("current: {:?}", self.current_token()?.value);
+            println!("peek: {:?}", self.peek_token()?.value);
             return Ok(Node::Conditional {
                 condition: Box::from(condition),
                 consequence,
@@ -276,6 +251,7 @@ impl<'a> LangParser<'a> {
         }
         self.consume(TokenKind::Word)?;
         self.consume(TokenKind::LBracket)?;
+        println!("current: {:?}", self.current_token()?.value);
         let alternative = self.parse_consequence()?;
 
         Ok(Node::Conditional {
@@ -335,6 +311,44 @@ impl<'a> LangParser<'a> {
         
         self.consume(TokenKind::Semicolon)?;
         Ok(ident)
+    }
+    
+    fn parse_for_loop(&mut self) -> Result<Node, String> {
+        let variable = self.current_token()?;
+        self.consume(TokenKind::Word)?;
+
+        self.consume(TokenKind::Word)?;
+        let start = self.current_token()?;
+        self.consume(TokenKind::Number)?;
+        self.consume(TokenKind::Range)?;
+        let end = self.current_token()?;
+        self.consume(TokenKind::Number)?;
+        self.consume(TokenKind::LBracket)?;
+
+
+        let mut bracket_count = 1;
+
+        let mut nodes = Vec::new();
+        //while self.current_token()?.kind != TokenKind::RBracket {
+        while bracket_count > 0 {
+            println!("{:?}", self.current_token()?.kind);
+            let node = self.parse_node()?;
+            nodes.push(node);
+            if self.current_token()?.kind == TokenKind::LBracket {
+                bracket_count += 1;
+            } else if self.current_token()?.kind == TokenKind::RBracket {
+                bracket_count -= 1;
+            }
+        }
+        self.consume(TokenKind::RBracket)?;
+        Ok(Node::ForLoop {
+            variable: variable.value,
+            range: (
+                start.value.parse::<i32>().unwrap(),
+                end.value.parse::<i32>().unwrap(),
+            ),
+            body: nodes,
+        })
     }
     
     fn parse_condition_header(&mut self) -> Result<Node, String> {

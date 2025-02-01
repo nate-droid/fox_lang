@@ -27,7 +27,13 @@ fn longer_if_statement() {
 
 #[test]
 fn variables_in_conditionals() {
-    let input = "let x : Nat = 5; if (true) { print(\"hello\"); x = x + 2;} print(x);";
+    let input = "\
+    let x : Nat = 5; \
+    if (true) { \
+        print(\"hello\"); \
+        x = x + 2;\
+    } \
+    print(x);";
 
     let mut parser = LangParser::new(input);
     let mut ast = parser.parse().expect("unexpected failure");
