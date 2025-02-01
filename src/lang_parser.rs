@@ -1,7 +1,6 @@
-use crate::cut::Axiom;
 use crate::lang_ast::Ast;
 use crate::lang_lexer::LangLexer;
-use crate::lexer::TokenKind::{And, HypothesisConjunction};
+use crate::lexer::TokenKind::{And};
 use crate::lexer::{Token, TokenKind};
 use crate::parser::{Node, Value};
 
@@ -14,7 +13,7 @@ pub struct LangParser<'a> {
 impl<'a> LangParser<'a> {
     pub fn new(input: &'a str) -> Self {
         let mut lexer = LangLexer::new(input);
-        // lexer.tokenize().expect("TODO: panic message");
+
         match lexer.tokenize() {
             Ok(_) => (),
             Err(e) => panic!("{:?}", e),
@@ -49,56 +48,6 @@ impl<'a> LangParser<'a> {
                             
                             globals.push(ident.val());
                             ast.add_node(ident);
-                            continue;
-                            let name = self.current_token()?;
-
-                            self.consume(TokenKind::Word)?;
-                            self.consume(TokenKind::Colon)?;
-
-                            // TODO: write a function to grab "kind" from the tokens
-                            let kind = self.current_token()?;
-
-                            self.advance();
-
-                            self.consume(TokenKind::Equality)?;
-
-                            let left = self.parse_node()?;
-
-                            // TODO: Will need a more robust way to handle expressions in the future
-                            if self.current_token()?.kind == TokenKind::Add
-                                || self.current_token()?.kind == TokenKind::Modulo
-                            {
-                                let op = self.current_token()?;
-                                self.advance();
-
-                                let right = self.parse_node()?;
-
-                                let n = Node::BinaryExpression {
-                                    left: Box::from(left),
-                                    operator: op.kind,
-                                    right: Box::from(right),
-                                };
-
-                                let ident = Node::Identity {
-                                    name: name.value.to_string(),
-                                    value: Box::from(n),
-                                    kind: kind.value,
-                                };
-                                println!("{:?}", ident);
-
-                                ast.add_node(ident);
-                                self.consume(TokenKind::Semicolon)?;
-                                continue;
-                            }
-
-                            let ident = Node::Identity {
-                                name: name.value.to_string(),
-                                value: Box::from(left),
-                                kind: kind.value,
-                            };
-
-                            ast.add_node(ident);
-                            self.consume(TokenKind::Semicolon)?;
                             continue;
                         }
                         "type" => {
@@ -241,20 +190,6 @@ impl<'a> LangParser<'a> {
                     let ident = self.parse_let()?;
                     // TODO: Need to add to globals
                     return Ok(ident);
-                    
-                    let name = self.current_token()?;
-                    self.consume(TokenKind::Word)?;
-                    self.consume(TokenKind::Colon)?;
-                    let kind = self.current_token()?;
-                    self.consume(TokenKind::Word)?;
-                    self.consume(TokenKind::Equality)?;
-                    let value = self.parse_node()?;
-                    self.consume(TokenKind::Semicolon)?;
-                    return Ok(Node::Identity {
-                        name: name.value,
-                        value: Box::from(value),
-                        kind: kind.value,
-                    });
                 } else if name.value == "if" {
                     return self.parse_if()
                 }
