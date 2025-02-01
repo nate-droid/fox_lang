@@ -211,7 +211,13 @@ impl Ast {
                 value,
                 kind: _kind,
             } => {
-                return self.eval_node(*value);
+                let res = self.eval_node(*value)?;
+                self.upsert_declaration(Node::Identity {
+                    name: _name,
+                    value: Box::from(res.clone()),
+                    kind: _kind,
+                })?;
+                return Ok(res);
             }
             Node::Call {
                 name,
@@ -245,8 +251,13 @@ impl Ast {
                 consequence,
                 alternative,
             } => {
+                let pre_left = condition.left().expect("unexpected failure");
+                let left = self.replace_var(*(*pre_left).clone());
+                println!("left side: {:?}", left);
                 println!("condition: {:?}", condition);
-                panic!("Conditional");
+                
+                //println!("equal? {:?}", left?.val() == condition.right().expect("unexpected failure").val());
+                println!("equal? {:?}", left?.val() == Value::Int(0));
             }
             Node::ForLoop {
                 variable,

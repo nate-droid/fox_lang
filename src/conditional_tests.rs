@@ -64,7 +64,7 @@ fn simple_modulo() {
     let input = "let x : Nat = 16 % 5; print(x);";
     let mut ast = LangParser::new(input);
     let mut ast = ast.parse().expect("unexpected failure");
-
+    println!("{:?}", ast);
     match ast.eval() {
         Ok(_) => {
             println!("{:?}", ast.declarations);
@@ -114,7 +114,11 @@ fn sum_range() {
     //     }
     // }";
     let input = "for i in 0..10 {
-        print(i);
+        let x : Nat = i % 3;
+        if (x == 0) {
+            print(i);
+        }
+        
     }";
     let mut ast = LangParser::new(input);
     let mut ast = ast.parse().expect("unexpected failure");
@@ -124,5 +128,5 @@ fn sum_range() {
         Err(e) => panic!("{:?}", e),
     }
     
-    // TODO: Pickup: parse header for range, and a body function
+    // TODO: Pickup: See why let x : Nat = i % 3; is not set in the global scope
 }

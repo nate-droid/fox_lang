@@ -67,28 +67,6 @@ impl<'a> LangParser<'a> {
                             
                             let node = self.parse_if()?;
                             
-                            // let condition = self.parse_condition_header()?;
-                            // self.consume(TokenKind::LBracket)?;
-                            // 
-                            // // parse consequence
-                            // let consequence = self.parse_consequence()?;
-                            // if self.current_token()?.value != "else" {
-                            //     ast.add_node(Node::Conditional {
-                            //         condition: Box::from(condition),
-                            //         consequence,
-                            //         alternative: vec![],
-                            //     });
-                            //     continue;
-                            // }
-                            // self.consume(TokenKind::Word)?;
-                            // self.consume(TokenKind::LBracket)?;
-                            // let alternative = self.parse_consequence()?;
-                            // 
-                            // ast.add_node(Node::Conditional {
-                            //     condition: Box::from(condition),
-                            //     consequence,
-                            //     alternative,
-                            // });
                             ast.add_node(node);
                             continue;
                         }
@@ -155,8 +133,6 @@ impl<'a> LangParser<'a> {
                 self.advance();
 
                 if name.value == "print" {
-                    println!("current2: {:?}", self.current_token()?.value);
-                    println!("peek2: {:?}", self.peek_token()?.value);
                     return self.parse_print();
                 } else if name.value == "let" {
                     let ident = self.parse_let()?;
@@ -239,10 +215,8 @@ impl<'a> LangParser<'a> {
 
         // parse consequence
         let consequence = self.parse_consequence()?;
-        println!("consequence: {:?}", consequence);
+        
         if self.current_token()?.value != "else" {
-            println!("current: {:?}", self.current_token()?.value);
-            println!("peek: {:?}", self.peek_token()?.value);
             return Ok(Node::Conditional {
                 condition: Box::from(condition),
                 consequence,
@@ -251,7 +225,7 @@ impl<'a> LangParser<'a> {
         }
         self.consume(TokenKind::Word)?;
         self.consume(TokenKind::LBracket)?;
-        println!("current: {:?}", self.current_token()?.value);
+        
         let alternative = self.parse_consequence()?;
 
         Ok(Node::Conditional {
@@ -281,6 +255,7 @@ impl<'a> LangParser<'a> {
         if self.current_token()?.kind == TokenKind::Add
             || self.current_token()?.kind == TokenKind::Modulo
         {
+            
             let op = self.current_token()?;
             self.advance();
 
