@@ -44,7 +44,7 @@ impl<'a> LangParser<'a> {
                         }
                         "let" => {
                             self.advance();
-                            let mut ident = self.parse_let()?;
+                            let ident = self.parse_let()?;
                             
                             globals.push(ident.val());
                             ast.add_node(ident);
@@ -467,6 +467,15 @@ impl<'a> LangParser<'a> {
         self.consume(TokenKind::LeftParenthesis)?;
 
         let input = self.current_token()?;
+        
+        // convert input to a node
+        let n = Node::Identity {
+            name: input.value,
+            value: Box::from(Node::Atomic {
+                value: Value::Int(0),
+            }),
+            kind: "Nat".to_string(),
+        };
 
         self.advance();
         self.consume(TokenKind::RightParenthesis)?;
@@ -474,7 +483,7 @@ impl<'a> LangParser<'a> {
 
         let node = Node::Call {
             name: "print".to_string(),
-            arguments: vec![input],
+            arguments: vec![n],
             returns: vec![],
         };
         Ok(node)

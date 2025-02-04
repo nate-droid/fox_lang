@@ -1,5 +1,5 @@
 use crate::cut::Axiom;
-use crate::lexer::{Token, TokenKind};
+use crate::lexer::{TokenKind};
 use crate::parser::Node::{Atomic, EmptyNode};
 use crate::parser::{compare_value, Node, Value};
 use std::collections::HashMap;
@@ -8,6 +8,12 @@ use std::collections::HashMap;
 pub struct Ast {
     pub nodes: Vec<Node>,
     pub declarations: HashMap<String, Node>,
+}
+
+impl Default for Ast {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl Ast {
@@ -20,7 +26,7 @@ impl Ast {
 
     pub fn upsert_declaration(&mut self, node: Node) -> Result<(), String> {
         match node {
-            Node::Identity { name, value, kind } => {
+            Node::Identity { name, value, ..} => {
                 self.declarations.insert(name, *value);
             }
             EmptyNode => {}
@@ -76,8 +82,8 @@ impl Ast {
                 } => {
                     self.eval_call(name, arguments)?;
                 }
-                Atomic { value: _value } => {
-                    println!("{:?}", _value);
+                Atomic { value } => {
+                    println!("{:?}", value);
                 }
                 Node::MMExpression {
                     expression: _expression,
@@ -157,18 +163,20 @@ impl Ast {
                             kind: "Nat".to_string(),
                         })?;
                     }
-
-                    // TODO: remove variable from scope
+                    
                     self.remove_declaration(&variable)?;
                 }
                 Node::Comparison {
-                    left,
-                    operator,
-                    right,
+                    left: _left,
+                    operator: _operator,
+                    right: _right,
                 } => {
                     return Ok(());
                 }
                 EmptyNode => {}
+                Node::Object { name: _name, .. } => {
+                    todo!("Object");
+                }
             }
         }
         Ok(())
@@ -184,15 +192,12 @@ impl Ast {
             } => {
                 let res = self.eval_binary_expression(*left.clone(), operator, *right)?;
 
-                match *left.clone() {
-                    Node::Identity { name, value, kind } => {
-                        self.upsert_declaration(Node::Identity {
-                            name,
-                            value: Box::from(res.clone()),
-                            kind,
-                        })?;
-                    }
-                    _ => {}
+                if let Node::Identity { name, value: _value, kind } = *left.clone() {
+                    self.upsert_declaration(Node::Identity {
+                        name,
+                        value: Box::from(res.clone()),
+                        kind,
+                    })?;
                 }
 
                 return Ok(res);
@@ -231,7 +236,7 @@ impl Ast {
             }
             Node::Comparison {
                 left,
-                operator,
+                operator: _operator,
                 right,
             } => {
                 return Ok(Atomic {
@@ -249,23 +254,32 @@ impl Ast {
             Node::Conditional {
                 condition,
                 consequence,
-                alternative,
+                alternative: _alternative,
             } => {
                 let pre_left = condition.left().expect("unexpected failure");
-                let left = self.replace_var(*(*pre_left).clone());
-                println!("left side: {:?}", left);
-                println!("condition: {:?}", condition);
+                let left = self.replace_var(*pre_left.clone());
                 
-                //println!("equal? {:?}", left?.val() == condition.right().expect("unexpected failure").val());
-                println!("equal? {:?}", left?.val() == Value::Int(0));
+                // TODO: the right side is hardcoded at the moment
+                
+                // println!("equal? {:?}", left?.val() == Value::Int(0));
+                if left?.val() == Value::Int(0) {
+                    // TODO: right a "evaluate consequence" function
+                    for node in consequence.clone() {
+                        let res = self.eval_node(node)?;
+                        self.upsert_declaration(res)?
+                    }
+                }
             }
             Node::ForLoop {
-                variable,
-                range,
-                body,
+                variable: _variable,
+                range: _range,
+                body: _body,
             } => {}
             EmptyNode => {
                 todo!("Empty node");
+            }
+            _ => {
+                todo!("Unknown node");
             }
         }
 
@@ -371,26 +385,33 @@ impl Ast {
         Ok(())
     }
 
-    fn eval_call(&mut self, name: String, arguments: Vec<Token>) -> Result<(), String> {
+    fn eval_call(&mut self, name: String, arguments: Vec<Node>) -> Result<(), String> {
         // TODO: Have the call names be enums
 
         match name.as_str() {
             "print" => {
-                let found = self.declarations.get(&arguments.clone()[0].value);
-                let mut args = arguments.clone();
-
-                match found {
-                    Some(node) => {
+                // check if the first argument is an Object
+                if let Node::Object { name, kind: _kind } = arguments[0].clone() {
+                    println!("Object: {:?}", arguments[0].clone());
+                    let found = self.declarations.get(name.as_str());
+                    let args = arguments.clone();
+                    if let Some(node) = found {
+                        println!("pre replace node: {:?}", node);
+                        println!("args: {:?}", args);
+                        // TODO: Args should be a Vec of Nodes, not tokens, that is icky...
+                        panic!("replace the args, not the node lol");
                         let res = self.replace_var(node.clone())?;
-
-                        args[0].value = res.val().to_string();
+                        println!("replaced: {:?}", res);
+                        // args[0].value = res.val().to_string();
                     }
-                    None => {}
                 }
-                println!("{:?}", args[0].value);
+                let temp = arguments[0].left().expect("unexpected failure");
+                let temp2 = *temp;
+                println!("{:?}", temp2.to_string());
+                
             }
             "reduce" => {
-                println!("{:?}", arguments[0].value);
+                println!("{:?}", arguments[0].left());
             }
             _ => return Err("Unknown function".to_string()),
         }
@@ -402,7 +423,6 @@ impl Ast {
 mod tests {
     use super::*;
     use crate::lang_parser::LangParser;
-    use crate::lexer::{Token, TokenKind};
     use crate::parser::{Node, Value};
 
     #[test]
@@ -410,7 +430,7 @@ mod tests {
         let mut ast = Ast::new();
         ast.add_node(Node::Identity {
             name: "x".to_string(),
-            value: Box::from(Node::Atomic {
+            value: Box::from(Atomic {
                 value: Value::Int(10),
             }),
             kind: "Nat".to_string(),
@@ -423,9 +443,8 @@ mod tests {
         let mut ast = Ast::new();
         ast.add_node(Node::Call {
             name: "print".to_string(),
-            arguments: vec![Token {
-                value: "Hello, World!".to_string(),
-                kind: TokenKind::String,
+            arguments: vec![Atomic {
+                value: Value::Str("hello, world".to_string()),
             }],
             returns: vec![],
         });
