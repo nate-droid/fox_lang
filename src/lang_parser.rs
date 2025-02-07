@@ -469,12 +469,9 @@ impl<'a> LangParser<'a> {
         let input = self.current_token()?;
         
         // convert input to a node
-        let n = Node::Identity {
+        let n = Node::Object {
             name: input.value,
-            value: Box::from(Node::Atomic {
-                value: Value::Int(0),
-            }),
-            kind: "Nat".to_string(),
+            kind: "Var".to_string(),
         };
 
         self.advance();

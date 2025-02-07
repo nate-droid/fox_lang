@@ -141,7 +141,7 @@ impl Ast {
                     self.upsert_declaration(Node::Identity {
                         name: variable.clone(),
                         value: Box::new(Atomic {
-                            value: Value::Int(0),
+                            value: Value::Int(range.0),
                         }),
                         kind: "Nat".to_string(),
                     })?;
@@ -149,6 +149,7 @@ impl Ast {
                     let start = range.0;
                     let end = range.1;
                     let mut i = start;
+                    
                     while i < end {
                         for node in body.clone() {
                             self.eval_node(node)?;
@@ -193,11 +194,12 @@ impl Ast {
                 let res = self.eval_binary_expression(*left.clone(), operator, *right)?;
 
                 if let Node::Identity { name, value: _value, kind } = *left.clone() {
-                    self.upsert_declaration(Node::Identity {
-                        name,
-                        value: Box::from(res.clone()),
-                        kind,
-                    })?;
+                    // panic!("check right vs left names");
+                    // self.upsert_declaration(Node::Identity {
+                    //     name,
+                    //     value: Box::from(res.clone()),
+                    //     kind,
+                    // })?;
                 }
 
                 return Ok(res);
@@ -300,6 +302,15 @@ impl Ast {
                 .clone();
             node = res;
         }
+        if let Node::Object { name, kind } = node.clone() {
+            let res = self
+                .declarations
+                .get(&name)
+                .expect("unexpected failure").clone();
+            // println!("res? {:?}", res);
+            node = res;
+            
+        }
         Ok(node)
     }
 
@@ -392,19 +403,15 @@ impl Ast {
             "print" => {
                 // check if the first argument is an Object
                 if let Node::Object { name, kind: _kind } = arguments[0].clone() {
-                    println!("Object: {:?}", arguments[0].clone());
                     let found = self.declarations.get(name.as_str());
-                    let args = arguments.clone();
+
                     if let Some(node) = found {
-                        println!("pre replace node: {:?}", node);
-                        println!("args: {:?}", args);
-                        // TODO: Args should be a Vec of Nodes, not tokens, that is icky...
-                        panic!("replace the args, not the node lol");
-                        let res = self.replace_var(node.clone())?;
-                        println!("replaced: {:?}", res);
-                        // args[0].value = res.val().to_string();
+                        let res = self.replace_var(arguments[0].clone())?;
+                        println!("{:?}", res.clone().to_string());
+                        return Ok(())
                     }
                 }
+                
                 let temp = arguments[0].left().expect("unexpected failure");
                 let temp2 = *temp;
                 println!("{:?}", temp2.to_string());

@@ -113,11 +113,9 @@ fn sum_range() {
     //         print(i);
     //     }
     // }";
-    let input = "for i in 0..10 {
+    let input = "for i in 0..5 {
         let x : Nat = i % 3;
-        if (x == 0) {
-            print(i);
-        }
+        print(i);
         
     }";
     let mut ast = LangParser::new(input);
@@ -129,4 +127,6 @@ fn sum_range() {
     }
     
     // TODO: Pickup: See why let x : Nat = i % 3; is not set in the global scope
+    
+    // TODO: parse "empty" variables as Objects and not Words
 }

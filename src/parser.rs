@@ -69,7 +69,7 @@ impl Value {
     }
 }
 
-impl fmt::Display for Value {
+impl Display for Value {
     fn fmt(&self,f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             Value::Int (i) => write!(f, "{}", i),
@@ -169,10 +169,11 @@ impl Display for Node {
                 write!(f, "{}", value.clone())
             }
             Node::Identity { name, value, kind } => {
-                write!(f, "{} : {} = {:?}", name, kind, value)
+                // write!(f, "{} : {} = {:?}", name, kind, value)
+                write!(f, "{}", value)
             }
             Atomic { value } => {
-                write!(f, "{}", value.to_string())
+                write!(f, "{}", value)
             }
             Node::Call { name, arguments, returns: _returns } => {
                 write!(f, "{}({:?})", name, arguments)
@@ -190,13 +191,13 @@ impl Display for Node {
                 write!(f, "for {} in {}..{} {{ {:?} }}", variable, range.0, range.1, body)
             }
             Node::Comparison { left, operator, right } => {
-                write!(f, "{} {} {}", left.to_string(), operator, right.to_string())
+                write!(f, "{} {} {}", left, operator, right)
             }
             Node::EmptyNode => {
-                write!(f, "{}", "".to_string())
+                write!(f, "")
             }
             Node::Object { name, kind } => {
-                write!(f, "{} : {}", name, kind)
+                write!(f, "{}", name)
             }
         }
     }
@@ -239,6 +240,7 @@ impl Node {
             },
             Node::BinaryExpression { left, .. } => Some(Box::from(*left.clone())),
             Node::Comparison { left, .. } => Some(Box::from(*left.clone())),
+            Node::Object { name, kind } => Some(Box::from(Node::Object { name: name.clone(), kind: kind.clone() })),
             _ => {
                 println!("boo {:?}", self);
                 None 
