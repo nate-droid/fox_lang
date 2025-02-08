@@ -334,7 +334,7 @@ mod tests {
 
     #[test]
     fn basic_declarations() {
-        let input = "let x : Nat = 10;";
+        let input = "let x = 10;";
         let mut lexer = LangLexer::new(input);
         lexer.tokenize().expect("TODO: panic message");
         let tokens = lexer.tokens();

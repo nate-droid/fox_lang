@@ -239,13 +239,6 @@ impl<'a> LangParser<'a> {
         let name = self.current_token()?;
         
         self.consume(TokenKind::Word)?;
-        
-        self.consume(TokenKind::Colon)?;
-
-        // TODO: write a function to grab "kind" from the tokens
-        let kind = self.current_token()?;
-
-        self.advance();
 
         self.consume(TokenKind::Equality)?;
 
@@ -270,7 +263,7 @@ impl<'a> LangParser<'a> {
             let ident = Node::Identity {
                 name: name.value.to_string(),
                 value: Box::from(n),
-                kind: kind.value,
+                kind: "str".to_string(),
             };
             
             
@@ -281,7 +274,7 @@ impl<'a> LangParser<'a> {
         let ident = Node::Identity {
             name: name.value.to_string(),
             value: Box::from(left),
-            kind: kind.value,
+            kind: "str".to_string(),
         };
         
         self.consume(TokenKind::Semicolon)?;
@@ -560,7 +553,7 @@ mod tests {
 
     #[test]
     fn variables() {
-        let input = "let x : nat = 10;";
+        let input = "let x = 10;";
 
         let mut parser = LangParser::new(input);
 
@@ -578,8 +571,8 @@ mod tests {
 
     #[test]
     fn multi_line_variables() {
-        let input = "let x : Nat = 1;\
-        let y : Nat = 2;";
+        let input = "let x = 1;\
+        let y = 2;";
         let mut parser = LangParser::new(input);
         println!("{:?}", parser.tokens);
         let ast = parser.parse().expect("unexpected failure");
@@ -588,7 +581,7 @@ mod tests {
 
     #[test]
     fn addition() {
-        let input = "let x : Nat = 1 + 2;";
+        let input = "let x = 1 + 2;";
         let mut parser = LangParser::new(input);
         let ast = parser.parse().expect("unexpected failure");
         println!("{:?}", ast);
@@ -598,9 +591,9 @@ mod tests {
 
     #[test]
     fn addition_with_variables() {
-        let input = "let x : Nat = 1;\
-        let y : Nat = 2;\
-        let z : Nat = x + y;";
+        let input = "let x = 1;\
+        let y = 2;\
+        let z = x + y;";
         let mut parser = LangParser::new(input);
         let ast = parser.parse().expect("unexpected failure");
         println!("{:?}", ast);
@@ -610,7 +603,7 @@ mod tests {
 
     #[test]
     fn mm_expressions_in_fox() {
-        let input = "let ax : Expr = (𝜓 → 𝜑);";
+        let input = "let ax = (𝜓 → 𝜑);";
         let mut parser = LangParser::new(input);
         let ast = parser.parse().expect("unexpected failure");
         println!("{:?}", ast);

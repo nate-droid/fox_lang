@@ -467,7 +467,7 @@ mod tests {
 
     #[test]
     fn eval_addition() {
-        let input = "let x : Nat = 1 + 2;";
+        let input = "let x = 1 + 2;";
         let mut parser = LangParser::new(input);
         let mut ast = parser.parse().expect("unexpected failure");
 
@@ -480,7 +480,7 @@ mod tests {
 
     #[test]
     fn eval_variable_addition() {
-        let input = "let x : Nat = 1; let y : Nat = 2; let z : Nat = x + y;";
+        let input = "let x = 1; let y = 2; let z = x + y;";
         let mut parser = LangParser::new(input);
         let mut ast = parser.parse().expect("unexpected failure");
 
@@ -492,7 +492,7 @@ mod tests {
 
     #[test]
     fn reduce_expression() {
-        let input = "let x : Expr = (𝜑 → (𝜓 → 𝜑));";
+        let input = "let x = (𝜑 → (𝜓 → 𝜑));";
         let mut parser = LangParser::new(input);
         let mut ast = parser.parse().expect("unexpected failure");
         println!("{:?}", ast);
@@ -501,10 +501,10 @@ mod tests {
 
     #[test]
     fn parse_several() {
-        let input = "let x : Nat = 1;";
+        let input = "let x = 1;";
         let mut ast = Ast::new();
         ast.parse(input).expect("unexpected failure");
-        let input2 = "let y : Nat = 2;";
+        let input2 = "let y = 2;";
         ast.parse(input2).expect("unexpected failure");
         println!("{:?}", ast.nodes);
     }

@@ -28,7 +28,7 @@ fn longer_if_statement() {
 #[test]
 fn variables_in_conditionals() {
     let input = "\
-    let x : Nat = 5; \
+    let x = 5; \
     if (true) { \
         print(\"hello\"); \
         x = x + 2;\
@@ -61,7 +61,7 @@ fn simple_for_loop() {
 
 #[test]
 fn simple_modulo() {
-    let input = "let x : Nat = 16 % 5; print(x);";
+    let input = "let x = 16 % 5; print(x);";
     let mut ast = LangParser::new(input);
     let mut ast = ast.parse().expect("unexpected failure");
     println!("{:?}", ast);
@@ -76,7 +76,7 @@ fn simple_modulo() {
 
 #[test]
 fn compare_expressions() {
-    let input = "let x : Nat = 15 % 5; if (x == 0) { print(\"x is zero\"); } else { print(\"x is not zero\"); }";
+    let input = "let x = 15 % 5; if (x == 0) { print(\"x is zero\"); } else { print(\"x is not zero\"); }";
     let mut ast = LangParser::new(input);
     let mut ast = ast.parse().expect("unexpected failure");
 
@@ -91,7 +91,7 @@ fn compare_expressions() {
 
 #[test]
 fn conditions_with_conjunctions() {
-    let input = "let x : Nat = 15 % 5; let y : Nat = 15 % 3; if (x == 0 && y == 0) { print(\"x is zero\"); } else { print(\"x is not zero\"); }";
+    let input = "let x = 15 % 5; let y = 15 % 3; if (x == 0 && y == 0) { print(\"x is zero\"); } else { print(\"x is not zero\"); }";
     let mut ast = LangParser::new(input);
     let mut ast = ast.parse().expect("unexpected failure");
 
@@ -107,9 +107,9 @@ fn conditions_with_conjunctions() {
 #[test]
 fn sum_range() {
       let input = "for i in 0..16 {
-        let sum : Nat = 0;
-        let x : Nat = i % 3;
-        let y : Nat = i % 5;
+        let sum = 0;
+        let x = i % 3;
+        let y = i % 5;
         
         if (x == 0 && y == 0) {
             print(\"hi\");
