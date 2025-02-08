@@ -132,14 +132,15 @@ impl<'a> LangParser<'a> {
                 let name = self.current_token()?;
                 self.advance();
 
-                if name.value == "print" {
-                    return self.parse_print();
-                } else if name.value == "let" {
-                    let ident = self.parse_let()?;
-                    // TODO: Need to add to globals
-                    return Ok(ident);
-                } else if name.value == "if" {
-                    return self.parse_if()
+                match name.value.as_str() {
+                    "print" => return self.parse_print(),
+                    "let" => {
+                        let ident = self.parse_let()?;
+                        // TODO: Need to add to globals
+                        return Ok(ident);
+                    }
+                    "if" => return self.parse_if(),
+                    _ => {}
                 }
 
                 match self.current_token()?.kind {
@@ -223,6 +224,7 @@ impl<'a> LangParser<'a> {
                 alternative: vec![],
             });
         }
+        
         self.consume(TokenKind::Word)?;
         self.consume(TokenKind::LBracket)?;
         
@@ -449,9 +451,9 @@ impl<'a> LangParser<'a> {
     fn parse_consequence(&mut self) -> Result<Vec<Node>, String> {
         let mut nodes = Vec::new();
         while self.current_token()?.kind != TokenKind::RBracket {
-            let node = self.parse_node()?;
-            nodes.push(node);
+            nodes.push(self.parse_node()?);
         }
+        
         self.consume(TokenKind::RBracket)?;
         Ok(nodes)
     }
@@ -482,9 +484,9 @@ impl<'a> LangParser<'a> {
     fn parse_body(&mut self) -> Result<Vec<Node>, String> {
         let mut nodes = Vec::new();
         while self.current_token()?.kind != TokenKind::RBracket {
-            let node = self.parse_node()?;
-            nodes.push(node);
+            nodes.push(self.parse_node()?);
         }
+        
         self.consume(TokenKind::RBracket)?;
         Ok(nodes)
     }

@@ -52,140 +52,7 @@ impl Ast {
 
     pub fn eval(&mut self) -> Result<(), String> {
         for node in self.nodes.clone() {
-            match node.clone() {
-                Node::BinaryExpression {
-                    left,
-                    operator,
-                    right,
-                } => {
-                    let _ = self.eval_binary_expression(*left, operator, *right)?;
-                    return Ok(());
-                }
-                Node::UnaryExpression {
-                    operator: _operator,
-                    right: _right,
-                } => {}
-                Node::Identifier { value: _value, .. } => {}
-                Node::Identity {
-                    name,
-                    value,
-                    kind: _kind,
-                } => {
-                    let res = self.eval_node(*value)?;
-
-                    self.declarations.insert(name, res);
-                }
-                Node::Call {
-                    name,
-                    arguments,
-                    returns: _returns,
-                } => {
-                    self.eval_call(name, arguments)?;
-                }
-                Atomic { value } => {
-                    println!("{:?}", value);
-                }
-                Node::MMExpression {
-                    expression: _expression,
-                } => {
-                    todo!("MMExpression");
-                }
-                Node::Type { name } => {
-                    self.declarations.insert(name, node);
-                }
-                Node::Conditional {
-                    condition,
-                    consequence,
-                    alternative,
-                } => {
-                    // test condition
-                    match *condition.clone() {
-                        Node::Comparison {
-                            left,
-                            operator: _operator,
-                            right,
-                        } => {
-                            // TODO: replace left and right with their values
-                            let pre_left = left.left().expect("unexpected failure");
-                            let replaced_left = self.replace_var(*pre_left.clone()).expect("unexpected failure");
-                            
-                            let pre_right = right.left().expect("unexpected failure");
-                            let replaced_right = self.replace_var(*pre_right.clone()).expect("unexpected failure");
-                            
-                            let best = compare_value(&replaced_left.val(), &replaced_right.val());
-                            if best {
-                                for node in consequence.clone() {
-                                    let res = self.eval_node(node)?;
-                                    self.upsert_declaration(res)?
-                                }
-                            } else {
-                                for node in alternative.clone() {
-                                    self.eval_node(node)?;
-                                }
-                            }
-                        }
-                        Atomic { value } => {
-                            if value == Value::Bool(true) {
-                                for node in consequence.clone() {
-                                    let res = self.eval_node(node)?;
-                                    self.upsert_declaration(res)?
-                                }
-                            }
-                        }
-                        _ => {
-                            println!("condition: {:?}", condition);
-                            // TODO: Check if boolean
-                        }
-                    }
-                }
-                Node::ForLoop {
-                    variable,
-                    range,
-                    body,
-                } => {
-                    // Add variable to declarations
-                    // increment variable every loop
-                    self.upsert_declaration(Node::Identity {
-                        name: variable.clone(),
-                        value: Box::new(Atomic {
-                            value: Value::Int(range.0),
-                        }),
-                        kind: "Nat".to_string(),
-                    })?;
-
-                    let start = range.0;
-                    let end = range.1;
-                    let mut i = start;
-                    
-                    while i < end {
-                        for node in body.clone() {
-                            self.eval_node(node)?;
-                        }
-                        i += 1;
-
-                        self.upsert_declaration(Node::Identity {
-                            name: variable.clone(),
-                            value: Box::new(Atomic {
-                                value: Value::Int(i),
-                            }),
-                            kind: "Nat".to_string(),
-                        })?;
-                    }
-                    
-                    self.remove_declaration(&variable)?;
-                }
-                Node::Comparison {
-                    left: _left,
-                    operator: _operator,
-                    right: _right,
-                } => {
-                    return Ok(());
-                }
-                EmptyNode => {}
-                Node::Object { name: _name, .. } => {
-                    todo!("Object");
-                }
-            }
+            self.eval_node(node)?;
         }
         Ok(())
     }
@@ -199,15 +66,6 @@ impl Ast {
                 right,
             } => {
                 let res = self.eval_binary_expression(*left.clone(), operator, *right)?;
-
-                if let Node::Identity { name, value: _value, kind } = *left.clone() {
-                    // panic!("check right vs left names");
-                    // self.upsert_declaration(Node::Identity {
-                    //     name,
-                    //     value: Box::from(res.clone()),
-                    //     kind,
-                    // })?;
-                }
 
                 return Ok(res);
             }
@@ -263,27 +121,81 @@ impl Ast {
             Node::Conditional {
                 condition,
                 consequence,
-                alternative: _alternative,
+                alternative,
             } => {
-                let pre_left = condition.left().expect("unexpected failure");
-                let left = self.replace_var(*pre_left.clone());
-                
-                // TODO: the right side is hardcoded at the moment
-                
-                // println!("equal? {:?}", left?.val() == Value::Int(0));
-                if left?.val() == Value::Int(0) {
-                    // TODO: right a "evaluate consequence" function
-                    for node in consequence.clone() {
-                        let res = self.eval_node(node)?;
-                        self.upsert_declaration(res)?
+                match *condition.clone() {
+                    Node::Comparison {
+                        left,
+                        operator: _operator,
+                        right,
+                    } => {
+                        // TODO: replace left and right with their values
+                        let pre_left = left.left().expect("unexpected failure");
+                        let replaced_left = self.replace_var(*pre_left.clone()).expect("unexpected failure");
+
+                        let pre_right = right.left().expect("unexpected failure");
+                        let replaced_right = self.replace_var(*pre_right.clone()).expect("unexpected failure");
+
+                        let best = compare_value(&replaced_left.val(), &replaced_right.val());
+                        if best {
+                            for node in consequence.clone() {
+                                let res = self.eval_node(node)?;
+                                self.upsert_declaration(res)?
+                            }
+                        } else {
+                            for node in alternative.clone() {
+                                self.eval_node(node)?;
+                            }
+                        }
+                    }
+                    Atomic { value } => {
+                        if value == Value::Bool(true) {
+                            for node in consequence.clone() {
+                                let res = self.eval_node(node)?;
+                                self.upsert_declaration(res)?
+                            }
+                        }
+                    }
+                    _ => {
+                        println!("condition: {:?}", condition);
+                        // TODO: Check if boolean
                     }
                 }
             }
             Node::ForLoop {
-                variable: _variable,
-                range: _range,
-                body: _body,
-            } => {}
+                variable,
+                range,
+                body,
+            } => {
+                self.upsert_declaration(Node::Identity {
+                    name: variable.clone(),
+                    value: Box::new(Atomic {
+                        value: Value::Int(range.0),
+                    }),
+                    kind: "Nat".to_string(),
+                })?;
+
+                let start = range.0;
+                let end = range.1;
+                let mut i = start;
+
+                while i < end {
+                    for node in body.clone() {
+                        self.eval_node(node)?;
+                    }
+                    i += 1;
+
+                    self.upsert_declaration(Node::Identity {
+                        name: variable.clone(),
+                        value: Box::new(Atomic {
+                            value: Value::Int(i),
+                        }),
+                        kind: "Nat".to_string(),
+                    })?;
+                }
+
+                self.remove_declaration(&variable)?;
+            }
             EmptyNode => {
                 todo!("Empty node");
             }
