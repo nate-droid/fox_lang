@@ -105,7 +105,14 @@ impl Ast {
                             operator: _operator,
                             right,
                         } => {
-                            let best = compare_value(&left.val(), &right.val());
+                            // TODO: replace left and right with their values
+                            let pre_left = left.left().expect("unexpected failure");
+                            let replaced_left = self.replace_var(*pre_left.clone()).expect("unexpected failure");
+                            
+                            let pre_right = right.left().expect("unexpected failure");
+                            let replaced_right = self.replace_var(*pre_right.clone()).expect("unexpected failure");
+                            
+                            let best = compare_value(&replaced_left.val(), &replaced_right.val());
                             if best {
                                 for node in consequence.clone() {
                                     let res = self.eval_node(node)?;

@@ -106,18 +106,25 @@ fn conditions_with_conjunctions() {
 
 #[test]
 fn sum_range() {
-    // let input = "for i in 0..1000 {
-    //     let x : Nat = i % 3;
-    //     let y : Nat = i % 5;
-    //     if (x == 0 && y == 0) {
-    //         print(i);
-    //     }
-    // }";
-    let input = "for i in 0..5 {
+      let input = "for i in 0..16 {
+        let sum : Nat = 0;
         let x : Nat = i % 3;
-        print(i);
+        let y : Nat = i % 5;
         
+        if (x == 0 && y == 0) {
+            print(\"hi\");
+        } else {
+            print(\"not equal\");
+            print(x);
+            print(y);
+        }
+        
+        if (i == 15) {
+            print(x);
+        }
     }";
+
+
     let mut ast = LangParser::new(input);
     let mut ast = ast.parse().expect("unexpected failure");
 
@@ -126,7 +133,5 @@ fn sum_range() {
         Err(e) => panic!("{:?}", e),
     }
     
-    // TODO: Pickup: See why let x : Nat = i % 3; is not set in the global scope
-    
-    // TODO: parse "empty" variables as Objects and not Words
+    println!("{:?}", ast.declarations);
 }

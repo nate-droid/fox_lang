@@ -239,7 +239,7 @@ impl<'a> LangParser<'a> {
         let name = self.current_token()?;
         
         self.consume(TokenKind::Word)?;
-        println!("name: {:?}", name);
+        
         self.consume(TokenKind::Colon)?;
 
         // TODO: write a function to grab "kind" from the tokens
@@ -306,7 +306,7 @@ impl<'a> LangParser<'a> {
         let mut nodes = Vec::new();
         //while self.current_token()?.kind != TokenKind::RBracket {
         while bracket_count > 0 {
-            println!("{:?}", self.current_token()?.kind);
+            
             let node = self.parse_node()?;
             nodes.push(node);
             if self.current_token()?.kind == TokenKind::LBracket {
@@ -332,7 +332,7 @@ impl<'a> LangParser<'a> {
         match self.current_token()?.kind {
             TokenKind::Word => {
                 let n = self.parse_condition()?;
-                println!("n: {:?}", n);
+
                 if self.current_token()?.kind == TokenKind::RightParenthesis {
                     self.advance();
                     return Ok(n);
@@ -518,7 +518,10 @@ impl<'a> LangParser<'a> {
         if self.position < self.tokens.len() {
             Ok(self.tokens[self.position].clone())
         } else {
-            Err("No more tokens".to_string())
+            Ok(Token {
+                kind: TokenKind::EOF,
+                value: "".to_string(),
+            })
         }
     }
 

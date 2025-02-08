@@ -62,6 +62,7 @@ pub enum TokenKind {
     Range,
     
     IsEqual, // ==
+    EOF,
 }
 
 impl std::fmt::Display for TokenKind {
@@ -111,6 +112,7 @@ impl std::fmt::Display for TokenKind {
             TokenKind::RBracket => write!(f, "RBracket"),
             TokenKind::Range => write!(f, "Range"),
             TokenKind::IsEqual => write!(f, "=="),
+            TokenKind::EOF => write!(f, "EOF"),
         }
     }
 }
