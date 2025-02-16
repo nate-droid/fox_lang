@@ -135,3 +135,30 @@ fn sum_range() {
     
     println!("{:?}", ast.declarations);
 }
+
+#[test]
+fn sum_range_with_break() {
+    let input = "for i in 0..16 {
+        let sum = 0;
+        let x = i % 3;
+        let y = i % 5;
+        
+        if (x == 0 && y == 0) {
+            print(\"hi\");
+        } else {
+            print(\"not equal\");
+            print(x);
+            print(y);
+        }
+    }";
+
+    let mut ast = LangParser::new(input);
+    let mut ast = ast.parse().expect("unexpected failure");
+
+    match ast.eval() {
+        Ok(_) => (),
+        Err(e) => panic!("{:?}", e),
+    }
+
+    println!("{:?}", ast.declarations);
+}

@@ -123,81 +123,17 @@ impl Ast {
                 consequence,
                 alternative,
             } => {
-                match *condition.clone() {
-                    Node::Comparison {
-                        left,
-                        operator: _operator,
-                        right,
-                    } => {
-                        // TODO: replace left and right with their values
-                        let pre_left = left.left().expect("unexpected failure");
-                        let replaced_left = self.replace_var(*pre_left.clone()).expect("unexpected failure");
-
-                        let pre_right = right.left().expect("unexpected failure");
-                        let replaced_right = self.replace_var(*pre_right.clone()).expect("unexpected failure");
-
-                        let best = compare_value(&replaced_left.val(), &replaced_right.val());
-                        if best {
-                            for node in consequence.clone() {
-                                let res = self.eval_node(node)?;
-                                self.upsert_declaration(res)?
-                            }
-                        } else {
-                            for node in alternative.clone() {
-                                self.eval_node(node)?;
-                            }
-                        }
-                    }
-                    Atomic { value } => {
-                        if value == Value::Bool(true) {
-                            for node in consequence.clone() {
-                                let res = self.eval_node(node)?;
-                                self.upsert_declaration(res)?
-                            }
-                        }
-                    }
-                    _ => {
-                        println!("condition: {:?}", condition);
-                        // TODO: Check if boolean
-                    }
-                }
+                self.eval_conditional(condition, consequence, alternative)?;
             }
             Node::ForLoop {
                 variable,
                 range,
                 body,
             } => {
-                self.upsert_declaration(Node::Identity {
-                    name: variable.clone(),
-                    value: Box::new(Atomic {
-                        value: Value::Int(range.0),
-                    }),
-                    kind: "Nat".to_string(),
-                })?;
-
-                let start = range.0;
-                let end = range.1;
-                let mut i = start;
-
-                while i < end {
-                    for node in body.clone() {
-                        self.eval_node(node)?;
-                    }
-                    i += 1;
-
-                    self.upsert_declaration(Node::Identity {
-                        name: variable.clone(),
-                        value: Box::new(Atomic {
-                            value: Value::Int(i),
-                        }),
-                        kind: "Nat".to_string(),
-                    })?;
-                }
-
-                self.remove_declaration(&variable)?;
+                self.parse_for(variable, range, body)?;
             }
             EmptyNode => {
-                todo!("Empty node");
+                return Ok(EmptyNode);
             }
             _ => {
                 todo!("Unknown node");
@@ -226,7 +162,6 @@ impl Ast {
                 .declarations
                 .get(&name)
                 .expect("unexpected failure").clone();
-            // println!("res? {:?}", res);
             node = res;
             
         }
@@ -341,6 +276,81 @@ impl Ast {
             }
             _ => return Err("Unknown function".to_string()),
         }
+        Ok(())
+    }
+    
+    fn eval_conditional(&mut self, condition: Box<Node>, consequence: Vec<Node>, alternative: Vec<Node>) -> Result<(), String> {
+        // assert that node is of type Conditional
+        match *condition.clone() {
+            Node::Comparison {
+                left,
+                operator: _operator,
+                right,
+            } => {
+                // TODO: replace left and right with their values
+                let pre_left = left.left().expect("unexpected failure");
+                let replaced_left = self.replace_var(*pre_left.clone()).expect("unexpected failure");
+
+                let pre_right = right.left().expect("unexpected failure");
+                let replaced_right = self.replace_var(*pre_right.clone()).expect("unexpected failure");
+
+                let best = compare_value(&replaced_left.val(), &replaced_right.val());
+                if best {
+                    for node in consequence.clone() {
+                        let res = self.eval_node(node)?;
+                        self.upsert_declaration(res)?
+                    }
+                } else {
+                    for node in alternative.clone() {
+                        self.eval_node(node)?;
+                    }
+                }
+            }
+            Atomic { value } => {
+                if value == Value::Bool(true) {
+                    for node in consequence.clone() {
+                        let res = self.eval_node(node)?;
+                        self.upsert_declaration(res)?
+                    }
+                }
+            }
+            _ => {
+                println!("condition: {:?}", condition);
+                // TODO: Check if boolean
+            }
+        }
+        Ok(())
+    }
+    
+    fn parse_for(&mut self, variable: String, range: (i32, i32), body: Vec<Node>) -> Result<(), String> {
+        self.upsert_declaration(Node::Identity {
+            name: variable.clone(),
+            value: Box::new(Atomic {
+                value: Value::Int(range.0),
+            }),
+            kind: "Nat".to_string(),
+        })?;
+
+        let start = range.0;
+        let end = range.1;
+        let mut i = start;
+
+        while i < end {
+            for node in body.clone() {
+                self.eval_node(node)?;
+            }
+            i += 1;
+
+            self.upsert_declaration(Node::Identity {
+                name: variable.clone(),
+                value: Box::new(Atomic {
+                    value: Value::Int(i),
+                }),
+                kind: "Nat".to_string(),
+            })?;
+        }
+
+        self.remove_declaration(&variable)?;
         Ok(())
     }
 }

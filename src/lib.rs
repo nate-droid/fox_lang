@@ -7,3 +7,4 @@ mod lang_parser;
 mod lang_lexer;
 pub mod lang_ast;
 mod conditional_tests;
+mod compile;
