@@ -41,6 +41,7 @@ impl<'a> LangParser<'a> {
                             self.consume(TokenKind::Word)?;
                             let node = self.parse_print()?;
                             ast.add_node(node);
+                            continue;
                         }
                         "let" => {
                             self.advance();

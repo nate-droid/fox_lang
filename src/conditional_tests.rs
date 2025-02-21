@@ -142,7 +142,7 @@ fn sum_range_with_break() {
         let sum = 0;
         let x = i % 3;
         let y = i % 5;
-        
+
         if (x == 0 && y == 0) {
             print(\"hi\");
         } else {
