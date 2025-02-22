@@ -28,6 +28,7 @@ pub enum TokenKind {
     Negation,
     Turnstile,
     And,
+    Or,
     ForAll,
     Exists,
     BoundX,
@@ -82,6 +83,7 @@ impl std::fmt::Display for TokenKind {
             TokenKind::Negation => write!(f, "¬"),
             TokenKind::Turnstile => write!(f, "Turnstile"),
             TokenKind::And => write!(f, "And"),
+            TokenKind::Or => write!(f, "Or"),
             TokenKind::ForAll => write!(f, "ForAll"),
             TokenKind::Exists => write!(f, "∃"),
             TokenKind::BoundX => write!(f, "BoundX"),
@@ -190,7 +192,14 @@ impl Lexer for DefaultLexer {
                             kind: TokenKind::Turnstile,
                         });
                         self.next_char();
-                    } else {
+                    } else if self.peek() == '|' {
+                        self.tokens.push(Token {
+                            value: "||".to_string(),
+                            kind: TokenKind::Or,
+                        });
+                        self.next_char();
+                    }
+                    else {
                         self.tokens.push(Token {
                             value: self.char.to_string(),
                             kind: TokenKind::Pipe,

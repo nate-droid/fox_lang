@@ -118,11 +118,6 @@ pub enum Node {
         consequence: Vec<Node>,
         alternative: Vec<Node>,
     },
-    Comparison {
-        left: Box<Node>,
-        operator: TokenKind,
-        right: Box<Node>,
-    },
     ForLoop {
         variable: String,
         range: (i32, i32),
@@ -190,9 +185,6 @@ impl Display for Node {
             Node::ForLoop { variable, range, body } => {
                 write!(f, "for {} in {}..{} {{ {:?} }}", variable, range.0, range.1, body)
             }
-            Node::Comparison { left, operator, right } => {
-                write!(f, "{} {} {}", left, operator, right)
-            }
             Node::EmptyNode => {
                 write!(f, "")
             }
@@ -239,7 +231,6 @@ impl Node {
                 Some(Box::from(Node::Identity { name: name.clone(), value: value.clone(), kind: kind.clone() }))
             },
             Node::BinaryExpression { left, .. } => Some(Box::from(*left.clone())),
-            Node::Comparison { left, .. } => Some(Box::from(*left.clone())),
             Node::Object { name, kind } => Some(Box::from(Node::Object { name: name.clone(), kind: kind.clone() })),
             _ => {
                 println!("boo {:?}", self);
@@ -255,73 +246,6 @@ impl Node {
             _ => None,
         }
     }
-
-    // pub fn to_string(&self) -> String {
-    //     match self {
-    //         Node::BinaryExpression { left, operator, right } => {
-    //             match operator {
-    //                 ForAll => {
-    //                     format!("∀{}{}", left.to_string(), right.to_string())
-    //                 }
-    //                 TokenKind::Equality => {
-    //                     format!("{} = {}", left.to_string(), right.to_string())
-    //                 }
-    //                 TokenKind::ElementOf => {
-    //                     format!("{} ∈ {}", left.to_string(), right.to_string())
-    //                 }
-    //                 TokenKind::Exists => {
-    //                     format!("∃{}{}", left.to_string(), right.to_string())
-    //                 }
-    //                 TokenKind::Implies => {
-    //                     format!("({} → {})", left.to_string(), right.to_string())
-    //                 }
-    //                 TokenKind::Disjunction => {
-    //                     format!("{} ∨ {}", left.to_string(), right.to_string())
-    //                 }
-    //                 _ => {
-    //                     format!("({} {} {})", left.to_string(), operator, right.to_string())
-    //                 }
-    //             }
-    //         }
-    //         Node::UnaryExpression { operator, right } => {
-    //             format!("({} {})", operator, right.to_string())
-    //         }
-    //         Node::Identifier { value } => {
-    //             value.clone()
-    //         }
-    //         Node::Identity { name, value, kind } => {
-    //             format!("{} : {} = {:?}", name, kind, value)
-    //         }
-    //         Atomic { value } => {
-    //             println!("checking: {:?}", value);
-    //             value.to_string()
-    //         }
-    //         Node::Call { name, arguments, returns: _returns } => {
-    //             format!("{}({:?})", name, arguments)
-    //         }
-    //         Node::MMExpression { expression } => {
-    //             expression.clone()
-    //         }
-    //         Node::Type { name } => {
-    //             name.clone()
-    //         }
-    //         Node::Conditional { condition, consequence, alternative } => {
-    //             todo!()
-    //         }
-    //         Node::ForLoop { variable, range, body } => {
-    //             format!("for {} in {}..{} {{ {:?} }}", variable, range.0, range.1, body)
-    //         }
-    //         Node::Comparison { left, operator, right } => {
-    //             format!("{} {} {}", left.to_string(), operator, right.to_string())
-    //         }
-    //         Node::EmptyNode => {
-    //             "".to_string()
-    //         }
-    //         Node::Object { name, kind } => {
-    //             format!("{} : {}", name, kind)
-    //         }
-    //     }
-    // }
 
     pub fn val(&self) -> Value {
         match self {

@@ -175,6 +175,15 @@ impl<'a> LangLexer<'a> {
                         });
                     }
                 }
+                '|' => {
+                    if self.peek() == '|' {
+                        self.next_char();
+                        self.tokens.push(Token {
+                            value: "||".to_string(),
+                            kind: TokenKind::Or,
+                        });
+                    }
+                }
                 '⇒' => {
                     self.tokens.push(Token {
                         value: self.current_char().to_string(),

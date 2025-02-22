@@ -101,15 +101,6 @@ impl Ast {
             Atomic { value } => {
                 return Ok(Atomic { value });
             }
-            Node::Comparison {
-                left,
-                operator: _operator,
-                right,
-            } => {
-                return Ok(Atomic {
-                    value: Value::Bool(left.val() == right.val()),
-                });
-            }
             Node::MMExpression { expression } => {
                 let mut axiom = Axiom::new("ax-1".to_string(), expression);
                 axiom.solve().expect("unexpected failure");
@@ -282,7 +273,7 @@ impl Ast {
     fn eval_conditional(&mut self, condition: Box<Node>, consequence: Vec<Node>, alternative: Vec<Node>) -> Result<(), String> {
         // assert that node is of type Conditional
         match *condition.clone() {
-            Node::Comparison {
+            Node::BinaryExpression {
                 left,
                 operator: _operator,
                 right,
@@ -293,7 +284,13 @@ impl Ast {
 
                 let pre_right = right.left().expect("unexpected failure");
                 let replaced_right = self.replace_var(*pre_right.clone()).expect("unexpected failure");
-
+                
+                println!("condition: {:?}", condition);
+                
+                println!("replaced left: {:?}", replaced_left);
+                println!("replaced left: {:?}", replaced_right);
+                // println!("replaced right: {:?}", replaced_right);
+                
                 let best = compare_value(&replaced_left.val(), &replaced_right.val());
                 if best {
                     for node in consequence.clone() {
@@ -305,6 +302,7 @@ impl Ast {
                         self.eval_node(node)?;
                     }
                 }
+                // todo!("finish");
             }
             Atomic { value } => {
                 if value == Value::Bool(true) {

@@ -337,7 +337,7 @@ impl<'a> LangParser<'a> {
                 self.advance();
                 let right = self.parse_condition()?;
                 
-                Ok(Node::Comparison {
+                Ok(Node::BinaryExpression {
                     left: Box::from(n),
                     operator: operator.kind,
                     right: Box::from(right),
@@ -385,7 +385,7 @@ impl<'a> LangParser<'a> {
         let right = self.current_token()?;
         self.advance();
         
-        let node = Node::Comparison {
+        let node = Node::BinaryExpression {
             left: Box::from(Node::Identity {
                 name: left.value,
                 value: Box::from(Node::Atomic {
@@ -399,13 +399,14 @@ impl<'a> LangParser<'a> {
             }),
         };
 
-        if self.current_token()?.kind == And {
+        // TODO: remove the comparison node and keep everything a BinaryExpression
+        if self.current_token()?.kind == And || self.current_token()?.kind == TokenKind::Or {
             let op = self.current_token()?;
             self.advance();
 
             let right2 = self.parse_condition()?;
 
-            return Ok(Node::Comparison {
+            return Ok(Node::BinaryExpression {
                 left: Box::from(node),
                 operator: op.kind,
                 right: Box::from(right2),
@@ -422,7 +423,7 @@ impl<'a> LangParser<'a> {
         let right = self.current_token()?;
         self.advance();
 
-        let node = Node::Comparison {
+        let node = Node::BinaryExpression {
             left: Box::from(Node::Identity {
                 name: left.value,
                 value: Box::from(Node::Atomic {
@@ -436,11 +437,11 @@ impl<'a> LangParser<'a> {
             }),
         };
 
-        if self.current_token()?.kind == And {
+        if self.current_token()?.kind == And || self.current_token()?.kind == TokenKind::Or {
             let op = self.current_token()?;
             self.advance();
             let right2 = self.parse_condition()?;
-            return Ok(Node::Comparison {
+            return Ok(Node::BinaryExpression {
                 left: Box::from(node),
                 operator: op.kind,
                 right: Box::from(right2),

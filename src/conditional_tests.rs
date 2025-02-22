@@ -138,18 +138,15 @@ fn sum_range() {
 
 #[test]
 fn sum_range_with_break() {
-    let input = "for i in 0..16 {
-        let sum = 0;
+    let input = "let sum = 0;
+    for i in 0..16 {
         let x = i % 3;
         let y = i % 5;
 
-        if (x == 0 && y == 0) {
-            print(\"hi\");
-        } else {
-            print(\"not equal\");
-            print(x);
-            print(y);
+        if (x == 0 || y == 0) {
+            sum = sum + i;
         }
+        print(sum);
     }";
 
     let mut ast = LangParser::new(input);
@@ -161,4 +158,5 @@ fn sum_range_with_break() {
     }
 
     println!("{:?}", ast.declarations);
+    // todo!("pickup with evaluating OR expressions");
 }
