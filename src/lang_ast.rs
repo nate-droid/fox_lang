@@ -31,7 +31,6 @@ impl Ast {
             }
             EmptyNode => {}
             Atomic { value } => {
-                println!("{:?}", value);
             }
             _ => {
                 println!("{:?}", node);
@@ -275,34 +274,70 @@ impl Ast {
         match *condition.clone() {
             Node::BinaryExpression {
                 left,
-                operator: _operator,
+                operator,
                 right,
             } => {
-                // TODO: replace left and right with their values
-                let pre_left = left.left().expect("unexpected failure");
-                let replaced_left = self.replace_var(*pre_left.clone()).expect("unexpected failure");
 
-                let pre_right = right.left().expect("unexpected failure");
-                let replaced_right = self.replace_var(*pre_right.clone()).expect("unexpected failure");
-                
-                println!("condition: {:?}", condition);
-                
-                println!("replaced left: {:?}", replaced_left);
-                println!("replaced left: {:?}", replaced_right);
-                // println!("replaced right: {:?}", replaced_right);
-                
-                let best = compare_value(&replaced_left.val(), &replaced_right.val());
-                if best {
-                    for node in consequence.clone() {
-                        let res = self.eval_node(node)?;
-                        self.upsert_declaration(res)?
+                match operator {
+                    TokenKind::IsEqual => {
+                        // TODO: This is using left.left and right.left which is an oopsie
+                        let pre_left = left.left().expect("unexpected failure");
+                        let replaced_left = self.replace_var(*pre_left.clone()).expect("unexpected failure");
+
+                        let pre_right = right.left().expect("unexpected failure");
+                        let replaced_right = self.replace_var(*pre_right.clone()).expect("unexpected failure");
+
+                        // println!("condition: {:?}", condition);
+
+                        // println!("left: {:?}", pre_left);
+                        // println!("right: {:?}", pre_right);
+                        // println!("replaced right: {:?}", replaced_right);
+                        let best = compare_value(&replaced_left.val(), &replaced_right.val());
+                        if best {
+                            for node in consequence.clone() {
+                                let res = self.eval_node(node)?;
+                                self.upsert_declaration(res)?
+                            }
+                        } else {
+                            for node in alternative.clone() {
+                                self.eval_node(node)?;
+                            }
+                        }
                     }
-                } else {
-                    for node in alternative.clone() {
-                        self.eval_node(node)?;
+                    TokenKind::Or => {
+                        // TODO: Sub expressions will need to be evaluated recursively
+                        let sub_left = left.left().expect("unexpected failure");
+                        let sub_right = left.right().expect("unexpected failure");
+                        
+                        let replaced_sub_left = self.replace_var(*sub_left.clone()).expect("unexpected failure");
+                        let replaced_sub_right = self.replace_var(*sub_right.clone()).expect("unexpected failure");
+                        
+                        // check the truthiness of the left and right
+                        let left_truth = compare_value(&replaced_sub_left.val(), &replaced_sub_right.val());
+                        
+                        let sub_right_left = right.left().expect("unexpected failure");
+                        let sub_right_right = right.right().expect("unexpected failure");
+                        
+                        let replaced_sub_right_left = self.replace_var(*sub_right_left.clone()).expect("unexpected failure");
+                        let replaced_sub_right_right = self.replace_var(*sub_right_right.clone()).expect("unexpected failure");
+                        
+                        let right_truth = compare_value(&replaced_sub_right_left.val(), &replaced_sub_right_right.val());
+                        
+                        if left_truth || right_truth {
+                            for node in consequence.clone() {
+                                    let res = self.eval_node(node)?;
+                                    self.upsert_declaration(res)?
+                                }
+                            } else {
+                                for node in alternative.clone() {
+                                    self.eval_node(node)?;
+                                }
+                            }
+                    }
+                    _ => {
+                        println!("operator: {:?}", operator);
                     }
                 }
-                // todo!("finish");
             }
             Atomic { value } => {
                 if value == Value::Bool(true) {
