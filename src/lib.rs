@@ -8,3 +8,4 @@ mod lang_lexer;
 pub mod lang_ast;
 mod conditional_tests;
 mod compile;
+mod pe;

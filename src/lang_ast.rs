@@ -82,7 +82,9 @@ impl Ast {
                 value,
                 kind: _kind,
             } => {
-                let res = self.eval_node(*value)?;
+                let replaced = self.replace_var(*value.clone()).expect("unexpected failure");
+                
+                let res = self.eval_node(replaced)?;
                 self.upsert_declaration(Node::Identity {
                     name: _name,
                     value: Box::from(res.clone()),
@@ -285,6 +287,8 @@ impl Ast {
                         let replaced_left = self.replace_var(*pre_left.clone()).expect("unexpected failure");
 
                         let pre_right = right.left().expect("unexpected failure");
+                        println!("pre-fail");
+                        println!("{:?}", pre_right);
                         let replaced_right = self.replace_var(*pre_right.clone()).expect("unexpected failure");
 
                         // println!("condition: {:?}", condition);
