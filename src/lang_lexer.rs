@@ -167,6 +167,12 @@ impl<'a> LangLexer<'a> {
                         kind: TokenKind::LessThan,
                     });
                 }
+                '>' => {
+                    self.tokens.push(Token {
+                        value: self.current_char().to_string(),
+                        kind: TokenKind::GreaterThan,
+                    });
+                }
                 '&' => {
                     if self.peek() == '&' {
                         self.next_char();

@@ -141,6 +141,10 @@ impl<'a> LangParser<'a> {
                         return Ok(ident);
                     }
                     "if" => return self.parse_if(),
+                    "break" => {
+                        self.consume(TokenKind::Semicolon)?;
+                        return Ok(Node::Break{});
+                    }
                     _ => {}
                 }
 
@@ -412,6 +416,7 @@ impl<'a> LangParser<'a> {
         let right = self.current_token()?;
         self.advance();
         
+        // TODO: add support for the right side being a variable
         let node = Node::BinaryExpression {
             left: Box::from(Node::Identity {
                 name: left.value,
@@ -425,21 +430,21 @@ impl<'a> LangParser<'a> {
                 value: Value::Int(right.value.parse::<i32>().unwrap()),
             }),
         };
-
-        // TODO: remove the comparison node and keep everything a BinaryExpression
-        if self.current_token()?.kind == And || self.current_token()?.kind == TokenKind::Or {
-            let op = self.current_token()?;
-            self.advance();
-
-            let right2 = self.parse_condition()?;
-
-            return Ok(Node::BinaryExpression {
-                left: Box::from(node),
-                operator: op.kind,
-                right: Box::from(right2),
-            });
+        
+        if self.current_token()?.kind != And && self.current_token()?.kind != TokenKind::Or {
+            return Ok(node);
         }
-        Ok(node)
+        
+        let op = self.current_token()?;
+        self.advance();
+
+        let right2 = self.parse_condition()?;
+
+        Ok(Node::BinaryExpression {
+            left: Box::from(node),
+            operator: op.kind,
+            right: Box::from(right2),
+        })
     }
 
     fn parse_bool(&mut self) -> Result<Node, String> {

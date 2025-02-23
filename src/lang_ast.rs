@@ -1,6 +1,6 @@
 use crate::cut::Axiom;
 use crate::lexer::{TokenKind};
-use crate::parser::Node::{Atomic, EmptyNode};
+use crate::parser::Node::{Atomic, Break, EmptyNode};
 use crate::parser::{compare_value, Node, Value};
 use std::collections::HashMap;
 
@@ -126,6 +126,9 @@ impl Ast {
             }
             EmptyNode => {
                 return Ok(EmptyNode);
+            }
+            Break { .. } => {
+                return Ok(Break {});
             }
             _ => {
                 todo!("Unknown node");
@@ -368,6 +371,40 @@ impl Ast {
                         }
                         
                     }
+                    TokenKind::GreaterThan => {
+                        let replaced_left = self.replace_var(*left.clone()).expect("unexpected failure");
+                        
+                        match replaced_left.val() {
+                            Value::Int(i) => {
+                                match right.val() {
+                                    Value::Int(ii) => {
+                                        match i.cmp(&ii) {
+                                            std::cmp::Ordering::Greater => {
+                                                for node in consequence.clone() {
+                                                    let res = self.eval_node(node)?;
+                                                    self.upsert_declaration(res)?
+                                                }
+                                            }
+                                            _ => {
+                                                for node in alternative.clone() {
+                                                    let res = self.eval_node(node)?;
+                                                    self.upsert_declaration(res)?
+                                                }
+                                            }
+                                        }
+                                    }
+                                    _ => {
+                                        println!("right: {:?}", right);
+                                        return Err("Invalid types".to_string());
+                                    }
+                                }
+                            }
+                            _ => {
+                                println!("left: {:?}", left);
+                                return Err("Invalid types".to_string());
+                            }
+                        }
+                    }
                     _ => {
                         println!("operator: {:?}", operator);
                         // todo!("Unknown operator");
@@ -405,7 +442,14 @@ impl Ast {
 
         while i < end {
             for node in body.clone() {
-                self.eval_node(node)?;
+                // self.eval_node(node)?;
+                let x = self.eval_node(node);
+                match x {
+                    Ok(_) => (),
+                    Err(e) => {
+                        break;
+                    },
+                }
             }
             i += 1;
 

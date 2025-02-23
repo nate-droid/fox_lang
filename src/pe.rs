@@ -45,6 +45,9 @@ fn problem2() {
     let c = 0;
     for i in 0..100 {
         c = a + b;
+        if (c < 4000000) {
+            break;
+        }
         a = b;
         let x = c % 2;
         if (x == 0) {

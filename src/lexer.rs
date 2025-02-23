@@ -33,6 +33,7 @@ pub enum TokenKind {
     Exists,
     BoundX,
     LessThan,
+    GreaterThan,
 
     // MetaMath specific
     HypothesisConjunction, // &, this links two or more hypotheses
@@ -55,6 +56,7 @@ pub enum TokenKind {
     Colon,
     Nat,
     MMExpression,
+    Break,
     
     Add,
     Modulo,
@@ -117,6 +119,8 @@ impl std::fmt::Display for TokenKind {
             TokenKind::IsEqual => write!(f, "=="),
             TokenKind::EOF => write!(f, "EOF"),
             TokenKind::LessThan => write!(f, "<"),
+            TokenKind::GreaterThan => write!(f, ">"),
+            TokenKind::Break => write!(f, "Break"),
         }
     }
 }

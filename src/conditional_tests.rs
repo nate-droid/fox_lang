@@ -162,7 +162,6 @@ fn sum_range_with_break() {
 #[test]
 fn less_than() {
     let input = "let x = 2; if (x < 3) { print(\"x is less than 3\"); } else { print(\"x is not less than 3\"); }";
-    // let input = "if (4 < 3) { print(\"x is less than 3\"); } else { print(\"x is not less than 3\"); }";
     let mut ast = LangParser::new(input);
     let mut ast = ast.parse().expect("unexpected failure");
 
@@ -172,4 +171,42 @@ fn less_than() {
     }
 
     println!("{:?}", ast.declarations);
+}
+
+#[test]
+fn greater_than() {
+    let input = "let x = 5; if (x > 3) { print(\"x is greater than 3\"); } else { print(\"x is not greater than 3\"); }";
+    let mut ast = LangParser::new(input);
+    let mut ast = ast.parse().expect("unexpected failure");
+
+    match ast.eval() {
+        Ok(_) => (),
+        Err(e) => panic!("{:?}", e),
+    }
+
+    println!("{:?}", ast.declarations);
+}
+
+#[test]
+fn test_break() {
+    let input = "
+    let a = 1;
+    let b = 2;
+    for i in 0..2 {
+        if (a < 9) {
+            break;
+        }
+        b = 3;
+    }";
+    
+    let mut ast = LangParser::new(input);
+    let mut ast = ast.parse().expect("unexpected failure");
+    
+    match ast.eval() {
+        Ok(_) => (),
+        Err(e) => panic!("{:?}", e),
+    }
+    
+    let res = ast.declarations.get("b").expect("unexpected failure");
+    assert_eq!(res.val(), Value::Int(2));
 }

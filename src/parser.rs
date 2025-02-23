@@ -128,6 +128,9 @@ pub enum Node {
         name: String,
         kind: String,
     },
+    Break {
+        
+    }, // TODO: Later will need to make a more generic "statement" node
 }
 impl Display for Node {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -190,6 +193,9 @@ impl Display for Node {
             }
             Node::Object { name, kind } => {
                 write!(f, "{}", name)
+            }
+            Node::Break {} => {
+                write!(f, "break")
             }
         }
     }
