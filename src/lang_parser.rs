@@ -343,6 +343,22 @@ impl<'a> LangParser<'a> {
                     right: Box::from(right),
                 })
             }
+            TokenKind::Number => {
+                let left = self.current_token()?;
+                self.advance();
+                let operator = self.current_token()?;
+                self.advance();
+                let right = self.parse_condition()?;
+                
+                let node = Node::BinaryExpression {
+                    left: Box::from(Node::Atomic {
+                        value: Value::Int(left.value.parse::<i32>().unwrap()),
+                    }),
+                    operator: operator.kind,
+                    right: Box::from(right),
+                };
+                Ok(node)
+            }
             _ => {
                 println!("{:?}", self.current_token()?.kind);
                 Err("Invalid conditional".to_string())
@@ -366,8 +382,19 @@ impl<'a> LangParser<'a> {
         }
         
         if self.peek_token()?.kind == TokenKind::RightParenthesis {
+            let val = self.current_token()?.value;
+            self.advance();
+            
+            if self.current_token()?.kind != TokenKind::Number {
+                self.consume(TokenKind::RightParenthesis)?;
+                return Ok(Node::Atomic {
+                    value: Value::Int(val.parse().unwrap()),
+                });
+            }
+
             self.advance();
             self.consume(TokenKind::RightParenthesis)?;
+            
             return Ok(Node::Identity {
                 name: left.value,
                 value: Box::from(Node::Atomic {

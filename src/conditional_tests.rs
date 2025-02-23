@@ -158,3 +158,18 @@ fn sum_range_with_break() {
 
     println!("{:?}", ast.declarations);
 }
+
+#[test]
+fn less_than() {
+    let input = "let x = 2; if (x < 3) { print(\"x is less than 3\"); } else { print(\"x is not less than 3\"); }";
+    // let input = "if (4 < 3) { print(\"x is less than 3\"); } else { print(\"x is not less than 3\"); }";
+    let mut ast = LangParser::new(input);
+    let mut ast = ast.parse().expect("unexpected failure");
+
+    match ast.eval() {
+        Ok(_) => (),
+        Err(e) => panic!("{:?}", e),
+    }
+
+    println!("{:?}", ast.declarations);
+}

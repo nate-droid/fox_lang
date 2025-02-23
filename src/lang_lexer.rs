@@ -161,6 +161,12 @@ impl<'a> LangLexer<'a> {
                         kind: TokenKind::WFF,
                     });
                 }
+                '<' => {
+                    self.tokens.push(Token {
+                        value: self.current_char().to_string(),
+                        kind: TokenKind::LessThan,
+                    });
+                }
                 '&' => {
                     if self.peek() == '&' {
                         self.next_char();

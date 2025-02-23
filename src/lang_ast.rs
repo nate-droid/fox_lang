@@ -290,12 +290,7 @@ impl Ast {
                         println!("pre-fail");
                         println!("{:?}", pre_right);
                         let replaced_right = self.replace_var(*pre_right.clone()).expect("unexpected failure");
-
-                        // println!("condition: {:?}", condition);
-
-                        // println!("left: {:?}", pre_left);
-                        // println!("right: {:?}", pre_right);
-                        // println!("replaced right: {:?}", replaced_right);
+                        
                         let best = compare_value(&replaced_left.val(), &replaced_right.val());
                         if best {
                             for node in consequence.clone() {
@@ -338,8 +333,44 @@ impl Ast {
                                 }
                             }
                     }
+                    TokenKind::LessThan => {
+                        
+                        let replaced_left = self.replace_var(*left.clone()).expect("unexpected failure");
+                        match replaced_left.val() {
+                            Value::Int(i) => {
+                                match right.val() {
+                                    Value::Int(ii) => {
+                                        match i.cmp(&ii) {
+                                            std::cmp::Ordering::Less => {
+                                                for node in consequence.clone() {
+                                                    let res = self.eval_node(node)?;
+                                                    self.upsert_declaration(res)?
+                                                }
+                                            }
+                                            _ => {
+                                                for node in alternative.clone() {
+                                                    let res = self.eval_node(node)?;
+                                                    self.upsert_declaration(res)?
+                                                }
+                                            }
+                                        }
+                                    }
+                                    _ => {
+                                        println!("right: {:?}", right);
+                                        return Err("Invalid types".to_string());
+                                    }
+                                }
+                            }
+                            _ => {
+                                println!("left: {:?}", left);
+                                return Err("Invalid types".to_string());
+                            }
+                        }
+                        
+                    }
                     _ => {
                         println!("operator: {:?}", operator);
+                        // todo!("Unknown operator");
                     }
                 }
             }
