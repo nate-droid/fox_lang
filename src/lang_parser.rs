@@ -92,8 +92,6 @@ impl<'a> LangParser<'a> {
                                     kind: "Nat".to_string(),
                                 });
                             }
-
-                            println!("{:?}", self.tokens[self.position].kind);
                         }
                     }
                 }

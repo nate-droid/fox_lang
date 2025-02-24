@@ -33,7 +33,7 @@ impl Ast {
             Atomic { value } => {
             }
             _ => {
-                println!("{:?}", node);
+                // println!("{:?}", node);
                 return Err("Invalid node type".to_string());
             }
         }
@@ -128,7 +128,8 @@ impl Ast {
                 return Ok(EmptyNode);
             }
             Break { .. } => {
-                return Ok(Break {});
+                // return Ok(Break {});
+                return Err("Break".to_string());
             }
             _ => {
                 todo!("Unknown node");
@@ -290,8 +291,6 @@ impl Ast {
                         let replaced_left = self.replace_var(*pre_left.clone()).expect("unexpected failure");
 
                         let pre_right = right.left().expect("unexpected failure");
-                        println!("pre-fail");
-                        println!("{:?}", pre_right);
                         let replaced_right = self.replace_var(*pre_right.clone()).expect("unexpected failure");
                         
                         let best = compare_value(&replaced_left.val(), &replaced_right.val());
@@ -442,12 +441,14 @@ impl Ast {
 
         while i < end {
             for node in body.clone() {
-                // self.eval_node(node)?;
                 let x = self.eval_node(node);
                 match x {
                     Ok(_) => (),
                     Err(e) => {
-                        break;
+                        if e == "Break" {
+                            i = end;
+                            break;
+                        }
                     },
                 }
             }

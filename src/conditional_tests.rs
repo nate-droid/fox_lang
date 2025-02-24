@@ -194,6 +194,7 @@ fn test_break() {
     let b = 2;
     for i in 0..2 {
         if (a < 9) {
+            print(\"breaking\");
             break;
         }
         b = 3;
