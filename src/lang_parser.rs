@@ -1,6 +1,6 @@
 use crate::lang_ast::Ast;
 use crate::lang_lexer::LangLexer;
-use crate::lexer::TokenKind::{And};
+use crate::lexer::TokenKind::{And, Comma};
 use crate::lexer::{Token, TokenKind};
 use crate::parser::{Node, Value};
 
@@ -205,8 +205,22 @@ impl<'a> LangParser<'a> {
                     kind: "Nat".to_string(),
                 })
             }
+            TokenKind::LBracket => {
+                self.consume(TokenKind::LBracket)?;
+                let mut nodes = Vec::new();
+                while self.current_token()?.kind != TokenKind::RBracket {
+                    nodes.push(self.parse_node()?);
+                    if self.current_token()?.kind == TokenKind::RBracket {
+                        break;
+                    }
+                    self.consume(Comma)?;
+                }
+                self.consume(TokenKind::RBracket)?;
+                
+                Ok(Node::Array { elements: nodes })
+            }
             _ => {
-                println!("{:?}", self.current_token()?.kind);
+                println!("kind: {:?}", self.current_token()?.kind);
                 Err("Unexpected token".to_string())
             }
         }
@@ -274,6 +288,10 @@ impl<'a> LangParser<'a> {
             
             self.consume(TokenKind::Semicolon)?;
             return Ok(ident)
+        }
+        
+        if self.current_token()?.kind == TokenKind::LBracket {
+            println!("parsing array!");
         }
 
         let ident = Node::Identity {

@@ -48,6 +48,18 @@ impl<'a> LangLexer<'a> {
                         kind: TokenKind::RightParenthesis,
                     });
                 }
+                '[' => {
+                    self.tokens.push(Token {
+                        value: self.current_char().to_string(),
+                        kind: TokenKind::LBracket,
+                    });
+                }
+                ']' => {
+                    self.tokens.push(Token {
+                        value: self.current_char().to_string(),
+                        kind: TokenKind::RBracket,
+                    });
+                }
                 '{' => {
                     self.tokens.push(Token {
                         value: self.current_char().to_string(),
@@ -58,6 +70,12 @@ impl<'a> LangLexer<'a> {
                     self.tokens.push(Token {
                         value: self.current_char().to_string(),
                         kind: TokenKind::RBracket,
+                    });
+                }
+                ',' => {
+                    self.tokens.push(Token {
+                        value: self.current_char().to_string(),
+                        kind: TokenKind::Comma,
                     });
                 }
                 '\"' => {

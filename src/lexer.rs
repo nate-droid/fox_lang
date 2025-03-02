@@ -64,6 +64,7 @@ pub enum TokenKind {
     LBracket,
     RBracket,
     Range,
+    Comma,
     
     IsEqual, // ==
     EOF,
@@ -115,6 +116,7 @@ impl std::fmt::Display for TokenKind {
             TokenKind::Equinumerosity => write!(f, "≈"),
             TokenKind::LBracket => write!(f, "LBracket"),
             TokenKind::RBracket => write!(f, "RBracket"),
+            TokenKind::Comma => write!(f, ","),
             TokenKind::Range => write!(f, "Range"),
             TokenKind::IsEqual => write!(f, "=="),
             TokenKind::EOF => write!(f, "EOF"),
@@ -189,6 +191,18 @@ impl Lexer for DefaultLexer {
                     self.tokens.push(Token {
                         value: self.char.to_string(),
                         kind: TokenKind::RightParenthesis,
+                    });
+                }
+                '[' => {
+                    self.tokens.push(Token {
+                        value: self.char.to_string(),
+                        kind: TokenKind::LBracket,
+                    });
+                }
+                ']' => {
+                    self.tokens.push(Token {
+                        value: self.char.to_string(),
+                        kind: TokenKind::RBracket,
                     });
                 }
                 '|' => {

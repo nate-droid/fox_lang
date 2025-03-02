@@ -131,6 +131,12 @@ impl Ast {
                 // return Ok(Break {});
                 return Err("Break".to_string());
             }
+            Node::Array {elements: _elements } => {
+                let x = Node::Array {
+                    elements: _elements,
+                };
+                return Ok(x);
+            }
             _ => {
                 todo!("Unknown node");
             }

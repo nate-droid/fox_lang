@@ -123,6 +123,9 @@ pub enum Node {
         range: (i32, i32),
         body: Vec<Node>,
     },
+    Array {
+        elements: Vec<Node>,
+    },
     EmptyNode,
     Object {
         name: String,
@@ -193,6 +196,9 @@ impl Display for Node {
             }
             Node::Object { name, kind } => {
                 write!(f, "{}", name)
+            }
+            Node::Array { elements } => {
+                write!(f, "[{:?}]", elements)
             }
             Node::Break {} => {
                 write!(f, "break")

@@ -31,17 +31,20 @@ fn main() {
                 println!("Exiting the hypervisor");
                 break;
             }
+            "scope" => {
+                println!("{:?}", ast.declarations);
+            }
+            "reset" => {
+                ast = lang_ast::Ast::new();
+            }
             _ => {
                 // call the lang parser
                 ast.parse(input.trim()).expect("unexpected failure");
                 
-                // ast.eval().expect("unexpected failure");
-                println!("{:?}", ast.nodes);
-                println!("{:?}", ast.nodes.len());
-                // TODO: refactor this after working on multi parsing
+                ast.eval().expect("unexpected failure");
                 
-                println!("Unknown command: {}", input);
-                println!("Type 'help' for a list of commands");
+                // println!("Unknown command: {}", input);
+                // println!("Type 'help' for a list of commands");
             }
         }
     }
