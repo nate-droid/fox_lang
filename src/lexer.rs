@@ -65,6 +65,7 @@ pub enum TokenKind {
     RBracket,
     Range,
     Comma,
+    Index,
     
     IsEqual, // ==
     EOF,
@@ -123,6 +124,7 @@ impl std::fmt::Display for TokenKind {
             TokenKind::LessThan => write!(f, "<"),
             TokenKind::GreaterThan => write!(f, ">"),
             TokenKind::Break => write!(f, "Break"),
+            TokenKind::Index => write!(f, "Index"),
         }
     }
 }

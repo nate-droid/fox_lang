@@ -134,6 +134,10 @@ pub enum Node {
     Break {
         
     }, // TODO: Later will need to make a more generic "statement" node
+    IndexExpression {
+        left: Box<Node>,
+        index: i32,
+    }
 }
 impl Display for Node {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -202,6 +206,9 @@ impl Display for Node {
             }
             Node::Break {} => {
                 write!(f, "break")
+            }
+            Node::IndexExpression { left, index } => {
+                write!(f, "{}[{}]", left, index)
             }
         }
     }

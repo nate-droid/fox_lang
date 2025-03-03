@@ -137,7 +137,43 @@ impl Ast {
                 };
                 return Ok(x);
             }
+            Node::IndexExpression { left, index } => {
+                let y = *left;
+                
+                // ensure that "y" is an array
+                return match y.clone() {
+                    Node::Identity { name, value, kind } => {
+                        let i = index;
+                        let i = i as usize;
+
+                        // fetch the name from the declarations
+                        let elements = self.declarations.get(&name).expect("unexpected failure");
+
+                        // check if the value is an array
+                        let result = match elements {
+                            Node::Array { elements } => {
+                                elements
+                            }
+                            _ => {
+                                println!("{:?}", elements);
+                                return Err("Invalid type".to_string());
+                            }
+                        };
+
+                        // Using only Atomic values for now
+                        let x = Atomic {
+                            value: result[i].val(),
+                        };
+                        Ok(x)
+                    }
+                    _ => {
+                        println!("{:?}", y);
+                        Err("Invalid type".to_string())
+                    }
+                }
+            }
             _ => {
+                println!("{:?}", ast);
                 todo!("Unknown node");
             }
         }

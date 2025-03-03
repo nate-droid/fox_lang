@@ -172,6 +172,26 @@ impl<'a> LangParser<'a> {
                             right: Box::from(right),
                         })
                     }
+                    TokenKind::LBracket => {
+                        self.consume(TokenKind::LBracket)?;
+                        let index = self.parse_node()?;
+
+                        self.consume(TokenKind::RBracket)?;
+                        
+                        Ok(Node::IndexExpression {
+                            left: Box::from(Node::Identity {
+                                name: name.value,
+                                value: Box::from(Node::Atomic {
+                                    value: Value::Int(0),
+                                }),
+                                kind: "Nat".to_string(),
+                            }),
+                            index: match index {
+                                Node::Atomic { value: Value::Int(i) } => i,
+                                _ => -1,
+                            },
+                        })
+                    }
                     _ => {
                         Ok(Node::Identity {
                             name: name.value,
@@ -221,6 +241,7 @@ impl<'a> LangParser<'a> {
             }
             _ => {
                 println!("kind: {:?}", self.current_token()?.kind);
+                println!("value: {:?}", self.current_token()?.value);
                 Err("Unexpected token".to_string())
             }
         }
@@ -289,10 +310,6 @@ impl<'a> LangParser<'a> {
             self.consume(TokenKind::Semicolon)?;
             return Ok(ident)
         }
-        
-        if self.current_token()?.kind == TokenKind::LBracket {
-            println!("parsing array!");
-        }
 
         let ident = Node::Identity {
             name: name.value.to_string(),
@@ -301,6 +318,7 @@ impl<'a> LangParser<'a> {
         };
         
         self.consume(TokenKind::Semicolon)?;
+        
         Ok(ident)
     }
     
@@ -512,6 +530,7 @@ impl<'a> LangParser<'a> {
         self.consume(TokenKind::LeftParenthesis)?;
 
         let input = self.current_token()?;
+        // let input = self.parse_node()?;
         
         // convert input to a node
         let n = Node::Object {

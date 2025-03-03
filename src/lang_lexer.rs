@@ -20,7 +20,7 @@ impl<'a> LangLexer<'a> {
     }
 
     pub fn tokenize(&mut self) -> Result<(), String> {
-        while self.char.is_some() {
+        'main: while self.char.is_some() {
             match self.current_char() {
                 ' ' => {}
                 '/' => {
@@ -278,6 +278,34 @@ impl<'a> LangLexer<'a> {
                         if self.peek().is_alphanumeric() || self.peek() == '_' {
                             self.next_char();
                             word.push(self.current_char());
+                        }  else if self.peek() == '[' {
+                            self.next_char();
+                            
+                            self.tokens.push(Token {
+                                value: word,
+                                kind: TokenKind::Word,
+                            });
+                            
+                            self.tokens.push(Token {
+                                value: "[".to_string(),
+                                kind: TokenKind::LBracket,
+                            });
+                            self.next_char(); // consuming the opening bracket
+                            
+                            let index = self.current_char().to_string();
+                            self.tokens.push(Token {
+                                value: index,
+                                kind: TokenKind::Number,
+                            });
+                            self.next_char(); // consuming the index
+                            
+                            self.tokens.push(Token {
+                                value: "]".to_string(),
+                                kind: TokenKind::RBracket,
+                            });
+                            
+                            self.next_char(); // consuming the closing bracket
+                            continue 'main;
                         } else {
                             break;
                         }
@@ -290,7 +318,7 @@ impl<'a> LangLexer<'a> {
                 }
 
                 // check for numbers
-                _ if self.current_char().is_digit(10) => {
+                _ if self.current_char().is_ascii_digit() => {
                     let mut number = String::new();
                     number.push(self.current_char());
 
