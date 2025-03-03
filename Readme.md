@@ -2,7 +2,8 @@
 
 # What is FoxLang?
 
-At it's core, FoxLang is an attempt at both creating a programming language and a theorem prover all at once.
+At it's core, FoxLang is an attempt at both creating a programming language and a theorem prover all at once. While indeed,
+quite ambitious, the goal is to have fun while getting a chance to dive into some topics I've always been interested in.
 
 Instead of "just" creating a theorem prover, I wanted to write a language that would serve as the core. In addition to
 enjoying language design, I wanted to write my own "math" language, since I found it a hassle to always type the symbols ∀ and ∃.
@@ -10,13 +11,27 @@ enjoying language design, I wanted to write my own "math" language, since I foun
 I am currently in the process of writing a parser and lexer that will allow fox_lang to work with existing theorem provers
 like MetaMath and Lean. Initial progress has been made with MetaMath, and several axioms can already be parsed and reduced.
 
+I've also been inspired by languages/ecosystems like OCaml, Forth, and Lisp, and I am aiming to incorporate some of my favorite
+elements, while doing my best to bring a fresh take on the language design.
+
 This is a work and progress, and I imagine the structure will change quite significantly over time.
 
 # What can Fox do?
 
 At the moment, Fox is able to parse the first batch of axioms from MetaMath. Most notably are the axiom of infinity and the
-axiom of choice. For the "main" parts of the language, Fox is able to set variables, print variables, perform simple arithmetic,
-and I've just recently added extremely simple support for conditionals.
+axiom of choice. 
+
+## General Purpose Features
+
+At the time of writing, Fox has a few general-purpose features:
+
+- Assigning variables
+- printing variables
+- loops
+- conditional statements
+- simple REPL support
+- basic arithmetic
+- modulo arithmetic
 
 # Design Choices
 
@@ -84,6 +99,23 @@ Step { index: 23, expression: "𝑤 ∈ 𝑡" }
 Step { index: 24, expression: "𝑢 ∈ 𝑡" }
 Step { index: 25, expression: "𝑡 ∈ 𝑦" }
 ```
+
+
+## General Purpose Examples
+
+Summing up all numbers divisible by 3 and 5 up to 1000:
+
+    let sum = 0;
+    for i in 0..1000 {
+        let x = i % 3;
+        let y = i % 5;
+        if (x == 0 || y == 0) {
+            sum = sum + i;
+        }
+    }
+    print("The sum of numbers divisible by 3 and 5 is: ");
+    print(sum);
+
 
 
 # Coming Up
