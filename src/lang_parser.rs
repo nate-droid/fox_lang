@@ -36,6 +36,7 @@ impl<'a> LangParser<'a> {
             match self.current_token()?.kind {
                 TokenKind::Word => {
                     let t = self.current_token()?;
+                    
                     match t.value.as_str() {
                         "print" => {
                             self.consume(TokenKind::Word)?;
@@ -86,11 +87,48 @@ impl<'a> LangParser<'a> {
                             if self.current_token()?.kind == TokenKind::Equality {
                                 self.consume(TokenKind::Equality)?;
                                 let value = self.parse_node()?;
-                                ast.add_node(Node::Identity {
-                                    name: ident.value,
-                                    value: Box::from(value),
+
+                                ast.add_node(Node::AssignStmt {
+                                    left: Box::from(Node::Ident {
+                                        name: ident.value,
+                                        kind: "var".to_string(),
+                                    }),
+                                    right: Box::from(value),
                                     kind: "Nat".to_string(),
                                 });
+                                continue;
+                            }
+                            
+                            // check if we are updating an array
+                            if self.current_token()?.kind == TokenKind::LBracket {
+                                self.consume(TokenKind::LBracket)?;
+                                let index = self.parse_node()?;
+                                self.consume(TokenKind::RBracket)?;
+                                self.consume(TokenKind::Equality)?;
+                                let value = self.parse_node()?;
+                                
+                                let index_update = Node::IndexExpression {
+                                    left: Box::from(Node::AssignStmt {
+                                        left: Box::from(Node::Ident { name: ident.value, kind: "var".to_string() }),
+                                        right: Box::from(Node::Atomic {
+                                            value: Value::Int(0),
+                                        }),
+                                        kind: "Nat".to_string(),
+                                    }),
+                                    index: match index {
+                                        Node::Atomic { value: Value::Int(i) } => i,
+                                        _ => -1,
+                                    },
+                                };
+                                
+                                let n = Node::AssignStmt {
+                                    left: Box::from(index_update),
+                                    right: Box::from(value),
+                                    kind: "".to_string(),
+                                };
+                                
+                                ast.add_node(n);
+                                continue;
                             }
                         }
                     }
@@ -151,19 +189,19 @@ impl<'a> LangParser<'a> {
                         self.consume(TokenKind::Equality)?;
                         let value = self.parse_node()?;
                         self.consume(TokenKind::Semicolon)?;
-                        Ok(Node::Identity {
-                            name: name.value,
-                            value: Box::from(value),
+                        Ok(Node::AssignStmt {
+                            left: Box::from(Node::Ident { name: name.value, kind: "var".to_string() }),
                             kind: "Nat".to_string(),
+                            right: Box::from(value),
                         })
                     }
                     TokenKind::Add => {
                         self.consume(TokenKind::Add)?;
                         let right = self.parse_node()?;
                         Ok(Node::BinaryExpression {
-                            left: Box::from(Node::Identity {
-                                name: name.value,
-                                value: Box::from(Node::Atomic {
+                            left: Box::from(Node::AssignStmt {
+                                left: Box::from(Node::Ident { name: name.value, kind: "var".to_string() }),
+                                right: Box::from(Node::Atomic {
                                     value: Value::Int(0),
                                 }),
                                 kind: "Nat".to_string(),
@@ -179,9 +217,9 @@ impl<'a> LangParser<'a> {
                         self.consume(TokenKind::RBracket)?;
                         
                         Ok(Node::IndexExpression {
-                            left: Box::from(Node::Identity {
-                                name: name.value,
-                                value: Box::from(Node::Atomic {
+                            left: Box::from(Node::AssignStmt {
+                                left: Box::from(Node::Ident { name: name.value, kind: "var".to_string() }),
+                                right: Box::from(Node::Atomic {
                                     value: Value::Int(0),
                                 }),
                                 kind: "Nat".to_string(),
@@ -193,9 +231,9 @@ impl<'a> LangParser<'a> {
                         })
                     }
                     _ => {
-                        Ok(Node::Identity {
-                            name: name.value,
-                            value: Box::from(Node::Atomic {
+                        Ok(Node::AssignStmt {
+                            left: Box::from(Node::Ident { name: name.value, kind: "var".to_string() }),
+                            right: Box::from(Node::Atomic {
                                 value: Value::Int(0),
                             }),
                             kind: "Nat".to_string(),
@@ -217,9 +255,9 @@ impl<'a> LangParser<'a> {
             TokenKind::Identifier => {
                 let name = self.current_token()?;
                 self.advance();
-                Ok(Node::Identity {
-                    name: name.value,
-                    value: Box::from(Node::Atomic {
+                Ok(Node::AssignStmt {
+                    left: Box::from(Node::Ident { name: name.value, kind: "var".to_string() }),
+                    right: Box::from(Node::Atomic {
                         value: Value::Int(0),
                     }),
                     kind: "Nat".to_string(),
@@ -300,9 +338,9 @@ impl<'a> LangParser<'a> {
                 right: Box::from(right),
             };
 
-            let ident = Node::Identity {
-                name: name.value.to_string(),
-                value: Box::from(n),
+            let ident = Node::AssignStmt {
+                left: Box::from(Node::Ident { name: name.value, kind: "var".to_string() }),
+                right: Box::from(n),
                 kind: "str".to_string(),
             };
             
@@ -311,9 +349,9 @@ impl<'a> LangParser<'a> {
             return Ok(ident)
         }
 
-        let ident = Node::Identity {
-            name: name.value.to_string(),
-            value: Box::from(left),
+        let ident = Node::AssignStmt {
+            left: Box::from(Node::Ident { name: name.value, kind: "var".to_string() }),
+            right: Box::from(left),
             kind: "str".to_string(),
         };
         
@@ -433,9 +471,9 @@ impl<'a> LangParser<'a> {
             self.advance();
             self.consume(TokenKind::RightParenthesis)?;
             
-            return Ok(Node::Identity {
-                name: left.value,
-                value: Box::from(Node::Atomic {
+            return Ok(Node::AssignStmt {
+                left: Box::from(Node::Ident { name: left.value, kind: "var".to_string() }),
+                right: Box::from(Node::Atomic {
                     value: Value::Int(0),
                 }),
                 kind: "Nat".to_string(),
@@ -452,9 +490,9 @@ impl<'a> LangParser<'a> {
         
         // TODO: add support for the right side being a variable
         let node = Node::BinaryExpression {
-            left: Box::from(Node::Identity {
-                name: left.value,
-                value: Box::from(Node::Atomic {
+            left: Box::from(Node::AssignStmt {
+                left: Box::from(Node::Ident { name: left.value, kind: "var".to_string() }),
+                right: Box::from(Node::Atomic {
                     value: Value::Int(0),
                 }),
                 kind: "Nat".to_string(),
@@ -490,9 +528,9 @@ impl<'a> LangParser<'a> {
         self.advance();
 
         let node = Node::BinaryExpression {
-            left: Box::from(Node::Identity {
-                name: left.value,
-                value: Box::from(Node::Atomic {
+            left: Box::from(Node::AssignStmt {
+                left: Box::from(Node::Ident { name: left.value, kind: "var".to_string() }),
+                right: Box::from(Node::Atomic {
                     value: Value::Int(0),
                 }),
                 kind: "Nat".to_string(),

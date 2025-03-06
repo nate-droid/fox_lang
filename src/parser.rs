@@ -94,9 +94,13 @@ pub enum Node {
     Identifier {
         value: String,
     },
-    Identity {
+    AssignStmt {
+        left: Box<Node>,
+        right: Box<Node>,
+        kind: String,
+    },
+    Ident {
         name: String,
-        value: Box<Node>,
         kind: String,
     },
     Atomic {
@@ -173,9 +177,9 @@ impl Display for Node {
             Node::Identifier { value } => {
                 write!(f, "{}", value.clone())
             }
-            Node::Identity { name, value, kind } => {
+            Node::AssignStmt { left, right, kind } => {
                 // write!(f, "{} : {} = {:?}", name, kind, value)
-                write!(f, "{}", value)
+                write!(f, "{} = {}", left, right)
             }
             Atomic { value } => {
                 write!(f, "{}", value)
@@ -210,6 +214,9 @@ impl Display for Node {
             Node::IndexExpression { left, index } => {
                 write!(f, "{}[{}]", left, index)
             }
+            Node::Ident { name, kind } => {
+                write!(f, "{} : {}", name, kind)
+            }
         }
     }
 }
@@ -229,10 +236,9 @@ impl Node {
             Node::MMExpression { expression: _expression } => {
                 TokenKind::MMExpression
             }
-            Node::Identity { name: _name, value: _value, kind: _kind } => {
+            Node::AssignStmt {..} => {
                 TokenKind::Word
             }
-
             _ => {
                 println!("{:?}", self);
                 TokenKind::End
@@ -246,8 +252,8 @@ impl Node {
             Atomic { value } => {
                 Some(Box::from(Atomic { value: value.clone() }))
             },
-            Node::Identity { name, value, kind } => {
-                Some(Box::from(Node::Identity { name: name.clone(), value: value.clone(), kind: kind.clone() }))
+            Node::AssignStmt { left, right, kind } => {
+                Some(Box::from(left.clone()))
             },
             Node::BinaryExpression { left, .. } => Some(Box::from(*left.clone())),
             Node::Object { name, kind } => Some(Box::from(Node::Object { name: name.clone(), kind: kind.clone() })),

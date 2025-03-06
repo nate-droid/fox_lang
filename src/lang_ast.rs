@@ -26,8 +26,21 @@ impl Ast {
 
     pub fn upsert_declaration(&mut self, node: Node) -> Result<(), String> {
         match node {
-            Node::Identity { name, value, ..} => {
-                self.declarations.insert(name, *value);
+            // Node::AssignStmt { name, value, ..} => {
+            Node::AssignStmt { left, right, .. } => {
+                match *left {
+                    Node::Identifier { value: _name } => {
+                        self.declarations.insert(_name, *right);
+                    }
+                    Node::Ident { name, kind } => {
+                        self.declarations.insert(name, *right);
+                    }
+                    _ => {
+                        println!("{:?}", left);
+                        return Err("Invalid type".to_string());
+                    }
+                }
+
             }
             EmptyNode => {}
             Atomic { value } => {
@@ -77,17 +90,17 @@ impl Ast {
             Node::Identifier { value: _value, .. } => {
                 todo!("Identifiers");
             }
-            Node::Identity {
-                name: _name,
-                value,
+            Node::AssignStmt {
+                left,
+                right,
                 kind: _kind,
             } => {
-                let replaced = self.replace_var(*value.clone()).expect("unexpected failure");
+                let replaced = self.replace_var(*right.clone()).expect("unexpected failure");
                 
                 let res = self.eval_node(replaced)?;
-                self.upsert_declaration(Node::Identity {
-                    name: _name,
-                    value: Box::from(res.clone()),
+                self.upsert_declaration(Node::AssignStmt {
+                    left,
+                    right: Box::from(res.clone()),
                     kind: _kind,
                 })?;
                 return Ok(res);
@@ -139,12 +152,20 @@ impl Ast {
             }
             Node::IndexExpression { left, index } => {
                 let y = *left;
-                
+
                 // ensure that "y" is an array
                 return match y.clone() {
-                    Node::Identity { name, value, kind } => {
+                    Node::AssignStmt { left, right, kind } => {
                         let i = index;
                         let i = i as usize;
+
+                        let name = match *left {
+                            Node::Identifier { value } => value,
+                            Node::Ident { name, kind: _kind } => name,
+                            _ => {
+                                return Err("Invalid type".to_string());
+                            }
+                        };
 
                         // fetch the name from the declarations
                         let elements = self.declarations.get(&name).expect("unexpected failure");
@@ -182,12 +203,21 @@ impl Ast {
     }
 
     fn replace_var(&mut self, mut node: Node) -> Result<Node, String> {
-        if let Node::Identity {
-            value: _left_val,
-            name,
+        if let Node::AssignStmt {
+            right: _left_val,
+            left,
             ..
         } = node.clone()
         {
+            let name = match *left {
+                Node::Identifier { value } => value,
+                Node::Ident { name, kind: _kind } => name,
+                _ => {
+                    println!("{:?}", left);
+                    return Err("Invalid type".to_string());
+                }
+            };
+
             let res = self
                 .declarations
                 .get(&name)
@@ -214,17 +244,17 @@ impl Ast {
     ) -> Result<Node, String> {
         match operator {
             TokenKind::Add => {
-                if let Node::Identity {
-                    value: _left_val,
-                    name: _name,
+                if let Node::AssignStmt {
+                    right: _left_val,
+                    left: _name,
                     ..
                 } = left.clone()
                 {
                     left = self.replace_var(left)?;
                 }
-                if let Node::Identity {
-                    value: _right_val,
-                    name: _name,
+                if let Node::AssignStmt {
+                    right: _right_val,
+                    left: _name,
                     ..
                 } = right.clone()
                 {
@@ -243,17 +273,17 @@ impl Ast {
                 }
             }
             TokenKind::Modulo => {
-                if let Node::Identity {
-                    value: _left_val,
-                    name: _name,
+                if let Node::AssignStmt {
+                    right: _left_val,
+                    left: _name,
                     ..
                 } = left.clone()
                 {
                     left = self.replace_var(left)?;
                 }
-                if let Node::Identity {
-                    value: _right_val,
-                    name: _name,
+                if let Node::AssignStmt {
+                    right: _right_val,
+                    left: _name,
                     ..
                 } = right.clone()
                 {
@@ -469,9 +499,13 @@ impl Ast {
     }
     
     fn parse_for(&mut self, variable: String, range: (i32, i32), body: Vec<Node>) -> Result<(), String> {
-        self.upsert_declaration(Node::Identity {
-            name: variable.clone(),
-            value: Box::new(Atomic {
+
+        self.upsert_declaration(Node::AssignStmt {
+            left: Box::new(Node::Ident {
+                name: variable.clone(),
+                kind: "var".to_string(),
+            }),
+            right: Box::new(Atomic {
                 value: Value::Int(range.0),
             }),
             kind: "Nat".to_string(),
@@ -496,9 +530,12 @@ impl Ast {
             }
             i += 1;
 
-            self.upsert_declaration(Node::Identity {
-                name: variable.clone(),
-                value: Box::new(Atomic {
+            self.upsert_declaration(Node::AssignStmt {
+                left: Box::new(Node::Ident {
+                    name: variable.clone(),
+                    kind: "var".to_string(),
+                }),
+                right: Box::new(Atomic {
                     value: Value::Int(i),
                 }),
                 kind: "Nat".to_string(),
@@ -519,9 +556,12 @@ mod tests {
     #[test]
     fn test_var() {
         let mut ast = Ast::new();
-        ast.add_node(Node::Identity {
-            name: "x".to_string(),
-            value: Box::from(Atomic {
+        ast.add_node(Node::AssignStmt {
+            left: Box::new(Node::Ident {
+                name: "x".to_string(),
+                kind: "var".to_string(),
+            }),
+            right: Box::from(Atomic {
                 value: Value::Int(10),
             }),
             kind: "Nat".to_string(),
