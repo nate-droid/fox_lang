@@ -35,6 +35,30 @@ impl Ast {
                     Node::Ident { name, kind } => {
                         self.declarations.insert(name, *right);
                     }
+                    Node::IndexExpression { left: left2, index } => {
+                        // fetch name from left
+                        
+                        let name = match *left2 {
+                            Node::Identifier { value } => value,
+                            Node::Ident { name, kind: _kind } => name,
+                            Node::IndexExpression {left: left3, ..} => {
+                                let name = match *left3 {
+                                    Node::Identifier { value } => value,
+                                    Node::Ident { name, kind: _kind } => name,
+                                    _ => {
+                                        println!("{:?}", left3);
+                                        return Err("Invalid type".to_string());
+                                    }
+                                };
+                                name
+                            }
+                            _ => {
+                                println!("{:?}", left2);
+                                return Err("Invalid type".to_string());
+                            }
+                        };
+                        self.declarations.insert(name, *right);
+                    }
                     _ => {
                         println!("{:?}", left);
                         return Err("Invalid type".to_string());

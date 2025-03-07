@@ -108,13 +108,7 @@ impl<'a> LangParser<'a> {
                                 let value = self.parse_node()?;
                                 
                                 let index_update = Node::IndexExpression {
-                                    left: Box::from(Node::AssignStmt {
-                                        left: Box::from(Node::Ident { name: ident.value, kind: "var".to_string() }),
-                                        right: Box::from(Node::Atomic {
-                                            value: Value::Int(0),
-                                        }),
-                                        kind: "Nat".to_string(),
-                                    }),
+                                    left: Box::from(Node::Ident { name: ident.value, kind: "var".to_string() }),
                                     index: match index {
                                         Node::Atomic { value: Value::Int(i) } => i,
                                         _ => -1,
@@ -126,7 +120,7 @@ impl<'a> LangParser<'a> {
                                     right: Box::from(value),
                                     kind: "".to_string(),
                                 };
-                                
+                                self.consume(TokenKind::Semicolon)?;
                                 ast.add_node(n);
                                 continue;
                             }
