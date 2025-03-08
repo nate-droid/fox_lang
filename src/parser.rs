@@ -137,10 +137,10 @@ pub enum Node {
     },
     Break {
         
-    }, // TODO: Later will need to make a more generic "statement" node
+    },
     IndexExpression {
         left: Box<Node>,
-        index: i32,
+        index: Box<Node>,
     }
 }
 impl Display for Node {

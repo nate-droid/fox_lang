@@ -3,6 +3,7 @@ use crate::lexer::{TokenKind};
 use crate::parser::Node::{Atomic, Break, EmptyNode};
 use crate::parser::{compare_value, Node, Value};
 use std::collections::HashMap;
+use std::fmt;
 
 #[derive(Debug)]
 pub struct Ast {
@@ -16,11 +17,35 @@ impl Default for Ast {
     }
 }
 
+fn print_with_indent(node: Node, indent: usize) {
+    match node {
+        Node::AssignStmt { left, right, kind } => {
+            // println!("{:indent$}{:?} = {:?};", "", left, right, indent=indent);
+            // left
+            print_with_indent(*left.clone(), indent +2);
+            // right
+            print_with_indent(*right.clone(), indent +2);
+        }
+        Node::Ident { name, kind } => {
+            print_with_indent(Node::Identifier { value: name }, indent +2);
+        }
+        _ => {
+            println!("{:indent$}{:?}", "", node, indent=indent);
+        }
+    }
+}
+
 impl Ast {
     pub fn new() -> Self {
         Self {
             nodes: Vec::new(),
             declarations: HashMap::new(),
+        }
+    }
+
+    pub fn print(&self) {
+        for node in self.nodes.clone() {
+            print_with_indent(node, 0);
         }
     }
 
@@ -37,7 +62,7 @@ impl Ast {
                     }
                     Node::IndexExpression { left: left2, index } => {
                         // fetch name from left
-                        
+
                         let name = match *left2 {
                             Node::Identifier { value } => value,
                             Node::Ident { name, kind: _kind } => name,
@@ -57,7 +82,24 @@ impl Ast {
                                 return Err("Invalid type".to_string());
                             }
                         };
-                        self.declarations.insert(name, *right);
+                        let array = self.declarations.get(&name).expect("var not found").clone();
+                        let mut elements = match array {
+                            Node::Array { elements } => elements,
+                            _ => {
+                                println!("{:?}", array);
+                                return Err("Invalid type".to_string());
+                            }
+                        };
+                        let i = match *index {
+                            Atomic { value: Value::Int(i) } => i as usize,
+                            _ => {
+                                println!("{:?}", index);
+                                return Err("Invalid type".to_string());
+                            }
+                        };
+                        elements[i] = *right;
+
+                        self.declarations.insert(name, Node::Array { elements });
                     }
                     _ => {
                         println!("{:?}", left);
@@ -119,9 +161,28 @@ impl Ast {
                 right,
                 kind: _kind,
             } => {
-                let replaced = self.replace_var(*right.clone()).expect("unexpected failure");
+                if let Node::IndexExpression { left, index } = *left.clone() {
+                    println!("found a : {:?}", left);
+                    println!("found an index : {:?}", index);
+                    println!("right: {:?}", right);
+                    let replaced = self.replace_var(*index.clone()).expect("unexpected failure");
+                    let res = self.eval_node(replaced)?;
+                    println!("res: {:?}", res);
+                    self.upsert_declaration(Node::AssignStmt {
+                        left: Box::from(Node::IndexExpression {
+                            left,
+                            index: Box::from(res.clone()),
+                        }),
+                        right: right.clone(),
+                        kind: _kind,
+                    })?;
+                    return Ok(res);
+                }
                 
+                let replaced = self.replace_var(*right.clone()).expect("unexpected failure");
+
                 let res = self.eval_node(replaced)?;
+
                 self.upsert_declaration(Node::AssignStmt {
                     left,
                     right: Box::from(res.clone()),
@@ -180,8 +241,8 @@ impl Ast {
                 // ensure that "y" is an array
                 return match y.clone() {
                     Node::AssignStmt { left, right, kind } => {
-                        let i = index;
-                        let i = i as usize;
+                        // let i = index;
+                        // let i = i as usize;
 
                         let name = match *left {
                             Node::Identifier { value } => value,
@@ -201,6 +262,13 @@ impl Ast {
                             }
                             _ => {
                                 println!("{:?}", elements);
+                                return Err("Invalid type".to_string());
+                            }
+                        };
+                        let i = match *index {
+                            Atomic { value: Value::Int(i) } => i as usize,
+                            _ => {
+                                println!("{:?}", index);
                                 return Err("Invalid type".to_string());
                             }
                         };
@@ -227,36 +295,42 @@ impl Ast {
     }
 
     fn replace_var(&mut self, mut node: Node) -> Result<Node, String> {
-        if let Node::AssignStmt {
-            right: _left_val,
-            left,
-            ..
-        } = node.clone()
-        {
-            let name = match *left {
-                Node::Identifier { value } => value,
-                Node::Ident { name, kind: _kind } => name,
-                _ => {
-                    println!("{:?}", left);
-                    return Err("Invalid type".to_string());
-                }
-            };
+        match node.clone() {
+            Node::AssignStmt {
+                right: _left_val,
+                left,
+                ..
+            } => {
+                let name = match *left {
+                    Node::Identifier { value } => value,
+                    Node::Ident { name, kind: _kind } => name,
+                    _ => {
+                        println!("{:?}", left);
+                        return Err("Invalid type".to_string());
+                    }
+                };
 
-            let res = self
-                .declarations
-                .get(&name)
-                .expect("unexpected failure")
-                .clone();
-            node = res;
+                let res = self
+                    .declarations
+                    .get(&name)
+                    .expect("unexpected failure")
+                    .clone();
+                return Ok(res);
+            }
+            Node::Object {name, ..} => {
+                let res = self
+                    .declarations
+                    .get(&name)
+                    .expect("unexpected failure").clone();
+                return Ok(res);
+            }
+            Atomic { value } => {
+                return Ok(Atomic { value });
+            }
+            _ => {
+            }
         }
-        if let Node::Object { name, kind } = node.clone() {
-            let res = self
-                .declarations
-                .get(&name)
-                .expect("unexpected failure").clone();
-            node = res;
-            
-        }
+        
         Ok(node)
     }
 

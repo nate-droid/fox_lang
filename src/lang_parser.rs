@@ -103,16 +103,14 @@ impl<'a> LangParser<'a> {
                             if self.current_token()?.kind == TokenKind::LBracket {
                                 self.consume(TokenKind::LBracket)?;
                                 let index = self.parse_node()?;
+                                
                                 self.consume(TokenKind::RBracket)?;
                                 self.consume(TokenKind::Equality)?;
                                 let value = self.parse_node()?;
                                 
                                 let index_update = Node::IndexExpression {
                                     left: Box::from(Node::Ident { name: ident.value, kind: "var".to_string() }),
-                                    index: match index {
-                                        Node::Atomic { value: Value::Int(i) } => i,
-                                        _ => -1,
-                                    },
+                                    index: Box::from(index),
                                 };
                                 
                                 let n = Node::AssignStmt {
@@ -218,10 +216,7 @@ impl<'a> LangParser<'a> {
                                 }),
                                 kind: "Nat".to_string(),
                             }),
-                            index: match index {
-                                Node::Atomic { value: Value::Int(i) } => i,
-                                _ => -1,
-                            },
+                            index: Box::from(index),
                         })
                     }
                     _ => {

@@ -292,11 +292,40 @@ impl<'a> LangLexer<'a> {
                             });
                             self.next_char(); // consuming the opening bracket
                             
-                            let index = self.current_char().to_string();
-                            self.tokens.push(Token {
-                                value: index,
-                                kind: TokenKind::Number,
-                            });
+                            let mut index = self.current_char().to_string();
+                            // if the char is a number, parse numbers
+                            // else parse as a word
+                            if self.current_char().is_numeric() {
+                                loop {
+                                    if self.peek().is_numeric() {
+                                        self.next_char();
+                                        index.push(self.current_char());
+                                    } else {
+                                        break;
+                                    }
+                                }
+                                self.tokens.push(Token {
+                                    value: index,
+                                    kind: TokenKind::Number,
+                                });
+                            } else {
+                                let mut index_word = String::new();
+                                loop {
+                                    if self.peek().is_alphabetic() {
+                                        self.next_char();
+                                        index_word.push(self.current_char());
+                                    } else {
+                                        break;
+                                    }
+                                }
+                                index.push_str(&index_word);
+                                self.tokens.push(Token {
+                                    value: index,
+                                    kind: TokenKind::Word,
+                                });
+                            }
+                            
+       
                             self.next_char(); // consuming the index
                             
                             self.tokens.push(Token {
