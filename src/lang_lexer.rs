@@ -33,7 +33,10 @@ impl<'a> LangLexer<'a> {
                             kind: TokenKind::Comment,
                         });
                     } else {
-                        return Err(format!("Expected '/' but found: {}", self.current_char()));
+                        self.tokens.push(Token {
+                            value: self.current_char().to_string(),
+                            kind: TokenKind::Divide,
+                        });
                     }
                 }
                 '(' => {
@@ -120,6 +123,14 @@ impl<'a> LangLexer<'a> {
                 '+' => self.tokens.push(Token {
                     value: self.current_char().to_string(),
                     kind: TokenKind::Add,
+                }),
+                '-' => self.tokens.push(Token {
+                    value: self.current_char().to_string(),
+                    kind: TokenKind::Subtract,
+                }),
+                '*' => self.tokens.push(Token {
+                    value: self.current_char().to_string(),
+                    kind: TokenKind::Multiply,
                 }),
                 '%' => {
                     self.tokens.push(Token {

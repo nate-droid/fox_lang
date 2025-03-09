@@ -59,6 +59,9 @@ pub enum TokenKind {
     Break,
     
     Add,
+    Subtract,
+    Multiply,
+    Divide,
     Modulo,
     
     LBracket,
@@ -106,6 +109,9 @@ impl std::fmt::Display for TokenKind {
             TokenKind::Colon => write!(f, "Colon"),
             TokenKind::Nat => write!(f, "Nat"),
             TokenKind::Add => write!(f, "+"),
+            TokenKind::Subtract => write!(f, "-"),
+            TokenKind::Multiply => write!(f, "*"),
+            TokenKind::Divide => write!(f, "/"),
             TokenKind::Modulo => write!(f, "%"),
             TokenKind::Comment => write!(f, "//"),
             TokenKind::MMExpression => write!(f, "MMExpression"),

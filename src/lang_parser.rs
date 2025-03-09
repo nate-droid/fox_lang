@@ -80,7 +80,6 @@ impl<'a> LangParser<'a> {
                             ast.add_node(node);
                         }
                         _ => {
-                            // TODO: check if the next character is an assignment
                             let ident = self.current_token()?;
 
                             self.consume(TokenKind::Word)?;
@@ -315,6 +314,9 @@ impl<'a> LangParser<'a> {
         // TODO: Will need a more robust way to handle expressions in the future
         if self.current_token()?.kind == TokenKind::Add
             || self.current_token()?.kind == TokenKind::Modulo
+            || self.current_token()?.kind == TokenKind::Subtract
+            || self.current_token()?.kind == TokenKind::Multiply
+            || self.current_token()?.kind == TokenKind::Divide
         {
             
             let op = self.current_token()?;
@@ -684,6 +686,33 @@ mod tests {
         let mut parser = LangParser::new(input);
         let ast = parser.parse().expect("unexpected failure");
         println!("{:?}", ast);
+
+        assert_eq!(ast.nodes.len(), 1);
+    }
+    
+    #[test]
+    fn subtraction() {
+        let input = "let x = 1 - 2;";
+        let mut parser = LangParser::new(input);
+        let ast = parser.parse().expect("unexpected failure");
+
+        assert_eq!(ast.nodes.len(), 1);
+    }
+    
+    #[test]
+    fn multiplication() {
+        let input = "let x = 1 * 2;";
+        let mut parser = LangParser::new(input);
+        let ast = parser.parse().expect("unexpected failure");
+
+        assert_eq!(ast.nodes.len(), 1);
+    }
+    
+    #[test]
+    fn division() {
+        let input = "let x = 1 / 2;";
+        let mut parser = LangParser::new(input);
+        let ast = parser.parse().expect("unexpected failure");
 
         assert_eq!(ast.nodes.len(), 1);
     }

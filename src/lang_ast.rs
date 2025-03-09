@@ -370,6 +370,93 @@ impl Ast {
                     }
                 }
             }
+            TokenKind::Subtract => {
+                if let Node::AssignStmt {
+                    right: _left_val,
+                    left: _name,
+                    ..
+                } = left.clone()
+                {
+                    left = self.replace_var(left)?;
+                }
+                if let Node::AssignStmt {
+                    right: _right_val,
+                    left: _name,
+                    ..
+                } = right.clone()
+                {
+                    right = self.replace_var(right)?;
+                }
+
+                if let Atomic { value: left_val } = left {
+                    if let Atomic { value: right_val } = right {
+                        return match (left_val, right_val) {
+                            (Value::Int(left), Value::Int(right)) => Ok(Atomic {
+                                value: Value::Int(left - right),
+                            }),
+                            _ => Err("Invalid types".to_string()),
+                        };
+                    }
+                }
+            }
+            TokenKind::Multiply => {
+                if let Node::AssignStmt {
+                    right: _left_val,
+                    left: _name,
+                    ..
+                } = left.clone()
+                {
+                    left = self.replace_var(left)?;
+                }
+                if let Node::AssignStmt {
+                    right: _right_val,
+                    left: _name,
+                    ..
+                } = right.clone()
+                {
+                    right = self.replace_var(right)?;
+                }
+
+                if let Atomic { value: left_val } = left {
+                    if let Atomic { value: right_val } = right {
+                        return match (left_val, right_val) {
+                            (Value::Int(left), Value::Int(right)) => Ok(Atomic {
+                                value: Value::Int(left * right),
+                            }),
+                            _ => Err("Invalid types".to_string()),
+                        };
+                    }
+                }
+            }
+            TokenKind::Divide => {
+                if let Node::AssignStmt {
+                    right: _left_val,
+                    left: _name,
+                    ..
+                } = left.clone()
+                {
+                    left = self.replace_var(left)?;
+                }
+                if let Node::AssignStmt {
+                    right: _right_val,
+                    left: _name,
+                    ..
+                } = right.clone()
+                {
+                    right = self.replace_var(right)?;
+                }
+
+                if let Atomic { value: left_val } = left {
+                    if let Atomic { value: right_val } = right {
+                        return match (left_val, right_val) {
+                            (Value::Int(left), Value::Int(right)) => Ok(Atomic {
+                                value: Value::Int(left / right),
+                            }),
+                            _ => Err("Invalid types".to_string()),
+                        };
+                    }
+                }
+            }
             TokenKind::Modulo => {
                 if let Node::AssignStmt {
                     right: _left_val,
@@ -691,6 +778,45 @@ mod tests {
         let res = ast.declarations.get("x").expect("unexpected failure");
 
         assert_eq!(res.val(), Value::Int(3));
+    }
+    
+    #[test]
+    fn eval_subtraction() {
+        let input = "let x = 1 - 2;";
+        let mut parser = LangParser::new(input);
+        let mut ast = parser.parse().expect("unexpected failure");
+
+        ast.eval().expect("unexpected failure");
+
+        let res = ast.declarations.get("x").expect("unexpected failure");
+
+        assert_eq!(res.val(), Value::Int(-1));
+    }
+    
+    #[test]
+    fn eval_multiplication() {
+        let input = "let x = 2 * 3;";
+        let mut parser = LangParser::new(input);
+        let mut ast = parser.parse().expect("unexpected failure");
+
+        ast.eval().expect("unexpected failure");
+
+        let res = ast.declarations.get("x").expect("unexpected failure");
+
+        assert_eq!(res.val(), Value::Int(6));
+    }
+    
+    #[test]
+    fn eval_division() {
+        let input = "let x = 6 / 3;";
+        let mut parser = LangParser::new(input);
+        let mut ast = parser.parse().expect("unexpected failure");
+
+        ast.eval().expect("unexpected failure");
+
+        let res = ast.declarations.get("x").expect("unexpected failure");
+
+        assert_eq!(res.val(), Value::Int(2));
     }
 
     #[test]

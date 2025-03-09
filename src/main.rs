@@ -42,9 +42,6 @@ fn main() {
                 ast.parse(input.trim()).expect("unexpected failure");
                 
                 ast.eval().expect("unexpected failure");
-                
-                // println!("Unknown command: {}", input);
-                // println!("Type 'help' for a list of commands");
             }
         }
     }

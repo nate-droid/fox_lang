@@ -95,3 +95,27 @@ fn test_update_var() {
 
     assert_eq!(x.to_string(), "20");
 }
+
+#[test]
+fn test_array_of_arrays() {
+    let input = "let x = [[1, 2, 3], [4, 5, 6], [7, 8, 9]];
+    print(x);";
+    let mut ast = LangParser::new(input);
+    let mut ast = ast.parse().expect("unexpected failure");
+
+    match ast.eval() {
+        Ok(_) => (),
+        Err(e) => panic!("{:?}", e),
+    }
+
+    let x = ast.declarations.get("x").unwrap();
+    println!("{:?}", x);
+    // match x {
+    //     Node::Array{elements} => {
+    //         assert_eq!(elements[0].to_string(), "[1, 2, 3]");
+    //         assert_eq!(elements[1].to_string(), "[4, 5, 6]");
+    //         assert_eq!(elements[2].to_string(), "[7, 8, 9]");
+    //     },
+    //     _ => panic!("x is not an array"),
+    // }
+}
