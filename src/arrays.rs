@@ -46,7 +46,7 @@ fn update_array() {
     }
 
     let x = ast.declarations.get("x").unwrap();
-    
+
     match x {
         Node::Array{elements} => {
             assert_eq!(elements[2].to_string(), "10");
@@ -76,4 +76,22 @@ fn access_array_with_var() {
         },
         _ => panic!("x is not an array"),
     }
+}
+
+#[test]
+fn test_update_var() {
+    let input = "let x = 10;
+    x = 20;
+    print(x);";
+    let mut ast = LangParser::new(input);
+    let mut ast = ast.parse().expect("unexpected failure");
+
+    match ast.eval() {
+        Ok(_) => (),
+        Err(e) => panic!("{:?}", e),
+    }
+
+    let x = ast.declarations.get("x").unwrap();
+
+    assert_eq!(x.to_string(), "20");
 }

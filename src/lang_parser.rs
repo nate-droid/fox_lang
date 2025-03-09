@@ -96,6 +96,7 @@ impl<'a> LangParser<'a> {
                                     right: Box::from(value),
                                     kind: "Nat".to_string(),
                                 });
+                                self.consume(TokenKind::Semicolon)?;
                                 continue;
                             }
                             
@@ -137,8 +138,8 @@ impl<'a> LangParser<'a> {
                 }
                 _ => {
                     println!("current: {:?}", self.current_token()?);
-                    println!("peek: {:?}", self.tokens[self.position + 1].kind);
-                    println!("peek value: {:?}", self.tokens[self.position + 1].value);
+                    // println!("peek: {:?}", self.tokens[self.position + 1].kind);
+                    // println!("peek value: {:?}", self.tokens[self.position + 1].value);
                     return Err("Unexpected token".to_string());
                 }
             }
