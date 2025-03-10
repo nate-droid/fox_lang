@@ -266,6 +266,11 @@ impl<'a> LangParser<'a> {
                 
                 Ok(Node::Array { elements: nodes })
             }
+            TokenKind::String => {
+                let val = Value::Str(self.current_token()?.value.clone());
+                self.advance();
+                Ok(Node::Atomic { value: val })
+            }
             _ => {
                 println!("kind: {:?}", self.current_token()?.kind);
                 println!("value: {:?}", self.current_token()?.value);
@@ -310,7 +315,7 @@ impl<'a> LangParser<'a> {
         self.consume(TokenKind::Equality)?;
 
         let left = self.parse_node()?;
-
+        
         // TODO: Will need a more robust way to handle expressions in the future
         if self.current_token()?.kind == TokenKind::Add
             || self.current_token()?.kind == TokenKind::Modulo
@@ -559,22 +564,23 @@ impl<'a> LangParser<'a> {
     fn parse_print(&mut self) -> Result<Node, String> {
         self.consume(TokenKind::LeftParenthesis)?;
 
-        let input = self.current_token()?;
-        // let input = self.parse_node()?;
+        // let input = self.current_token()?;
+        let input = self.parse_node()?;
         
         // convert input to a node
-        let n = Node::Object {
-            name: input.value,
-            kind: "Var".to_string(),
-        };
+        // let n = Node::Object {
+        //     name: input.value,
+        //     kind: "Var".to_string(),
+        // };
+        println!("print node: {:?}", input);
 
         self.advance();
-        self.consume(TokenKind::RightParenthesis)?;
+        // self.consume(TokenKind::RightParenthesis)?;
         self.consume(TokenKind::Semicolon)?;
 
         let node = Node::Call {
             name: "print".to_string(),
-            arguments: vec![n],
+            arguments: vec![input],
             returns: vec![],
         };
         Ok(node)

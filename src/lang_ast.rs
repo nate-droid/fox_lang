@@ -90,13 +90,7 @@ impl Ast {
                                 return Err("Invalid type".to_string());
                             }
                         };
-                        let i = match *index {
-                            Atomic { value: Value::Int(i) } => i as usize,
-                            _ => {
-                                println!("{:?}", index);
-                                return Err("Invalid type".to_string());
-                            }
-                        };
+                        let i = extract_index(*index.clone())?;
                         elements[i] = *right;
 
                         self.declarations.insert(name, Node::Array { elements });
@@ -162,12 +156,10 @@ impl Ast {
                 kind: _kind,
             } => {
                 if let Node::IndexExpression { left, index } = *left.clone() {
-                    println!("found a : {:?}", left);
-                    println!("found an index : {:?}", index);
-                    println!("right: {:?}", right);
+
                     let replaced = self.replace_var(*index.clone()).expect("unexpected failure");
                     let res = self.eval_node(replaced)?;
-                    println!("res: {:?}", res);
+
                     self.upsert_declaration(Node::AssignStmt {
                         left: Box::from(Node::IndexExpression {
                             left,
@@ -226,7 +218,6 @@ impl Ast {
                 return Ok(EmptyNode);
             }
             Break { .. } => {
-                // return Ok(Break {});
                 return Err("Break".to_string());
             }
             Node::Array {elements: _elements } => {
@@ -241,8 +232,6 @@ impl Ast {
                 // ensure that "y" is an array
                 return match y.clone() {
                     Node::AssignStmt { left, right, kind } => {
-                        // let i = index;
-                        // let i = i as usize;
 
                         let name = match *left {
                             Node::Identifier { value } => value,
@@ -265,19 +254,12 @@ impl Ast {
                                 return Err("Invalid type".to_string());
                             }
                         };
-                        let i = match *index {
-                            Atomic { value: Value::Int(i) } => i as usize,
-                            _ => {
-                                println!("{:?}", index);
-                                return Err("Invalid type".to_string());
-                            }
-                        };
+                        let i = extract_index(*index.clone())?;
 
                         // Using only Atomic values for now
-                        let x = Atomic {
+                        Ok(Atomic {
                             value: result[i].val(),
-                        };
-                        Ok(x)
+                        })
                     }
                     _ => {
                         println!("{:?}", y);
@@ -294,7 +276,7 @@ impl Ast {
         Ok(EmptyNode)
     }
 
-    fn replace_var(&mut self, mut node: Node) -> Result<Node, String> {
+    fn replace_var(&mut self, node: Node) -> Result<Node, String> {
         match node.clone() {
             Node::AssignStmt {
                 right: _left_val,
@@ -326,6 +308,47 @@ impl Ast {
             }
             Atomic { value } => {
                 return Ok(Atomic { value });
+            }
+            Node::IndexExpression { left, index } => {
+                let y = *left;
+
+                // ensure that "y" is an array
+                return match y.clone() {
+                    Node::AssignStmt { left, right, kind } => {
+
+                        let name = match *left {
+                            Node::Identifier { value } => value,
+                            Node::Ident { name, kind: _kind } => name,
+                            _ => {
+                                return Err("Invalid type".to_string());
+                            }
+                        };
+
+                        // fetch the name from the declarations
+                        let elements = self.declarations.get(&name).expect("unexpected failure");
+
+                        // check if the value is an array
+                        let result = match elements {
+                            Node::Array { elements } => {
+                                elements
+                            }
+                            _ => {
+                                println!("{:?}", elements);
+                                return Err("Invalid type".to_string());
+                            }
+                        };
+                        let i = extract_index(*index.clone())?;
+
+                        // Using only Atomic values for now
+                        Ok(Atomic {
+                            value: result[i].val(),
+                        })
+                    }
+                    _ => {
+                        println!("{:?}", y);
+                        Err("Invalid type".to_string())
+                    }
+                }
             }
             _ => {
             }
@@ -521,7 +544,13 @@ impl Ast {
                 
                 let temp = arguments[0].left().expect("unexpected failure");
                 let temp2 = *temp;
-                println!("{:?}", temp2.to_string());
+                
+                // replace temp2
+                let temp3 = self.replace_var(temp2).expect("unexpected failure");
+                
+                println!("temp3: {:?}", temp3);
+                
+                println!("{:?}", temp3.to_string());
                 
             }
             "reduce" => {
@@ -729,6 +758,16 @@ impl Ast {
 
         self.remove_declaration(&variable)?;
         Ok(())
+    }
+}
+
+fn extract_index(index: Node) -> Result<usize, String> {
+    match index {
+        Atomic { value: Value::Int(i) } => Ok(i as usize),
+        _ => {
+            println!("{:?}", index);
+            Err("Invalid type".to_string())
+        }
     }
 }
 

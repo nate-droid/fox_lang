@@ -253,10 +253,11 @@ impl Node {
                 Some(Box::from(Atomic { value: value.clone() }))
             },
             Node::AssignStmt { left, right, kind } => {
-                Some(Box::from(left.clone()))
+                Some(left.clone())
             },
             Node::BinaryExpression { left, .. } => Some(Box::from(*left.clone())),
             Node::Object { name, kind } => Some(Box::from(Node::Object { name: name.clone(), kind: kind.clone() })),
+            Node::IndexExpression { left, index } => Some(Box::from(Node::IndexExpression { left: left.clone(), index: index.clone() })),
             _ => {
                 println!("boo {:?}", self);
                 None 
