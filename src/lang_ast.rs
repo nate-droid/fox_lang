@@ -4,6 +4,7 @@ use crate::parser::Node::{Atomic, Break, EmptyNode};
 use crate::parser::{compare_value, Node, Value};
 use std::collections::HashMap;
 use std::fmt;
+use crate::internal_types::{fetch_array, fetch_integer, fetch_string};
 
 #[derive(Debug)]
 pub struct Ast {
@@ -51,7 +52,6 @@ impl Ast {
 
     pub fn upsert_declaration(&mut self, node: Node) -> Result<(), String> {
         match node {
-            // Node::AssignStmt { name, value, ..} => {
             Node::AssignStmt { left, right, .. } => {
                 match *left {
                     Node::Identifier { value: _name } => {
@@ -63,33 +63,12 @@ impl Ast {
                     Node::IndexExpression { left: left2, index } => {
                         // fetch name from left
 
-                        let name = match *left2 {
-                            Node::Identifier { value } => value,
-                            Node::Ident { name, kind: _kind } => name,
-                            Node::IndexExpression {left: left3, ..} => {
-                                let name = match *left3 {
-                                    Node::Identifier { value } => value,
-                                    Node::Ident { name, kind: _kind } => name,
-                                    _ => {
-                                        println!("{:?}", left3);
-                                        return Err("Invalid type".to_string());
-                                    }
-                                };
-                                name
-                            }
-                            _ => {
-                                println!("{:?}", left2);
-                                return Err("Invalid type".to_string());
-                            }
-                        };
+                        let name = fetch_string(*left2.clone())?;
+                        
                         let array = self.declarations.get(&name).expect("var not found").clone();
-                        let mut elements = match array {
-                            Node::Array { elements } => elements,
-                            _ => {
-                                println!("{:?}", array);
-                                return Err("Invalid type".to_string());
-                            }
-                        };
+
+                        let mut elements = fetch_array(array)?;
+                        
                         let i = extract_index(*index.clone())?;
                         elements[i] = *right;
 
@@ -232,28 +211,13 @@ impl Ast {
                 // ensure that "y" is an array
                 return match y.clone() {
                     Node::AssignStmt { left, right, kind } => {
-
-                        let name = match *left {
-                            Node::Identifier { value } => value,
-                            Node::Ident { name, kind: _kind } => name,
-                            _ => {
-                                return Err("Invalid type".to_string());
-                            }
-                        };
-
+                        let name = fetch_string(*left.clone())?;
+                        
                         // fetch the name from the declarations
                         let elements = self.declarations.get(&name).expect("unexpected failure");
 
                         // check if the value is an array
-                        let result = match elements {
-                            Node::Array { elements } => {
-                                elements
-                            }
-                            _ => {
-                                println!("{:?}", elements);
-                                return Err("Invalid type".to_string());
-                            }
-                        };
+                        let result = fetch_array(elements.clone())?;
                         let i = extract_index(*index.clone())?;
 
                         // Using only Atomic values for now
@@ -283,15 +247,8 @@ impl Ast {
                 left,
                 ..
             } => {
-                let name = match *left {
-                    Node::Identifier { value } => value,
-                    Node::Ident { name, kind: _kind } => name,
-                    _ => {
-                        println!("{:?}", left);
-                        return Err("Invalid type".to_string());
-                    }
-                };
-
+                let name = fetch_string(*left.clone())?;
+                
                 let res = self
                     .declarations
                     .get(&name)
@@ -313,7 +270,6 @@ impl Ast {
                 return self.replace_var_assign(*left, index);
             }
             Node::Ident { name, kind } => {
-                println!("decl: {:?}", self.declarations);
                 let res = self
                     .declarations
                     .get(&name)
@@ -331,27 +287,12 @@ impl Ast {
     fn replace_var_assign(&mut self, node: Node, index: Box<Node>) -> Result<Node, String> {
         match node.clone() {
             Node::AssignStmt { left, right, kind } => {
-                let name = match *left {
-                    Node::Identifier { value } => value,
-                    Node::Ident { name, kind: _kind } => name,
-                    _ => {
-                        return Err("Invalid type".to_string());
-                    }
-                };
+                let name = fetch_string(*left.clone())?;
 
                 // fetch the name from the declarations
                 let elements = self.declarations.get(&name).expect("unexpected failure");
 
-                // check if the value is an array
-                let result = match elements {
-                    Node::Array { elements } => {
-                        elements
-                    }
-                    _ => {
-                        println!("{:?}", elements);
-                        return Err("Invalid type".to_string());
-                    }
-                };
+                let result = fetch_array(elements.clone())?;
                 let i = extract_index(*index.clone())?;
 
                 // Using only Atomic values for now
@@ -360,20 +301,19 @@ impl Ast {
                 })
             }
             Node::IndexExpression {left, index} => {
-                println!("parent node: {:?}", node);
-                println!("child_left: {:?}", left);
-                // get the parent variable name
-                let name = match node {
-                    Node::Identifier { value } => value,
-                    Node::Ident { name, kind: _kind } => name,
-                    _ => {
-                        return Err("Invalid type".to_string());
-                    }
-                };
-                // TODO: This is getting called on the left and not the index
+                let name = fetch_string(node)?;
                 
-                println!("name: {:?}", name);
-                Err("so sad".to_string())
+                let array = self.declarations.get(&name).expect("var not found").clone();
+
+                let outer_index = fetch_integer(*index.clone())?;
+                
+                let elements = fetch_array(array)?;
+
+                let child_node = elements[outer_index as usize].clone();
+                let child_array = fetch_array(child_node)?;
+                let res = child_array[0].clone();
+                
+                Ok(res)
             }
             _ => {
                 println!("{:?}", node);

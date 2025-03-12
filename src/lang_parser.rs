@@ -215,18 +215,18 @@ impl<'a> LangParser<'a> {
                             let index2 = self.parse_node()?;
                             self.consume(TokenKind::RBracket)?;
                             
+                            if self.current_token()?.kind == TokenKind::Equality {
+                                self.consume(TokenKind::Equality)?;
+                                let right = self.parse_node()?;
+                                panic!("not yet implemented");
+                            }
+                            
                             return Ok(Node::IndexExpression {
                                 left: Box::from(Node::IndexExpression {
-                                    left: Box::from(Node::AssignStmt {
-                                        left: Box::from(Node::Ident { name: name.value, kind: "var".to_string() }),
-                                        right: Box::from(Node::Atomic {
-                                            value: Value::Int(0),
-                                        }),
-                                        kind: "Nat".to_string(),
-                                    }),
-                                    index: Box::from(index),
+                                    left: Box::from(Node::Ident {name: name.value, kind: "var".to_string()}),
+                                    index: Box::from(index2),
                                 }),
-                                index: Box::from(index2),
+                                index: Box::from(index),
                             });
                         }
                         

@@ -9,6 +9,8 @@ pub mod lang_ast;
 
 pub mod cut;
 
+pub mod internal_types;
+
 fn main() {
     println!("Welcome to the FoxLang REPL");
     println!("Type 'help' for a list of commands");
