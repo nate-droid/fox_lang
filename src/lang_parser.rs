@@ -78,6 +78,7 @@ impl<'a> LangParser<'a> {
                             let node = self.parse_for_loop()?;
                             
                             ast.add_node(node);
+                            continue;
                         }
                         _ => {
                             let ident = self.current_token()?;
@@ -208,6 +209,27 @@ impl<'a> LangParser<'a> {
 
                         self.consume(TokenKind::RBracket)?;
                         
+                        // TODO: Check for nested arrays
+                        if self.current_token()?.kind == TokenKind::LBracket {
+                            self.consume(TokenKind::LBracket)?;
+                            let index2 = self.parse_node()?;
+                            self.consume(TokenKind::RBracket)?;
+                            
+                            return Ok(Node::IndexExpression {
+                                left: Box::from(Node::IndexExpression {
+                                    left: Box::from(Node::AssignStmt {
+                                        left: Box::from(Node::Ident { name: name.value, kind: "var".to_string() }),
+                                        right: Box::from(Node::Atomic {
+                                            value: Value::Int(0),
+                                        }),
+                                        kind: "Nat".to_string(),
+                                    }),
+                                    index: Box::from(index),
+                                }),
+                                index: Box::from(index2),
+                            });
+                        }
+                        
                         Ok(Node::IndexExpression {
                             left: Box::from(Node::AssignStmt {
                                 left: Box::from(Node::Ident { name: name.value, kind: "var".to_string() }),
@@ -253,8 +275,10 @@ impl<'a> LangParser<'a> {
                 })
             }
             TokenKind::LBracket => {
+                // parse array
                 self.consume(TokenKind::LBracket)?;
                 let mut nodes = Vec::new();
+                
                 while self.current_token()?.kind != TokenKind::RBracket {
                     nodes.push(self.parse_node()?);
                     if self.current_token()?.kind == TokenKind::RBracket {
@@ -385,6 +409,7 @@ impl<'a> LangParser<'a> {
             }
         }
         self.consume(TokenKind::RBracket)?;
+        
         Ok(Node::ForLoop {
             variable: variable.value,
             range: (
@@ -566,13 +591,13 @@ impl<'a> LangParser<'a> {
 
         // let input = self.current_token()?;
         let input = self.parse_node()?;
-        
+        println!("node fella {:?}", input);
         // convert input to a node
         // let n = Node::Object {
         //     name: input.value,
         //     kind: "Var".to_string(),
         // };
-        println!("print node: {:?}", input);
+        // println!("print node: {:?}", input);
 
         self.advance();
         // self.consume(TokenKind::RightParenthesis)?;
@@ -597,6 +622,7 @@ impl<'a> LangParser<'a> {
     }
 
     fn consume(&mut self, kind: TokenKind) -> Result<(), String> {
+        // debug
         if self.tokens[self.position].kind == kind {
             self.advance();
             Ok(())

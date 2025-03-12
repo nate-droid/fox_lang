@@ -1,0 +1,17 @@
+let sum = 0;
+
+for i in 1..1000 {
+    let a = 0;
+    let b = 1;
+    let c = 0;
+    if (b > 1000) {
+        break;
+    }
+    
+    let x = b % 2;
+    if (x == 0) {
+        sum = sum + b;
+    }
+}
+
+print(sum);

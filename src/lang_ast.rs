@@ -170,7 +170,7 @@ impl Ast {
                     })?;
                     return Ok(res);
                 }
-                
+
                 let replaced = self.replace_var(*right.clone()).expect("unexpected failure");
 
                 let res = self.eval_node(replaced)?;
@@ -310,53 +310,78 @@ impl Ast {
                 return Ok(Atomic { value });
             }
             Node::IndexExpression { left, index } => {
-                let y = *left;
-
-                // ensure that "y" is an array
-                return match y.clone() {
-                    Node::AssignStmt { left, right, kind } => {
-
-                        let name = match *left {
-                            Node::Identifier { value } => value,
-                            Node::Ident { name, kind: _kind } => name,
-                            _ => {
-                                return Err("Invalid type".to_string());
-                            }
-                        };
-
-                        // fetch the name from the declarations
-                        let elements = self.declarations.get(&name).expect("unexpected failure");
-
-                        // check if the value is an array
-                        let result = match elements {
-                            Node::Array { elements } => {
-                                elements
-                            }
-                            _ => {
-                                println!("{:?}", elements);
-                                return Err("Invalid type".to_string());
-                            }
-                        };
-                        let i = extract_index(*index.clone())?;
-
-                        // Using only Atomic values for now
-                        Ok(Atomic {
-                            value: result[i].val(),
-                        })
-                    }
-                    _ => {
-                        println!("{:?}", y);
-                        Err("Invalid type".to_string())
-                    }
-                }
+                return self.replace_var_assign(*left, index);
+            }
+            Node::Ident { name, kind } => {
+                println!("decl: {:?}", self.declarations);
+                let res = self
+                    .declarations
+                    .get(&name)
+                    .expect("unexpected failure")
+                    .clone();
+                return Ok(res);
             }
             _ => {
             }
         }
-        
+
         Ok(node)
     }
 
+    fn replace_var_assign(&mut self, node: Node, index: Box<Node>) -> Result<Node, String> {
+        match node.clone() {
+            Node::AssignStmt { left, right, kind } => {
+                let name = match *left {
+                    Node::Identifier { value } => value,
+                    Node::Ident { name, kind: _kind } => name,
+                    _ => {
+                        return Err("Invalid type".to_string());
+                    }
+                };
+
+                // fetch the name from the declarations
+                let elements = self.declarations.get(&name).expect("unexpected failure");
+
+                // check if the value is an array
+                let result = match elements {
+                    Node::Array { elements } => {
+                        elements
+                    }
+                    _ => {
+                        println!("{:?}", elements);
+                        return Err("Invalid type".to_string());
+                    }
+                };
+                let i = extract_index(*index.clone())?;
+
+                // Using only Atomic values for now
+                Ok(Atomic {
+                    value: result[i].val(),
+                })
+            }
+            Node::IndexExpression {left, index} => {
+                println!("parent node: {:?}", node);
+                println!("child_left: {:?}", left);
+                // get the parent variable name
+                let name = match node {
+                    Node::Identifier { value } => value,
+                    Node::Ident { name, kind: _kind } => name,
+                    _ => {
+                        return Err("Invalid type".to_string());
+                    }
+                };
+                // TODO: This is getting called on the left and not the index
+                
+                println!("name: {:?}", name);
+                Err("so sad".to_string())
+            }
+            _ => {
+                println!("{:?}", node);
+                Err("Invalid type".to_string())
+            }
+        }
+    }
+    
     fn eval_binary_expression(
         &mut self,
         mut left: Node,
@@ -543,13 +568,15 @@ impl Ast {
                 }
                 
                 let temp = arguments[0].left().expect("unexpected failure");
+                
                 let temp2 = *temp;
+                println!("temp2: {:?}", temp2);
                 
                 // replace temp2
                 let temp3 = self.replace_var(temp2).expect("unexpected failure");
-                
+
                 println!("temp3: {:?}", temp3);
-                
+
                 println!("{:?}", temp3.to_string());
                 
             }
@@ -818,7 +845,7 @@ mod tests {
 
         assert_eq!(res.val(), Value::Int(3));
     }
-    
+
     #[test]
     fn eval_subtraction() {
         let input = "let x = 1 - 2;";
@@ -831,7 +858,7 @@ mod tests {
 
         assert_eq!(res.val(), Value::Int(-1));
     }
-    
+
     #[test]
     fn eval_multiplication() {
         let input = "let x = 2 * 3;";
@@ -844,7 +871,7 @@ mod tests {
 
         assert_eq!(res.val(), Value::Int(6));
     }
-    
+
     #[test]
     fn eval_division() {
         let input = "let x = 6 / 3;";

@@ -14,13 +14,19 @@ fn main() {
     println!("Type 'help' for a list of commands");
     println!();
     let mut ast = lang_ast::Ast::new();
+
+    let args: Vec<String> = env::args().collect();
+    
+    if args.len() > 1 {
+        // need to parse a file
+        let filename = &args[1];
+        let contents = std::fs::read_to_string(filename).expect("could not read file");
+        ast.parse(&contents).expect("unexpected failure");
+        ast.eval().expect("unexpected failure");
+        return;
+    }
     
     loop {
-        let args: Vec<String> = env::args().collect();
-        println!("args: {:?}", args);
-        if args.len() > 1 {
-            // need to parse a file
-        }
         let mut input = String::new();
         std::io::stdin().read_line(&mut input).unwrap();
         let mut parts = input.trim().split_whitespace();
