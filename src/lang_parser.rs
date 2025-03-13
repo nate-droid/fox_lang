@@ -224,9 +224,9 @@ impl<'a> LangParser<'a> {
                             return Ok(Node::IndexExpression {
                                 left: Box::from(Node::IndexExpression {
                                     left: Box::from(Node::Ident {name: name.value, kind: "var".to_string()}),
-                                    index: Box::from(index2),
+                                    index: Box::from(index),
                                 }),
-                                index: Box::from(index),
+                                index: Box::from(index2),
                             });
                         }
                         

@@ -1,9 +1,9 @@
 use crate::cut::Axiom;
 use crate::lexer::{TokenKind};
-use crate::parser::Node::{Atomic, Break, EmptyNode};
+use crate::parser::Node::{Atomic, Break, EmptyNode, Ident};
 use crate::parser::{compare_value, Node, Value};
 use std::collections::HashMap;
-use std::fmt;
+
 use crate::internal_types::{fetch_array, fetch_integer, fetch_string};
 
 #[derive(Debug)]
@@ -310,6 +310,7 @@ impl Ast {
                 let elements = fetch_array(array)?;
 
                 let child_node = elements[outer_index as usize].clone();
+                println!("child node {:?}", child_node);
                 let child_array = fetch_array(child_node)?;
                 let res = child_array[0].clone();
                 
@@ -497,25 +498,16 @@ impl Ast {
         match name.as_str() {
             "print" => {
                 // check if the first argument is an Object
-                if let Node::Object { name, kind: _kind } = arguments[0].clone() {
-                    let found = self.declarations.get(name.as_str());
-
-                    if let Some(node) = found {
-                        let res = self.replace_var(arguments[0].clone())?;
-                        println!("{:?}", res.clone().to_string());
-                        return Ok(())
-                    }
-                }
-                
                 let temp = arguments[0].left().expect("unexpected failure");
-                
                 let temp2 = *temp;
-                println!("temp2: {:?}", temp2);
                 
-                // replace temp2
+                if let  Node::IndexExpression { left, index } = temp2 {
+                    let x = self.eval_array(Node::IndexExpression { left, index })?;
+                    println!("{:?}", x);
+                    return Ok(())
+                };
+                
                 let temp3 = self.replace_var(temp2).expect("unexpected failure");
-
-                println!("temp3: {:?}", temp3);
 
                 println!("{:?}", temp3.to_string());
                 
@@ -677,6 +669,37 @@ impl Ast {
             }
         }
         Ok(())
+    }
+    
+    fn eval_array(&mut self, node: Node) -> Result<Node, String> {
+        match node {
+            Node::IndexExpression { left, index: sub_index } => {
+                if let Node::IndexExpression {left, index} = *left {
+                    let res = self.eval_array(*left)?;
+
+                    let name = fetch_string(res.clone())?;
+                    let blah = self.declarations.get(&name).expect("missing declaration").clone();
+                    let array = fetch_array(blah)?;
+                    let index = fetch_integer(*index)?;
+                    let sub_index = fetch_integer(*sub_index)?;
+                    let outer = array[index as usize].clone();
+
+                    let inner = fetch_array(outer)?;
+                    
+                    let last = inner[sub_index as usize].clone();
+                    
+                    return Ok(last);
+                }
+                Ok(EmptyNode)
+            }
+            Ident {name, kind} => {
+                // fetch the ident by name from declarations and return
+                Ok(Ident { name, kind })
+            }
+            _=> {
+                Err("expected index expression".to_string())
+            }
+        }
     }
     
     fn parse_for(&mut self, variable: String, range: (i32, i32), body: Vec<Node>) -> Result<(), String> {

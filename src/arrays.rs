@@ -182,7 +182,7 @@ fn test_string_assign() {
 #[test]
 fn access_index() {
     let input = "let x = [[33, 11], [22]];
-    print(x[0][0]);";
+    print(x[0][1]);";
     let mut ast = LangParser::new(input);
     let mut ast = ast.parse().expect("unexpected failure");
 
