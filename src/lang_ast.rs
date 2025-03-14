@@ -231,6 +231,14 @@ impl Ast {
                     }
                 }
             }
+            Node::FunctionDecl {
+                name: _name,
+                arguments: _arguments,
+                body: _body, ..
+            } => {
+                // don't do anything for a decl, rather only on call
+                return Ok(EmptyNode);
+            }
             _ => {
                 println!("{:?}", ast);
                 todo!("Unknown node");

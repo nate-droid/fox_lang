@@ -69,6 +69,7 @@ pub enum TokenKind {
     Range,
     Comma,
     Index,
+    Function,
     
     IsEqual, // ==
     EOF,
@@ -131,6 +132,7 @@ impl std::fmt::Display for TokenKind {
             TokenKind::GreaterThan => write!(f, ">"),
             TokenKind::Break => write!(f, "Break"),
             TokenKind::Index => write!(f, "Index"),
+            TokenKind::Function => write!(f, "Function"),
         }
     }
 }

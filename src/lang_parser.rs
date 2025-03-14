@@ -80,6 +80,12 @@ impl<'a> LangParser<'a> {
                             ast.add_node(node);
                             continue;
                         }
+                        "fn" => {
+                            let func = self.parse_function()?;
+                            println!("{:?}", func);
+                            ast.add_node(func);
+                            continue;
+                        }
                         _ => {
                             let ident = self.current_token()?;
 
@@ -463,7 +469,61 @@ impl<'a> LangParser<'a> {
             }
         }
     }
+    
+    fn parse_function(&mut self) -> Result<Node, String> {
+        self.consume(TokenKind::Word)?; // consume "fn"
+        let name = self.parse_function_name()?;
 
+        self.consume(TokenKind::LeftParenthesis)?;
+        let mut arguments = Vec::new();
+
+        while self.current_token()?.kind != TokenKind::RightParenthesis {
+            let arg = self.parse_function_input()?;
+            
+            if self.current_token()?.kind != TokenKind::RightParenthesis {
+                self.consume(Comma)?;    
+            }
+            arguments.push(arg);
+        }
+        self.consume(TokenKind::RightParenthesis)?;
+        
+        // TODO: ignoring return types for now :(
+        
+        self.consume(TokenKind::LBracket)?;
+        
+        let body = self.parse_body()?;
+        println!("{:?}", body);
+        
+        Ok(Node::FunctionDecl {
+            name: Box::from(name),
+            arguments,
+            returns: vec![],
+            body,
+        })
+    }
+
+    fn parse_function_name(&mut self) -> Result<Node, String> {
+        let name = self.current_token()?;
+        self.consume(TokenKind::Word)?;
+        
+        Ok(Node::Ident {
+            name: name.value,
+            kind: "fn".to_string(),
+        })
+    }
+    
+    fn parse_function_input(&mut self) -> Result<Node, String> {
+        let ident = self.current_token()?;
+        self.consume(TokenKind::Word)?;
+        
+        // TODO this will need more advanced pattern matching when more types are introduced and supported
+        
+        Ok(Node::Ident {
+            name: ident.value,
+            kind: "var".to_string(),
+        })
+    }
+    
     fn parse_condition(&mut self) -> Result<Node, String> {
         // conditions must be wrapped in parentheses
         let left = self.current_token()?;
@@ -622,6 +682,14 @@ impl<'a> LangParser<'a> {
     }
 
     fn consume(&mut self, kind: TokenKind) -> Result<(), String> {
+        
+        // TODO:
+        // TODO: refactor to have tokens accessed via a function and guard against out of bounds errors
+        // TODO:
+        if self.position >= self.tokens.len() {
+            println!("uhoh");
+        }
+        
         // debug
         if self.tokens[self.position].kind == kind {
             self.advance();

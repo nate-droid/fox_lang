@@ -11,3 +11,4 @@ mod compile;
 mod pe;
 mod arrays;
 pub mod internal_types;
+pub mod functions;
