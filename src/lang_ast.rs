@@ -3,7 +3,7 @@ use crate::lexer::{TokenKind};
 use crate::parser::Node::{Atomic, Break, EmptyNode, Ident};
 use crate::parser::{compare_value, Node, Value};
 use std::collections::HashMap;
-
+use std::fmt::Arguments;
 use crate::internal_types::{fetch_array, fetch_integer, fetch_string};
 
 #[derive(Debug)]
@@ -80,6 +80,15 @@ impl Ast {
                     }
                 }
 
+            }
+            Node::FunctionDecl { name, arguments, returns, body } => {
+                let n = fetch_string(*name.clone())?;
+                self.declarations.insert(n, Node::FunctionDecl {
+                    name,
+                    arguments,
+                    returns,
+                    body,
+                });
             }
             EmptyNode => {}
             Atomic { value } => {
@@ -232,11 +241,21 @@ impl Ast {
                 }
             }
             Node::FunctionDecl {
-                name: _name,
-                arguments: _arguments,
-                body: _body, ..
+                name,
+                arguments,
+                returns, 
+                body,
             } => {
-                // don't do anything for a decl, rather only on call
+                let res = Node::FunctionDecl {
+                    name,
+                    arguments,
+                    returns,
+                    body,
+                    
+                };
+                
+                self.upsert_declaration(res)?;
+                
                 return Ok(EmptyNode);
             }
             _ => {
@@ -277,7 +296,7 @@ impl Ast {
             Node::IndexExpression { left, index } => {
                 return self.replace_var_assign(*left, index);
             }
-            Node::Ident { name, kind } => {
+            Ident { name, kind } => {
                 let res = self
                     .declarations
                     .get(&name)
@@ -506,25 +525,57 @@ impl Ast {
         match name.as_str() {
             "print" => {
                 // check if the first argument is an Object
-                let temp = arguments[0].left().expect("unexpected failure");
-                let temp2 = *temp;
+                let temp2 = *arguments[0].left().expect("unexpected failure");
                 
                 if let  Node::IndexExpression { left, index } = temp2 {
                     let x = self.eval_array(Node::IndexExpression { left, index })?;
                     println!("{:?}", x);
                     return Ok(())
                 };
-                
-                let temp3 = self.replace_var(temp2).expect("unexpected failure");
 
-                println!("{:?}", temp3.to_string());
-                
+                println!("{:?}", self.replace_var(temp2).expect("unexpected failure").to_string());
             }
             "reduce" => {
                 println!("{:?}", arguments[0].left());
             }
-            _ => return Err("Unknown function".to_string()),
+            _ => { 
+                println!("arguments: {:?}", arguments);
+                // function call is not a builtin function
+                let func = self.declarations.get(&name).expect("unexpected failure").clone();
+
+                self.eval_function(func, arguments)?;
+            }
         }
+        
+        Ok(())
+    }
+    
+    fn eval_function(&mut self, node: Node, arguments: Vec<Node>) -> Result<(), String> {
+        // make sure that the node is a function
+        if let Node::FunctionDecl {
+                name,
+                arguments: args,
+                returns,
+                body} = node 
+        {
+            for i in 0..args.len() {
+                let name = fetch_string(args[i].clone())?;
+                self.upsert_declaration(Node::AssignStmt {
+                    left: Box::new(Ident {
+                        name: name.clone(),
+                        kind: "var".to_string(),
+                    }),
+                    right: Box::new(arguments[i].clone()),
+                    kind: "Nat".to_string(),
+                })?;
+            }
+            
+            for expr in body {
+                self.eval_node(expr)?;
+            }
+            // TODO iterate through "args" and delete from scope
+        }
+        
         Ok(())
     }
     

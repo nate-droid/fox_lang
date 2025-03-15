@@ -88,46 +88,67 @@ impl<'a> LangParser<'a> {
                         }
                         _ => {
                             let ident = self.current_token()?;
-
                             self.consume(TokenKind::Word)?;
-                            if self.current_token()?.kind == TokenKind::Equality {
-                                self.consume(TokenKind::Equality)?;
-                                let value = self.parse_node()?;
-
-                                ast.add_node(Node::AssignStmt {
-                                    left: Box::from(Node::Ident {
-                                        name: ident.value,
-                                        kind: "var".to_string(),
-                                    }),
-                                    right: Box::from(value),
-                                    kind: "Nat".to_string(),
-                                });
-                                self.consume(TokenKind::Semicolon)?;
-                                continue;
-                            }
                             
-                            // check if we are updating an array
-                            if self.current_token()?.kind == TokenKind::LBracket {
-                                self.consume(TokenKind::LBracket)?;
-                                let index = self.parse_node()?;
-                                
-                                self.consume(TokenKind::RBracket)?;
-                                self.consume(TokenKind::Equality)?;
-                                let value = self.parse_node()?;
-                                
-                                let index_update = Node::IndexExpression {
-                                    left: Box::from(Node::Ident { name: ident.value, kind: "var".to_string() }),
-                                    index: Box::from(index),
-                                };
-                                
-                                let n = Node::AssignStmt {
-                                    left: Box::from(index_update),
-                                    right: Box::from(value),
-                                    kind: "".to_string(),
-                                };
-                                self.consume(TokenKind::Semicolon)?;
-                                ast.add_node(n);
-                                continue;
+                            match self.current_token()?.kind {
+                                TokenKind::Equality => {
+                                    self.consume(TokenKind::Equality)?;
+                                    let value = self.parse_node()?;
+
+                                    ast.add_node(Node::AssignStmt {
+                                        left: Box::from(Node::Ident {
+                                            name: ident.value,
+                                            kind: "var".to_string(),
+                                        }),
+                                        right: Box::from(value),
+                                        kind: "Nat".to_string(),
+                                    });
+                                    self.consume(TokenKind::Semicolon)?;
+                                    continue;
+                                }
+                                TokenKind::LeftParenthesis => {
+                                    // parsing a function call
+                                    self.consume(TokenKind::LeftParenthesis)?;
+                                    let mut arguments = Vec::new();
+                                    while self.current_token()?.kind != TokenKind::RightParenthesis {
+                                        let arg = self.parse_node()?;
+                                        arguments.push(arg);
+                                        if self.current_token()?.kind == TokenKind::RightParenthesis {
+                                            break;
+                                        }
+                                        self.consume(Comma)?;
+                                    }
+                                    self.consume(TokenKind::RightParenthesis)?;
+                                    self.consume(TokenKind::Semicolon)?;
+                                    ast.add_node(Node::Call {
+                                        name: ident.value,
+                                        arguments,
+                                        returns: vec![],
+                                    })
+                                }
+                                TokenKind::LBracket => {
+                                    self.consume(TokenKind::LBracket)?;
+                                    let index = self.parse_node()?;
+
+                                    self.consume(TokenKind::RBracket)?;
+                                    self.consume(TokenKind::Equality)?;
+                                    let value = self.parse_node()?;
+
+                                    let index_update = Node::IndexExpression {
+                                        left: Box::from(Node::Ident { name: ident.value, kind: "var".to_string() }),
+                                        index: Box::from(index),
+                                    };
+
+                                    let n = Node::AssignStmt {
+                                        left: Box::from(index_update),
+                                        right: Box::from(value),
+                                        kind: "".to_string(),
+                                    };
+                                    self.consume(TokenKind::Semicolon)?;
+                                    ast.add_node(n);
+                                    continue;
+                                }
+                                _ => {}
                             }
                         }
                     }
@@ -172,7 +193,7 @@ impl<'a> LangParser<'a> {
                     "print" => return self.parse_print(),
                     "let" => {
                         let ident = self.parse_let()?;
-                        // TODO: Need to add to globals
+
                         return Ok(ident);
                     }
                     "if" => return self.parse_if(),
@@ -492,7 +513,6 @@ impl<'a> LangParser<'a> {
         self.consume(TokenKind::LBracket)?;
         
         let body = self.parse_body()?;
-        println!("{:?}", body);
         
         Ok(Node::FunctionDecl {
             name: Box::from(name),
@@ -601,41 +621,6 @@ impl<'a> LangParser<'a> {
         })
     }
 
-    fn parse_bool(&mut self) -> Result<Node, String> {
-        let left = self.current_token()?;
-        self.advance();
-        let operator = self.current_token()?;
-        self.advance();
-        let right = self.current_token()?;
-        self.advance();
-
-        let node = Node::BinaryExpression {
-            left: Box::from(Node::AssignStmt {
-                left: Box::from(Node::Ident { name: left.value, kind: "var".to_string() }),
-                right: Box::from(Node::Atomic {
-                    value: Value::Int(0),
-                }),
-                kind: "Nat".to_string(),
-            }),
-            operator: operator.kind,
-            right: Box::from(Node::Atomic {
-                value: Value::Int(right.value.parse::<i32>().unwrap()),
-            }),
-        };
-
-        if self.current_token()?.kind == And || self.current_token()?.kind == TokenKind::Or {
-            let op = self.current_token()?;
-            self.advance();
-            let right2 = self.parse_condition()?;
-            return Ok(Node::BinaryExpression {
-                left: Box::from(node),
-                operator: op.kind,
-                right: Box::from(right2),
-            });
-        }
-        Ok(node)
-    }
-
     fn parse_consequence(&mut self) -> Result<Vec<Node>, String> {
         let mut nodes = Vec::new();
         while self.current_token()?.kind != TokenKind::RBracket {
@@ -651,16 +636,9 @@ impl<'a> LangParser<'a> {
 
         // let input = self.current_token()?;
         let input = self.parse_node()?;
-        println!("node fella {:?}", input);
-        // convert input to a node
-        // let n = Node::Object {
-        //     name: input.value,
-        //     kind: "Var".to_string(),
-        // };
-        // println!("print node: {:?}", input);
 
         self.advance();
-        // self.consume(TokenKind::RightParenthesis)?;
+        
         self.consume(TokenKind::Semicolon)?;
 
         let node = Node::Call {
@@ -682,14 +660,6 @@ impl<'a> LangParser<'a> {
     }
 
     fn consume(&mut self, kind: TokenKind) -> Result<(), String> {
-        
-        // TODO:
-        // TODO: refactor to have tokens accessed via a function and guard against out of bounds errors
-        // TODO:
-        if self.position >= self.tokens.len() {
-            println!("uhoh");
-        }
-        
         // debug
         if self.tokens[self.position].kind == kind {
             self.advance();
