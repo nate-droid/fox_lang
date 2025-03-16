@@ -57,7 +57,7 @@ impl Ast {
                     Node::Identifier { value: _name } => {
                         self.declarations.insert(_name, *right);
                     }
-                    Node::Ident { name, kind } => {
+                    Ident { name, kind } => {
                         self.declarations.insert(name, *right);
                     }
                     Node::IndexExpression { left: left2, index } => {
@@ -75,8 +75,7 @@ impl Ast {
                         self.declarations.insert(name, Node::Array { elements });
                     }
                     _ => {
-                        println!("{:?}", left);
-                        return Err("Invalid type".to_string());
+                        return Err(format!("invalid type {:?} for left branch", left));
                     }
                 }
 
@@ -94,8 +93,7 @@ impl Ast {
             Atomic { value } => {
             }
             _ => {
-                // println!("{:?}", node);
-                return Err("Invalid node type".to_string());
+                return Err(format!("Invalid node type: {:?}", node));
             }
         }
         Ok(())
@@ -145,7 +143,7 @@ impl Ast {
             } => {
                 if let Node::IndexExpression { left, index } = *left.clone() {
 
-                    let replaced = self.replace_var(*index.clone()).expect("unexpected failure");
+                    let replaced = self.replace_var(*index.clone())?;
                     let res = self.eval_node(replaced)?;
 
                     self.upsert_declaration(Node::AssignStmt {
@@ -159,7 +157,7 @@ impl Ast {
                     return Ok(res);
                 }
 
-                let replaced = self.replace_var(*right.clone()).expect("unexpected failure");
+                let replaced = self.replace_var(*right.clone())?;
 
                 let res = self.eval_node(replaced)?;
 
@@ -525,7 +523,7 @@ impl Ast {
         match name.as_str() {
             "print" => {
                 // check if the first argument is an Object
-                let temp2 = *arguments[0].left().expect("unexpected failure");
+                let temp2 = *arguments[0].left()?;
                 
                 if let  Node::IndexExpression { left, index } = temp2 {
                     let x = self.eval_array(Node::IndexExpression { left, index })?;
@@ -573,7 +571,10 @@ impl Ast {
             for expr in body {
                 self.eval_node(expr)?;
             }
-            // TODO iterate through "args" and delete from scope
+            
+            for arg in args {
+                self.remove_declaration(&fetch_string(arg)?)?;
+            }
         }
         
         Ok(())
@@ -591,11 +592,11 @@ impl Ast {
                 match operator {
                     TokenKind::IsEqual => {
                         // TODO: This is using left.left and right.left which is an oopsie
-                        let pre_left = left.left().expect("unexpected failure");
-                        let replaced_left = self.replace_var(*pre_left.clone()).expect("unexpected failure");
+                        let pre_left = left.left()?;
+                        let replaced_left = self.replace_var(*pre_left.clone())?;
 
-                        let pre_right = right.left().expect("unexpected failure");
-                        let replaced_right = self.replace_var(*pre_right.clone()).expect("unexpected failure");
+                        let pre_right = right.left()?;
+                        let replaced_right = self.replace_var(*pre_right.clone())?;
                         
                         let best = compare_value(&replaced_left.val(), &replaced_right.val());
                         if best {
@@ -611,20 +612,20 @@ impl Ast {
                     }
                     TokenKind::Or => {
                         // TODO: Sub expressions will need to be evaluated recursively
-                        let sub_left = left.left().expect("unexpected failure");
-                        let sub_right = left.right().expect("unexpected failure");
+                        let sub_left = left.left()?;
+                        let sub_right = left.right()?;
                         
-                        let replaced_sub_left = self.replace_var(*sub_left.clone()).expect("unexpected failure");
-                        let replaced_sub_right = self.replace_var(*sub_right.clone()).expect("unexpected failure");
+                        let replaced_sub_left = self.replace_var(*sub_left.clone())?;
+                        let replaced_sub_right = self.replace_var(sub_right.clone())?;
                         
                         // check the truthiness of the left and right
                         let left_truth = compare_value(&replaced_sub_left.val(), &replaced_sub_right.val());
                         
-                        let sub_right_left = right.left().expect("unexpected failure");
-                        let sub_right_right = right.right().expect("unexpected failure");
+                        let sub_right_left = right.left()?;
+                        let sub_right_right = right.right()?;
                         
-                        let replaced_sub_right_left = self.replace_var(*sub_right_left.clone()).expect("unexpected failure");
-                        let replaced_sub_right_right = self.replace_var(*sub_right_right.clone()).expect("unexpected failure");
+                        let replaced_sub_right_left = self.replace_var(*sub_right_left.clone())?;
+                        let replaced_sub_right_right = self.replace_var(sub_right_right.clone())?;
                         
                         let right_truth = compare_value(&replaced_sub_right_left.val(), &replaced_sub_right_right.val());
                         
@@ -640,8 +641,7 @@ impl Ast {
                             }
                     }
                     TokenKind::LessThan => {
-                        
-                        let replaced_left = self.replace_var(*left.clone()).expect("unexpected failure");
+                        let replaced_left = self.replace_var(*left.clone())?;
                         match replaced_left.val() {
                             Value::Int(i) => {
                                 match right.val() {
@@ -675,7 +675,7 @@ impl Ast {
                         
                     }
                     TokenKind::GreaterThan => {
-                        let replaced_left = self.replace_var(*left.clone()).expect("unexpected failure");
+                        let replaced_left = self.replace_var(*left.clone())?;
                         
                         match replaced_left.val() {
                             Value::Int(i) => {
@@ -756,7 +756,7 @@ impl Ast {
                 Ok(Ident { name, kind })
             }
             _=> {
-                Err("expected index expression".to_string())
+                Err(format!("expected index expression but received {:?} while evaluating array", node))
             }
         }
     }
@@ -814,8 +814,7 @@ fn extract_index(index: Node) -> Result<usize, String> {
     match index {
         Atomic { value: Value::Int(i) } => Ok(i as usize),
         _ => {
-            println!("{:?}", index);
-            Err("Invalid type".to_string())
+            Err(format!("expected atomic but received {:?} while extracting index", index))
         }
     }
 }

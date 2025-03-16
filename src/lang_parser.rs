@@ -89,7 +89,7 @@ impl<'a> LangParser<'a> {
                         _ => {
                             let ident = self.current_token()?;
                             self.consume(TokenKind::Word)?;
-                            
+
                             match self.current_token()?.kind {
                                 TokenKind::Equality => {
                                     self.consume(TokenKind::Equality)?;
@@ -155,7 +155,8 @@ impl<'a> LangParser<'a> {
                 }
                 TokenKind::Comment => {
                     // skip comments
-                    println!("Skipping comment");
+                    self.advance();
+                    continue;
                 }
                 TokenKind::HypothesisConjunction => {
                     self.consume(TokenKind::HypothesisConjunction)?;
@@ -164,10 +165,7 @@ impl<'a> LangParser<'a> {
                     }
                 }
                 _ => {
-                    println!("current: {:?}", self.current_token()?);
-                    // println!("peek: {:?}", self.tokens[self.position + 1].kind);
-                    // println!("peek value: {:?}", self.tokens[self.position + 1].value);
-                    return Err("Unexpected token".to_string());
+                    return Err(format!("unexpected token: {:?} while parsing", self.current_token()?));
                 }
             }
             self.advance();
@@ -323,9 +321,7 @@ impl<'a> LangParser<'a> {
                 Ok(Node::Atomic { value: val })
             }
             _ => {
-                println!("kind: {:?}", self.current_token()?.kind);
-                println!("value: {:?}", self.current_token()?.value);
-                Err("Unexpected token".to_string())
+                Err(format!("unexpected token: {:?}", self.current_token()?))
             }
         }
     }
@@ -485,12 +481,11 @@ impl<'a> LangParser<'a> {
                 Ok(node)
             }
             _ => {
-                println!("{:?}", self.current_token()?.kind);
-                Err("Invalid conditional".to_string())
+                Err(format!("invalid conditional: {:?}", self.current_token()?))
             }
         }
     }
-    
+
     fn parse_function(&mut self) -> Result<Node, String> {
         self.consume(TokenKind::Word)?; // consume "fn"
         let name = self.parse_function_name()?;
@@ -500,20 +495,20 @@ impl<'a> LangParser<'a> {
 
         while self.current_token()?.kind != TokenKind::RightParenthesis {
             let arg = self.parse_function_input()?;
-            
+
             if self.current_token()?.kind != TokenKind::RightParenthesis {
-                self.consume(Comma)?;    
+                self.consume(Comma)?;
             }
             arguments.push(arg);
         }
         self.consume(TokenKind::RightParenthesis)?;
-        
+
         // TODO: ignoring return types for now :(
-        
+
         self.consume(TokenKind::LBracket)?;
-        
+
         let body = self.parse_body()?;
-        
+
         Ok(Node::FunctionDecl {
             name: Box::from(name),
             arguments,
@@ -525,25 +520,25 @@ impl<'a> LangParser<'a> {
     fn parse_function_name(&mut self) -> Result<Node, String> {
         let name = self.current_token()?;
         self.consume(TokenKind::Word)?;
-        
+
         Ok(Node::Ident {
             name: name.value,
             kind: "fn".to_string(),
         })
     }
-    
+
     fn parse_function_input(&mut self) -> Result<Node, String> {
         let ident = self.current_token()?;
         self.consume(TokenKind::Word)?;
-        
+
         // TODO this will need more advanced pattern matching when more types are introduced and supported
-        
+
         Ok(Node::Ident {
             name: ident.value,
             kind: "var".to_string(),
         })
     }
-    
+
     fn parse_condition(&mut self) -> Result<Node, String> {
         // conditions must be wrapped in parentheses
         let left = self.current_token()?;
@@ -638,7 +633,7 @@ impl<'a> LangParser<'a> {
         let input = self.parse_node()?;
 
         self.advance();
-        
+
         self.consume(TokenKind::Semicolon)?;
 
         let node = Node::Call {

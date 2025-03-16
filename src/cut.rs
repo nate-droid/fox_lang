@@ -153,7 +153,7 @@ pub fn reduce(node: Node) -> Result<(Node, Node), ReduceError>{
                     // |- ¬A becomes A |- ⊥
                     let right = node.right().unwrap();
 
-                    Ok((node.clone(), *right.clone()))
+                    Ok((node.clone(), right.clone()))
                 }
                 _ => {
                     Err(ReduceError::Unimplemented)

@@ -255,30 +255,29 @@ impl Node {
         }
     }
 
-    pub fn left(&self) -> Option<Box<Node>> {
+    pub fn left(&self) -> Result<Box<Node>, String> {
 
         match self {
             Atomic { value } => {
-                Some(Box::from(Atomic { value: value.clone() }))
+                Ok(Box::from(Atomic { value: value.clone() }))
             },
             Node::AssignStmt { left, right, kind } => {
-                Some(left.clone())
+                Ok(left.clone())
             },
-            Node::BinaryExpression { left, .. } => Some(Box::from(*left.clone())),
-            Node::Object { name, kind } => Some(Box::from(Node::Object { name: name.clone(), kind: kind.clone() })),
-            Node::IndexExpression { left, index } => Some(Box::from(Node::IndexExpression { left: left.clone(), index: index.clone() })),
+            Node::BinaryExpression { left, .. } => Ok(Box::from(*left.clone())),
+            Node::Object { name, kind } => Ok(Box::from(Node::Object { name: name.clone(), kind: kind.clone() })),
+            Node::IndexExpression { left, index } => Ok(Box::from(Node::IndexExpression { left: left.clone(), index: index.clone() })),
             _ => {
-                println!("boo {:?}", self);
-                None 
+                Err(format!("unexpected token {:?}", self)) 
             },
         }
     }
 
-    pub fn right(&self) -> Option<&Box<Node>> {
+    pub fn right(&self) -> Result<&Node, String> {
         match self {
-            Node::BinaryExpression { right, .. } => Some(right),
-            Node::UnaryExpression { right, .. } => Some(right),
-            _ => None,
+            Node::BinaryExpression { right, .. } => Ok(right),
+            Node::UnaryExpression { right, .. } => Ok(right),
+            _ => Err(format!("unexpected token {:?}", self)),
         }
     }
 
