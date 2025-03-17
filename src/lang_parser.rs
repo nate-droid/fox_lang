@@ -1,3 +1,4 @@
+use crate::internal_types::{fetch_binary, fetch_integer};
 use crate::lang_ast::Ast;
 use crate::lang_lexer::LangLexer;
 use crate::lexer::TokenKind::{And, Comma};
@@ -84,6 +85,18 @@ impl<'a> LangParser<'a> {
                             let func = self.parse_function()?;
                             println!("{:?}", func);
                             ast.add_node(func);
+                            continue;
+                        }
+                        "bin" => {
+                            // parsing binary number type
+                            self.consume(TokenKind::Word)?;
+                            self.consume(TokenKind::LeftParenthesis)?;
+                            let value = self.parse_node()?;
+                            let bin = fetch_binary(value)?;
+
+                            self.consume(TokenKind::RightParenthesis)?;
+
+                            ast.add_node(Node::Atomic { value: Value::Bin(bin) });
                             continue;
                         }
                         _ => {
@@ -198,6 +211,16 @@ impl<'a> LangParser<'a> {
                     "break" => {
                         self.consume(TokenKind::Semicolon)?;
                         return Ok(Node::Break{});
+                    }
+                    "bin" => {
+                        self.consume(TokenKind::LeftParenthesis)?;
+                        let value = self.parse_node()?;
+                        let integer = fetch_integer(value)?;
+                        
+
+                        self.consume(TokenKind::RightParenthesis)?;
+                        
+                        return Ok(Node::Atomic { value: Value::Bin(integer as u32) });
                     }
                     _ => {}
                 }

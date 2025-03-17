@@ -59,4 +59,17 @@ mod tests {
             Err(e) => panic!("{:?}", e),
         }
     }
+    
+    #[test]
+    fn binary_type() {
+        let input = "\
+        let b = bin(5);\
+        print(b);";
+        let mut ast = LangParser::new(input);
+        let mut ast = ast.parse().expect("unexpected failure");
+        match ast.eval() {
+            Ok(_) => (),
+            Err(e) => panic!("{:?}", e),
+        }
+    }
 }

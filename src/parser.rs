@@ -55,6 +55,7 @@ pub enum Value {
     Float(f64),
     Str(String),
     Bool(bool),
+    Bin(u32),
     // Add other types as needed
 }
 
@@ -76,6 +77,7 @@ impl Display for Value {
             Value::Float(fl) => write!(f, "{}", fl),
             Value::Str(s) => write!(f, "{}", s),
             Value::Bool(b) => write!(f, "{}", b),
+            Value::Bin(b) => write!(f, "{:b}", b),
         }
     }
 }
