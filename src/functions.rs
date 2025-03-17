@@ -37,4 +37,26 @@ mod tests {
             Err(e) => panic!("{:?}", e),
         }
     }
+    
+    #[test]
+    fn prep_for_binary_conversion() {
+        let input = "
+        let x = 5;
+        for i in 0..10 {
+            let y = x % 2;
+            x = x / 2;
+            print(y);
+            if (x == 0) {
+                break;
+            }
+        }";
+        let mut ast = LangParser::new(input);
+        let mut ast = ast.parse().expect("unexpected failure");
+
+        // evaluate the ast
+        match ast.eval() {
+            Ok(_) => (),
+            Err(e) => panic!("{:?}", e),
+        }
+    }
 }

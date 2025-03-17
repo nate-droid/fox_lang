@@ -228,6 +228,51 @@ impl<'a> LangParser<'a> {
                             right: Box::from(right),
                         })
                     }
+                    TokenKind::Subtract => {
+                        self.consume(TokenKind::Subtract)?;
+                        let right = self.parse_node()?;
+                        Ok(Node::BinaryExpression {
+                            left: Box::from(Node::AssignStmt {
+                                left: Box::from(Node::Ident { name: name.value, kind: "var".to_string() }),
+                                right: Box::from(Node::Atomic {
+                                    value: Value::Int(0),
+                                }),
+                                kind: "Nat".to_string(),
+                            }),
+                            operator: TokenKind::Subtract,
+                            right: Box::from(right),
+                        })
+                    }
+                    TokenKind::Multiply => {
+                        self.consume(TokenKind::Multiply)?;
+                        let right = self.parse_node()?;
+                        Ok(Node::BinaryExpression {
+                            left: Box::from(Node::AssignStmt {
+                                left: Box::from(Node::Ident { name: name.value, kind: "var".to_string() }),
+                                right: Box::from(Node::Atomic {
+                                    value: Value::Int(0),
+                                }),
+                                kind: "Nat".to_string(),
+                            }),
+                            operator: TokenKind::Multiply,
+                            right: Box::from(right),
+                        })
+                    }
+                    TokenKind::Divide => {
+                        self.consume(TokenKind::Divide)?;
+                        let right = self.parse_node()?;
+                        Ok(Node::BinaryExpression {
+                            left: Box::from(Node::AssignStmt {
+                                left: Box::from(Node::Ident { name: name.value, kind: "var".to_string() }),
+                                right: Box::from(Node::Atomic {
+                                    value: Value::Int(0),
+                                }),
+                                kind: "Nat".to_string(),
+                            }),
+                            operator: TokenKind::Divide,
+                            right: Box::from(right),
+                        })
+                    }
                     TokenKind::LBracket => {
                         self.consume(TokenKind::LBracket)?;
                         let index = self.parse_node()?;
