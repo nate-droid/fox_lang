@@ -17,7 +17,6 @@ pub enum TokenKind {
     Whitespace,
     Identifier,
     End,
-    Pipe,
     Comment,
 
     WFF, // Well-formed formula
@@ -34,9 +33,15 @@ pub enum TokenKind {
     BoundX,
     LessThan,
     GreaterThan,
-
+    
+    // Bitwise operators
+    BitwiseOr,  // |
+    BitwiseAnd, // &, (formerly HypothesisConjunction this links two or more hypotheses
+    BitwiseXor, // ^
+    ShiftLeft, // <<
+    ShiftRight, // >>
+    
     // MetaMath specific
-    HypothesisConjunction, // &, this links two or more hypotheses
     HypothesisEnd, // ⇒, this ends a list of hypotheses
     Equality, // =
     ElementOf, // ∈
@@ -57,6 +62,7 @@ pub enum TokenKind {
     Nat,
     MMExpression,
     Break,
+    Period,
     
     Add,
     Subtract,
@@ -87,7 +93,7 @@ impl std::fmt::Display for TokenKind {
             TokenKind::Whitespace => write!(f, "Whitespace"),
             TokenKind::Identifier => write!(f, "Identifier"),
             TokenKind::End => write!(f, "End"),
-            TokenKind::Pipe => write!(f, "Pipe"),
+            TokenKind::BitwiseOr => write!(f, "Pipe"),
             TokenKind::Implies => write!(f, "→"),
             TokenKind::Negation => write!(f, "¬"),
             TokenKind::Turnstile => write!(f, "Turnstile"),
@@ -96,7 +102,10 @@ impl std::fmt::Display for TokenKind {
             TokenKind::ForAll => write!(f, "ForAll"),
             TokenKind::Exists => write!(f, "∃"),
             TokenKind::BoundX => write!(f, "BoundX"),
-            TokenKind::HypothesisConjunction => write!(f, "&"),
+            TokenKind::BitwiseAnd => write!(f, "&"),
+            TokenKind::BitwiseXor => write!(f, "^"),
+            TokenKind::ShiftLeft => write!(f, "<<"),
+            TokenKind::ShiftRight => write!(f, ">>"),
             TokenKind::HypothesisEnd => write!(f, "⇒"),
             TokenKind::Equality => write!(f, "="),
             TokenKind::ElementOf => write!(f, "∈"),
@@ -133,6 +142,7 @@ impl std::fmt::Display for TokenKind {
             TokenKind::Break => write!(f, "Break"),
             TokenKind::Index => write!(f, "Index"),
             TokenKind::Function => write!(f, "Function"),
+            TokenKind::Period => write!(f, "."),
         }
     }
 }
@@ -232,7 +242,7 @@ impl Lexer for DefaultLexer {
                     else {
                         self.tokens.push(Token {
                             value: self.char.to_string(),
-                            kind: TokenKind::Pipe,
+                            kind: TokenKind::BitwiseOr,
                         });
                     }
                 }
@@ -272,7 +282,7 @@ impl Lexer for DefaultLexer {
                     } else {
                         self.tokens.push(Token {
                             value: self.char.to_string(),
-                            kind: TokenKind::HypothesisConjunction,
+                            kind: TokenKind::BitwiseAnd,
                         });
                     }
                 }

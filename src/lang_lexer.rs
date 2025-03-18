@@ -114,6 +114,32 @@ impl<'a> LangLexer<'a> {
                         });
                     }
                 }
+                '|' => {
+                    if self.peek() == '|' {
+                        self.next_char();
+                        self.tokens.push(Token {
+                            value: "||".to_string(),
+                            kind: TokenKind::Or,
+                        });
+                    } else {
+                        self.tokens.push(Token {
+                            value: self.current_char().to_string(),
+                            kind: TokenKind::BitwiseOr,
+                        });
+                    }
+                }
+                '^' => {
+                    self.tokens.push(Token {
+                        value: self.current_char().to_string(),
+                        kind: TokenKind::BitwiseXor,
+                    });
+                }
+                '~' => {
+                    self.tokens.push(Token {
+                        value: self.current_char().to_string(),
+                        kind: TokenKind::Negation,
+                    });
+                }
                 ':' => {
                     self.tokens.push(Token {
                         value: self.current_char().to_string(),
@@ -191,16 +217,32 @@ impl<'a> LangLexer<'a> {
                     });
                 }
                 '<' => {
-                    self.tokens.push(Token {
-                        value: self.current_char().to_string(),
-                        kind: TokenKind::LessThan,
-                    });
+                    if self.peek() == '<' {
+                        self.next_char();
+                        self.tokens.push(Token {
+                            value: "<<".to_string(),
+                            kind: TokenKind::ShiftLeft,
+                        });
+                    } else { 
+                        self.tokens.push(Token { 
+                            value: self.current_char().to_string(), 
+                            kind: TokenKind::LessThan, 
+                        });
+                    }
                 }
                 '>' => {
-                    self.tokens.push(Token {
-                        value: self.current_char().to_string(),
-                        kind: TokenKind::GreaterThan,
-                    });
+                    if self.peek() == '>' {
+                        self.next_char();
+                        self.tokens.push(Token {
+                            value: ">>".to_string(),
+                            kind: TokenKind::ShiftRight,
+                        });
+                    } else {
+                        self.tokens.push(Token {
+                            value: self.current_char().to_string(),
+                            kind: TokenKind::GreaterThan,
+                        });
+                    }
                 }
                 '&' => {
                     if self.peek() == '&' {
@@ -212,7 +254,7 @@ impl<'a> LangLexer<'a> {
                     } else {
                         self.tokens.push(Token {
                             value: self.current_char().to_string(),
-                            kind: TokenKind::HypothesisConjunction,
+                            kind: TokenKind::BitwiseAnd,
                         });
                     }
                 }
@@ -346,7 +388,20 @@ impl<'a> LangLexer<'a> {
                             
                             self.next_char(); // consuming the closing bracket
                             continue 'main;
-                        } else {
+                        } //else if self.peek() == '.' {
+                            // self.next_char();
+                            // self.tokens.push(Token {
+                            //     value: word,
+                            //     kind: TokenKind::Word,
+                            // });
+                            // self.tokens.push(Token {
+                            //     value: ".".to_string(),
+                            //     kind: TokenKind::Period,
+                            // });
+                            // // self.next_char();
+                            // continue 'main;
+                    //    } 
+                        else {
                             break;
                         }
                     }
@@ -377,16 +432,20 @@ impl<'a> LangLexer<'a> {
                     });
                 }
                 '.' => {
-                    self.next_char();
-
-                    if self.current_char() != '.' {
-                        return Err(format!("Expected '.' but found: {}", self.current_char()));
+                    if self.peek() == '.' {
+                        self.next_char();
+                        self.tokens.push(Token {
+                            value: self.current_char().to_string(),
+                            kind: TokenKind::Range,
+                        });    
+                    } else { 
+                        self.tokens.push(Token {
+                            value: ".".to_string(),
+                            kind: TokenKind::Period,
+                        })
                     }
-
-                    self.tokens.push(Token {
-                        value: self.current_char().to_string(),
-                        kind: TokenKind::Range,
-                    });
+                    
+                    
                 }
                 '\n' => {}
                 _ => {

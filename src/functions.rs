@@ -72,4 +72,87 @@ mod tests {
             Err(e) => panic!("{:?}", e),
         }
     }
+    
+    #[test]
+    fn bitwise_and() {
+        let input = "
+        let a = bin(7);
+        let b = bin(3);
+        let c = a & b;
+        print(c);
+        ";
+        let mut ast = LangParser::new(input);
+        let mut ast = ast.parse().expect("unexpected failure");
+        match ast.eval() {
+            Ok(_) => (),
+            Err(e) => panic!("{:?}", e),
+        }
+    }
+    
+    #[test]
+    fn bitwise_or() {
+        let input = "let a = bin(7);
+        let b = bin(3);
+        let c = a | b;
+        print(c);";
+        let mut ast = LangParser::new(input);
+        let mut ast = ast.parse().expect("unexpected failure");
+        match ast.eval() {
+            Ok(_) => (),
+            Err(e) => panic!("{:?}", e),
+        }
+    }
+    
+    #[test]
+    fn bitwise_xor() {
+        let input = "let a = bin(7);
+        let b = bin(3);
+        let c = a ^ b;
+        print(c);";
+        let mut ast = LangParser::new(input);
+        let mut ast = ast.parse().expect("unexpected failure");
+        match ast.eval() {
+            Ok(_) => (),
+            Err(e) => panic!("{:?}", e),
+        }
+    }
+    
+    #[test]
+    fn bitwise_not() {
+        let input = "let a = bin(7);
+        let b = ~a;
+        print(b);";
+        let mut ast = LangParser::new(input);
+        let mut ast = ast.parse().expect("unexpected failure");
+        match ast.eval() {
+            Ok(_) => (),
+            Err(e) => panic!("{:?}", e),
+        }
+    }
+    
+    #[test]
+    fn shift_left() {
+        let input = "let a = bin(7);
+        let b = a << 1;
+        print(b);";
+        let mut ast = LangParser::new(input);
+        let mut ast = ast.parse().expect("unexpected failure");
+        match ast.eval() {
+            Ok(_) => (),
+            Err(e) => panic!("{:?}", e),
+        }
+    }
+    
+    #[test]
+    fn shift_right() {
+        let input = "let a = bin(7);
+        let b = a >> 1;
+        print(b);";
+        let mut ast = LangParser::new(input);
+        let mut ast = ast.parse().expect("unexpected failure");
+        match ast.eval() {
+            Ok(_) => (),
+            Err(e) => panic!("{:?}", e),
+        }
+    }
 }

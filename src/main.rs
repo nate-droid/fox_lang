@@ -53,6 +53,8 @@ fn main() {
                 println!("exit - exit the hypervisor");
                 println!("scope - display the current scope");
                 println!("reset - reset the current scope");
+                println!("ls - list the files in the current directory");
+                println!("eval - evaluates a provided file");
             }
             "exit" => {
                 println!("Exiting the Fox REPL");
@@ -63,6 +65,21 @@ fn main() {
             }
             "reset" => {
                 ast = lang_ast::Ast::new();
+            }
+            "ls" => {
+                // just the "ls" command
+                println!();
+                let files = std::fs::read_dir(".").expect("could not read directory");
+                for file in files {
+                    let file = file.expect("could not read file");
+                    println!("{}", file.file_name().into_string().unwrap());
+                }
+            }
+            "eval" => {
+                let filename = parts.next().expect("expected filename");
+                let contents = std::fs::read_to_string(filename).expect("could not read file");
+                ast.parse(&contents).expect("unexpected failure");
+                ast.eval().expect("unexpected failure");
             }
             _ => {
                 // call the lang parser

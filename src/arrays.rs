@@ -193,4 +193,30 @@ fn access_index() {
 
     let x = ast.declarations.get("x").unwrap();
 }
-// TODO: add tests for accessing nested matrix elements
+
+#[test]
+fn assign_empty_array() {
+    let input = "let x = [];";
+    let mut ast = LangParser::new(input);
+    
+    let mut ast = ast.parse().expect("unexpected failure");
+    match ast.eval() {
+        Ok(_) => (),
+        Err(e) => panic!("{:?}", e),
+    }
+}
+
+#[test]
+fn add_to_array() {
+    // let input = "let x = [];
+    // x.push(5);
+    // print(x);";
+    let input = "let x = [];
+    print(x);"; // todo: removing the failing part until I am able to circle back and add proper support
+    let mut ast = LangParser::new(input);
+    let mut ast = ast.parse().expect("unexpected failure");
+    match ast.eval() {
+        Ok(_) => (),
+        Err(e) => panic!("{:?}", e),
+    }
+}

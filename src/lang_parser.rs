@@ -21,7 +21,9 @@ impl<'a> LangParser<'a> {
         }
 
         let tokens = lexer.tokens();
-
+        
+        println!("tokens: {:?}", tokens);
+        
         Self {
             lexer,
             tokens,
@@ -161,7 +163,15 @@ impl<'a> LangParser<'a> {
                                     ast.add_node(n);
                                     continue;
                                 }
-                                _ => {}
+                                TokenKind::Period => {
+                                    // this is a method call
+                                    self.consume(TokenKind::Period)?;
+                                    let function_name = self.current_token()?;
+                                    println!("function: {:?}", function_name);
+                                    todo!("implement method calls");
+                                }
+                                _ => {
+                                }
                             }
                         }
                     }
@@ -171,9 +181,9 @@ impl<'a> LangParser<'a> {
                     self.advance();
                     continue;
                 }
-                TokenKind::HypothesisConjunction => {
-                    self.consume(TokenKind::HypothesisConjunction)?;
-                    if self.current_token()?.kind != TokenKind::HypothesisConjunction {
+                TokenKind::BitwiseAnd => {
+                    self.consume(TokenKind::BitwiseAnd)?;
+                    if self.current_token()?.kind != TokenKind::BitwiseAnd {
                         return Err("Expected another hypothesis conjunction".to_string());
                     }
                 }
@@ -388,6 +398,11 @@ impl<'a> LangParser<'a> {
                 self.advance();
                 Ok(Node::Atomic { value: val })
             }
+            TokenKind::Negation => {
+                self.consume(TokenKind::Negation)?;
+                let node = self.parse_node()?;
+                Ok(Node::UnaryExpression { operator: TokenKind::Negation, right: Box::from(node) })
+            }
             _ => {
                 Err(format!("unexpected token: {:?}", self.current_token()?))
             }
@@ -437,6 +452,11 @@ impl<'a> LangParser<'a> {
             || self.current_token()?.kind == TokenKind::Subtract
             || self.current_token()?.kind == TokenKind::Multiply
             || self.current_token()?.kind == TokenKind::Divide
+            || self.current_token()?.kind == TokenKind::BitwiseAnd
+            || self.current_token()?.kind == TokenKind::BitwiseOr
+            || self.current_token()?.kind == TokenKind::BitwiseXor
+            || self.current_token()?.kind == TokenKind::ShiftLeft
+            || self.current_token()?.kind == TokenKind::ShiftRight
         {
             
             let op = self.current_token()?;

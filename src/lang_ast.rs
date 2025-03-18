@@ -128,10 +128,11 @@ impl Ast {
                 return Ok(res);
             }
             Node::UnaryExpression {
-                operator: _operator,
-                right: _right,
+                operator,
+                right,
             } => {
-                todo!("Unary expressions");
+                let res = self.eval_unary_expression(*right, operator)?;
+                return Ok(res);
             }
             Node::Identifier { value: _value, .. } => {
                 todo!("Identifiers");
@@ -241,7 +242,7 @@ impl Ast {
             Node::FunctionDecl {
                 name,
                 arguments,
-                returns, 
+                returns,
                 body,
             } => {
                 let res = Node::FunctionDecl {
@@ -249,11 +250,11 @@ impl Ast {
                     arguments,
                     returns,
                     body,
-                    
+
                 };
-                
+
                 self.upsert_declaration(res)?;
-                
+
                 return Ok(EmptyNode);
             }
             _ => {
@@ -500,12 +501,188 @@ impl Ast {
                     }
                 }
             }
+            TokenKind::BitwiseAnd => {
+                if let Node::AssignStmt {
+                    right: _left_val,
+                    left: _name,
+                    ..
+                } = left.clone()
+                {
+                    left = self.replace_var(left)?;
+                }
+                if let Node::AssignStmt {
+                    right: _right_val,
+                    left: _name,
+                    ..
+                } = right.clone()
+                {
+                    right = self.replace_var(right)?;
+                }
+
+                if let Atomic { value: left_val } = left {
+                    if let Atomic { value: right_val } = right {
+                        return match (left_val, right_val) {
+                            (Value::Bin(left), Value::Bin(right)) => Ok(Atomic {
+                                value: Value::Bin(left & right),
+                            }),
+                            _ => Err("Invalid types".to_string()),
+                        };
+                    }
+                }
+            }
+            TokenKind::BitwiseOr => {
+                if let Node::AssignStmt {
+                    right: _left_val,
+                    left: _name,
+                    ..
+                } = left.clone()
+                {
+                    left = self.replace_var(left)?;
+                }
+                if let Node::AssignStmt {
+                    right: _right_val,
+                    left: _name,
+                    ..
+                } = right.clone()
+                {
+                    right = self.replace_var(right)?;
+                }
+
+                if let Atomic { value: left_val } = left {
+                    if let Atomic { value: right_val } = right {
+                        return match (left_val, right_val) {
+                            (Value::Bin(left), Value::Bin(right)) => Ok(Atomic {
+                                value: Value::Bin(left | right),
+                            }),
+                            _ => Err("Invalid types".to_string()),
+                        };
+                    }
+                }
+            }
+            TokenKind::BitwiseXor => {
+                if let Node::AssignStmt {
+                    right: _left_val,
+                    left: _name,
+                    ..
+                } = left.clone()
+                {
+                    left = self.replace_var(left)?;
+                }
+                if let Node::AssignStmt {
+                    right: _right_val,
+                    left: _name,
+                    ..
+                } = right.clone()
+                {
+                    right = self.replace_var(right)?;
+                }
+
+                if let Atomic { value: left_val } = left {
+                    if let Atomic { value: right_val } = right {
+                        return match (left_val, right_val) {
+                            (Value::Bin(left), Value::Bin(right)) => Ok(Atomic {
+                                value: Value::Bin(left ^ right),
+                            }),
+                            _ => Err("Invalid types".to_string()),
+                        };
+                    }
+                }
+            }
+            TokenKind::ShiftLeft => {
+                if let Node::AssignStmt {
+                    right: _left_val,
+                    left: _name,
+                    ..
+                } = left.clone()
+                {
+                    left = self.replace_var(left)?;
+                }
+                if let Node::AssignStmt {
+                    right: _right_val,
+                    left: _name,
+                    ..
+                } = right.clone()
+                {
+                    right = self.replace_var(right)?;
+                }
+
+                if let Atomic { value: left_val } = left {
+                    if let Atomic { value: right_val } = right {
+                        return match (left_val, right_val) {
+                            (Value::Bin(left), Value::Int(right)) => Ok(Atomic {
+                                value: Value::Bin(left << right),
+                            }),
+                            _ => Err("Invalid types".to_string()),
+                        };
+                    }
+                }
+            }
+            TokenKind::ShiftRight => {
+                if let Node::AssignStmt {
+                    right: _left_val,
+                    left: _name,
+                    ..
+                } = left.clone()
+                {
+                    left = self.replace_var(left)?;
+                }
+                if let Node::AssignStmt {
+                    right: _right_val,
+                    left: _name,
+                    ..
+                } = right.clone()
+                {
+                    right = self.replace_var(right)?;
+                }
+
+                if let Atomic { value: left_val } = left {
+                    if let Atomic { value: right_val } = right {
+                        return match (left_val, right_val) {
+                            (Value::Bin(left), Value::Int(right)) => Ok(Atomic {
+                                value: Value::Bin(left >> right),
+                            }),
+                            _ => Err("Invalid types".to_string()),
+                        };
+                    }
+                }
+            }
             _ => return Err("Unknown operator".to_string()),
         }
 
         Ok(EmptyNode)
     }
 
+    fn eval_unary_expression(
+        &mut self,
+        mut right: Node,
+        operator: TokenKind,
+    ) -> Result<Node, String> {
+        match operator {
+            TokenKind::Negation => {
+                if let Node::AssignStmt {
+                    right: _right_val,
+                    left: _name,
+                    ..
+                } = right.clone()
+                {
+                    right = self.replace_var(right)?;
+                }
+
+                if let Atomic { value: right_val } = right {
+                    return match right_val {
+                        Value::Bin(right) => Ok(Atomic {
+                            value: Value::Bin(!right),
+                        }),
+                        _ => Err("Invalid types".to_string()),
+                    };
+                }
+                Ok(right)
+            }
+            _ => {
+                Err("Unknown operator".to_string())
+            }
+        }
+    }
     pub fn parse(&mut self, input: &str) -> Result<(), String> {
         let mut parser = crate::lang_parser::LangParser::new(input);
         let ast = parser.parse().expect("unexpected failure");
@@ -536,7 +713,7 @@ impl Ast {
             "reduce" => {
                 println!("{:?}", arguments[0].left());
             }
-            _ => { 
+            _ => {
                 println!("arguments: {:?}", arguments);
                 // function call is not a builtin function
                 let func = self.declarations.get(&name).expect("unexpected failure").clone();
@@ -544,17 +721,17 @@ impl Ast {
                 self.eval_function(func, arguments)?;
             }
         }
-        
+
         Ok(())
     }
-    
+
     fn eval_function(&mut self, node: Node, arguments: Vec<Node>) -> Result<(), String> {
         // make sure that the node is a function
         if let Node::FunctionDecl {
                 name,
                 arguments: args,
                 returns,
-                body} = node 
+                body} = node
         {
             for i in 0..args.len() {
                 let name = fetch_string(args[i].clone())?;
@@ -567,19 +744,19 @@ impl Ast {
                     kind: "Nat".to_string(),
                 })?;
             }
-            
+
             for expr in body {
                 self.eval_node(expr)?;
             }
-            
+
             for arg in args {
                 self.remove_declaration(&fetch_string(arg)?)?;
             }
         }
-        
+
         Ok(())
     }
-    
+
     fn eval_conditional(&mut self, condition: Box<Node>, consequence: Vec<Node>, alternative: Vec<Node>) -> Result<(), String> {
         // assert that node is of type Conditional
         match *condition.clone() {
