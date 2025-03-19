@@ -155,4 +155,21 @@ mod tests {
             Err(e) => panic!("{:?}", e),
         }
     }
+    
+    #[test]
+    fn matching_masks() {
+        let input = "let x = bin(7) & bin(3);
+        print(bin(7) & bin(3));";
+        let mut ast = LangParser::new(input);
+        let mut ast = ast.parse().expect("unexpected failure");
+        match ast.eval() {
+            Ok(_) => (),
+            Err(e) => panic!("{:?}", e),
+        }
+    }
+    
+    #[test]
+    fn generate_mask() {
+        
+    }
 }

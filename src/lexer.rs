@@ -149,16 +149,27 @@ impl std::fmt::Display for TokenKind {
 
 impl TokenKind {
     pub fn is_binary_operator(&self) -> bool {
-        match self {
-            TokenKind::Implies => true,
-            TokenKind::ForAll => true,
-            TokenKind::Equality => true,
-            TokenKind::ElementOf => true,
-            TokenKind::Biconditional => true,
-            TokenKind::Conjunction => true,
-            TokenKind::Disjunction => true,
-            _ => false,
-        }
+        matches!(self, 
+            TokenKind::Implies 
+            | TokenKind::ForAll 
+            | TokenKind::Equality 
+            | TokenKind::ElementOf 
+            | TokenKind::Biconditional 
+            | TokenKind::Conjunction 
+            | TokenKind::Disjunction 
+            | TokenKind::Subtract 
+            | TokenKind::Add 
+            | TokenKind::Multiply 
+            | TokenKind::Divide 
+            | TokenKind::Modulo 
+            | TokenKind::IsEqual 
+            | TokenKind::LessThan 
+            | TokenKind::GreaterThan 
+            | TokenKind::BitwiseOr 
+            | TokenKind::BitwiseAnd 
+            | TokenKind::BitwiseXor 
+            | TokenKind::ShiftLeft 
+            | TokenKind::ShiftRight)
     }
 
     pub fn is_unary_operator(&self) -> bool {

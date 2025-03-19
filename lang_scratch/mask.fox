@@ -1,0 +1,9 @@
+print("This is a mask function");
+
+fn mask(a, b) {
+    let x = bin(1) << b;
+    print(x);
+}
+let a = 1;
+let b = 2;
+mask(a, b);

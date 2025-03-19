@@ -85,7 +85,6 @@ impl<'a> LangParser<'a> {
                         }
                         "fn" => {
                             let func = self.parse_function()?;
-                            println!("{:?}", func);
                             ast.add_node(func);
                             continue;
                         }
@@ -223,12 +222,24 @@ impl<'a> LangParser<'a> {
                         return Ok(Node::Break{});
                     }
                     "bin" => {
+                        // TODO: there needs to be a more generic parse expression available for nodes
                         self.consume(TokenKind::LeftParenthesis)?;
                         let value = self.parse_node()?;
                         let integer = fetch_integer(value)?;
-                        
 
                         self.consume(TokenKind::RightParenthesis)?;
+                        
+                        if self.current_token()?.kind.is_binary_operator()  {
+                            let op = self.current_token()?;
+                            self.advance();
+                            let right = self.parse_node()?;
+                            
+                            return Ok(Node::BinaryExpression {
+                                left: Box::from(Node::Atomic { value: Value::Bin(integer as u32) }),
+                                operator: op.kind,
+                                right: Box::from(right),
+                            });
+                        }
                         
                         return Ok(Node::Atomic { value: Value::Bin(integer as u32) });
                     }
@@ -719,7 +730,7 @@ impl<'a> LangParser<'a> {
 
         // let input = self.current_token()?;
         let input = self.parse_node()?;
-
+        println!("node to print: {:?}", input);
         self.advance();
 
         self.consume(TokenKind::Semicolon)?;
