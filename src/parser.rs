@@ -149,6 +149,9 @@ pub enum Node {
         arguments: Vec<Node>,
         returns: Vec<Node>,
         body: Vec<Node>,
+    },
+    Return {
+        value: Box<Node>,
     }
 }
 impl Display for Node {
@@ -227,6 +230,9 @@ impl Display for Node {
             }
             Node::FunctionDecl { name, arguments, returns, body } => {
                 write!(f, "fn {}({:?}) -> {:?} {{ {:?} }}", name, arguments, returns, body)
+            }
+            Node::Return { value } => {
+                write!(f, "return {:?}", value)
             }
         }
     }

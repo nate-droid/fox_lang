@@ -158,9 +158,13 @@ impl Ast {
                     return Ok(res);
                 }
 
-                let replaced = self.replace_var(*right.clone())?;
-
-                let res = self.eval_node(replaced)?;
+                let mut res = EmptyNode;
+                if let Node::Call { name, arguments, returns } = *right.clone() {
+                    res = self.eval_call(name, arguments)?;
+                } else {
+                    let replaced = self.replace_var(*right.clone())?;
+                    res = self.eval_node(replaced)?;
+                }
 
                 self.upsert_declaration(Node::AssignStmt {
                     left,
@@ -256,6 +260,11 @@ impl Ast {
                 self.upsert_declaration(res)?;
 
                 return Ok(EmptyNode);
+            }
+            Node::Return { value } => {
+                // fetch the latest value of the variable
+                let res = self.replace_var(*value.clone())?;
+                return Ok(res);
             }
             _ => {
                 println!("{:?}", ast);
@@ -694,7 +703,7 @@ impl Ast {
         Ok(())
     }
 
-    fn eval_call(&mut self, name: String, arguments: Vec<Node>) -> Result<(), String> {
+    fn eval_call(&mut self, name: String, arguments: Vec<Node>) -> Result<Node, String> {
         // TODO: Have the call names be enums
 
         match name.as_str() {
@@ -705,10 +714,11 @@ impl Ast {
                 if let  Node::IndexExpression { left, index } = temp2 {
                     let x = self.eval_array(Node::IndexExpression { left, index })?;
                     println!("{:?}", x);
-                    return Ok(())
+                    return Ok(EmptyNode)
                 };
 
                 println!("{:?}", self.replace_var(temp2).expect("unexpected failure").to_string());
+                return Ok(EmptyNode)
             }
             "reduce" => {
                 println!("{:?}", arguments[0].left());
@@ -718,14 +728,19 @@ impl Ast {
                 // function call is not a builtin function
                 let func = self.declarations.get(&name).expect("unexpected failure").clone();
 
-                self.eval_function(func, arguments)?;
+                let node = self.eval_function(func, arguments)?;
+                
+                // upsert node
+                self.upsert_declaration(node.clone())?;
+                
+                return Ok(node);
             }
         }
 
-        Ok(())
+        Ok(EmptyNode)
     }
 
-    fn eval_function(&mut self, node: Node, arguments: Vec<Node>) -> Result<(), String> {
+    fn eval_function(&mut self, node: Node, arguments: Vec<Node>) -> Result<Node, String> {
         // make sure that the node is a function
         if let Node::FunctionDecl {
                 name,
@@ -733,6 +748,7 @@ impl Ast {
                 returns,
                 body} = node
         {
+            let mut ret = EmptyNode;
             for i in 0..args.len() {
                 let name = fetch_string(args[i].clone())?;
                 self.upsert_declaration(Node::AssignStmt {
@@ -744,17 +760,28 @@ impl Ast {
                     kind: "Nat".to_string(),
                 })?;
             }
-
+            
             for expr in body {
+                // check if node is a return statement
+                if let Node::Return { value } = expr {
+                    
+                    // TODO: this assumes a variable, eventually this should also evaluate a node
+                    ret = self.replace_var(*value)?;
+                    break;
+                }
+                
+                
                 self.eval_node(expr)?;
             }
 
             for arg in args {
                 self.remove_declaration(&fetch_string(arg)?)?;
             }
+            
+            return Ok(ret);
         }
 
-        Ok(())
+        Ok(EmptyNode)
     }
 
     fn eval_conditional(&mut self, condition: Box<Node>, consequence: Vec<Node>, alternative: Vec<Node>) -> Result<(), String> {

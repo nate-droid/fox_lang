@@ -221,6 +221,11 @@ impl<'a> LangParser<'a> {
                         self.consume(TokenKind::Semicolon)?;
                         return Ok(Node::Break{});
                     }
+                    "return" => {
+                        let value = self.parse_node()?;
+                        self.consume(TokenKind::Semicolon)?;
+                        return Ok(Node::Return { value: Box::from(value) });
+                    }
                     "bin" => {
                         // TODO: there needs to be a more generic parse expression available for nodes
                         self.consume(TokenKind::LeftParenthesis)?;
@@ -244,6 +249,26 @@ impl<'a> LangParser<'a> {
                         return Ok(Node::Atomic { value: Value::Bin(integer as u32) });
                     }
                     _ => {}
+                }
+                
+                // parse potential function
+                if self.current_token()?.kind == TokenKind::LeftParenthesis {
+                    self.consume(TokenKind::LeftParenthesis)?;
+                    let mut arguments = Vec::new();
+                    while self.current_token()?.kind != TokenKind::RightParenthesis {
+                        let arg = self.parse_node()?;
+                        arguments.push(arg);
+                        if self.current_token()?.kind == TokenKind::RightParenthesis {
+                            break;
+                        }
+                        self.consume(Comma)?;
+                    }
+                    self.consume(TokenKind::RightParenthesis)?;
+                    return Ok(Node::Call {
+                        name: name.value,
+                        arguments,
+                        returns: vec![],
+                    });
                 }
 
                 match self.current_token()?.kind {
@@ -491,7 +516,7 @@ impl<'a> LangParser<'a> {
             self.consume(TokenKind::Semicolon)?;
             return Ok(ident)
         }
-
+        println!("left node: {:?}", left);
         let ident = Node::AssignStmt {
             left: Box::from(Node::Ident { name: name.value, kind: "var".to_string() }),
             right: Box::from(left),

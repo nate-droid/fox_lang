@@ -169,6 +169,23 @@ mod tests {
     }
     
     #[test]
+    fn return_values() {
+        let input = "fn add(x, y) {
+            let z = x + y;
+            return z;
+        }
+        let z = add(5, 10);
+        print(z);";
+        let mut ast = LangParser::new(input);
+        let mut ast = ast.parse().expect("unexpected failure");
+        match ast.eval() {
+            Ok(_) => (),
+            Err(e) => panic!("{:?}", e),
+        }
+        println!("decls: {:?}", ast.declarations);
+    }
+    
+    #[test]
     fn generate_mask() {
         
     }
