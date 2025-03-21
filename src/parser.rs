@@ -1,4 +1,5 @@
 use std::cmp::PartialEq;
+use std::collections::{BTreeMap, HashMap};
 use crate::lexer::{Token, TokenKind};
 use crate::lexer::DefaultLexer;
 
@@ -19,7 +20,8 @@ pub trait Lexer {
 }
 
 use std::fmt;
-use std::fmt::Display;
+use std::fmt::{write, Display};
+use std::hash::{Hash, Hasher};
 use crate::lang_lexer::LangLexer;
 use crate::lexer::TokenKind::{ForAll, Identifier, RightParenthesis, SetVar};
 use crate::parser::Node::Atomic;
@@ -48,11 +50,12 @@ impl fmt::Display for ParseError {
 
 impl std::error::Error for ParseError {}
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, Hash)]
 #[derive(PartialEq)]
+#[derive(PartialOrd)]
+#[derive(Ord)]
 pub enum Value {
     Int(i32),
-    Float(f64),
     Str(String),
     Bool(bool),
     Bin(u32),
@@ -63,8 +66,6 @@ impl Value {
     pub fn from_string(s: String) -> Self {
         if let Ok(i) = s.parse::<i32>() {
             return Value::Int(i);
-        } else if let Ok(f) = s.parse::<f64>() {
-            return Value::Float(f);
         }
         Value::Str(s)
     }
@@ -74,7 +75,7 @@ impl Display for Value {
     fn fmt(&self,f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             Value::Int (i) => write!(f, "{}", i),
-            Value::Float(fl) => write!(f, "{}", fl),
+            // Value::Float(fl) => write!(f, "{}", fl),
             Value::Str(s) => write!(f, "{}", s),
             Value::Bool(b) => write!(f, "{}", b),
             Value::Bin(b) => write!(f, "{:b}", b),
@@ -82,7 +83,8 @@ impl Display for Value {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialOrd)]
+#[derive(Eq, PartialEq, Ord)]
 pub enum Node {
     BinaryExpression {
         left: Box<Node>,
@@ -110,6 +112,12 @@ pub enum Node {
     },
     Call {
         name: String,
+        arguments: Vec<Node>,
+        returns: Vec<Node>,
+    },
+    MethodCall {
+        name: String,
+        target: String, // what the method is called on
         arguments: Vec<Node>,
         returns: Vec<Node>,
     },
@@ -152,8 +160,12 @@ pub enum Node {
     },
     Return {
         value: Box<Node>,
-    }
+    },
+    HMap {
+        values: BTreeMap<Node, Node>,
+    },
 }
+
 impl Display for Node {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
@@ -233,6 +245,12 @@ impl Display for Node {
             }
             Node::Return { value } => {
                 write!(f, "return {:?}", value)
+            }
+            Node::HMap { values } => {
+                write!(f, "{:?}", values)
+            }
+            Node::MethodCall { name, target, arguments, returns } => {
+                write!(f, "{}.{}({:?}) -> {:?}", target, name, arguments, returns)
             }
         }
     }
@@ -941,7 +959,7 @@ impl Parser {
 pub fn compare_value(first: &Value, second: &Value) -> bool {
     match (first, second) {
         (Value::Int(i), Value::Int(j)) => i == j,
-        (Value::Float(f), Value::Float(g)) => f == g,
+        //(Value::Float(f), Value::Float(g)) => f == g,
         (Value::Str(s), Value::Str(t)) => s == t,
         (Value::Bool(b), Value::Bool(c)) => b == c,
         _ => false,

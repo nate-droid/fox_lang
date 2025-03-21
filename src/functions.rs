@@ -263,4 +263,40 @@ mod tests {
         println!("rules: {:?}", rules);
         println!("rule: {:03b}", rules.get(&2).unwrap());
     }
+    
+    #[test]
+    fn hashmap() {
+        let input = "let x = <>;\
+        x.push(1, 2);\
+        let y = x.get(1);\
+        print(y);";
+        let mut ast = LangParser::new(input);
+        let mut ast = ast.parse().expect("unexpected failure");
+        match ast.eval() {
+            Ok(_) => (),
+            Err(e) => panic!("{:?}", e),
+        }
+        println!("decls: {:?}", ast.declarations);
+    }
+    
+    #[test]
+    fn hashmap_with_masks() {
+        let input = "let masks = <>;
+        let input = bin(110);
+        for i in 0..8 {
+            let mask = bin(i) << 5;  
+            let res = input & mask;
+    
+            masks.push(i, res);
+    
+            print(res);
+        }";
+        let mut ast = LangParser::new(input);
+        let mut ast = ast.parse().expect("unexpected failure");
+        match ast.eval() {
+            Ok(_) => (),
+            Err(e) => panic!("{:?}", e),
+        }
+        println!("decls: {:?}", ast.declarations);
+    }
 }

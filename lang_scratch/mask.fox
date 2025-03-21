@@ -22,14 +22,15 @@ for i in 0..5 {
 print("trying some stuff out");
 let input = bin(110);
 print(input);
+let masks = <>;
 for i in 0..8 {
     let mask = bin(i) << 5;  
     let res = input & mask;
-    if (res == mask) {
-        print("found");
-        print(i);
-    }
+    
+    masks.push(i, res);
+    
     print(res);
 }
 
 print("done");
+

@@ -6,7 +6,10 @@ pub struct Token {
     pub kind: TokenKind,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Hash)]
+#[derive(Eq)]
+#[derive(PartialOrd)]
+#[derive(Ord)]
 pub enum TokenKind {
     Number,
     Operator,

@@ -1,3 +1,4 @@
+use std::collections::{BTreeMap, HashMap};
 use crate::parser::Node;
 
 pub(crate) fn fetch_array(node: Node) -> Result<Vec<Node>, String> {
@@ -5,6 +6,17 @@ pub(crate) fn fetch_array(node: Node) -> Result<Vec<Node>, String> {
         Ok(elements)
     } else {
         Err("expected array".to_string())
+    }
+}
+
+pub(crate) fn fetch_hash_map(node: Node) -> Result<BTreeMap<Node, Node>, String> {
+    match node {
+        Node::HMap { values } => {
+            Ok(values)
+        }
+        _ => {
+            Err(format!("expected hash map, got {:?}", node))
+        }
     }
 }
 

@@ -1,4 +1,4 @@
-use crate::internal_types::{fetch_binary, fetch_integer};
+use crate::internal_types::{fetch_binary, fetch_integer, fetch_string};
 use crate::lang_ast::Ast;
 use crate::lang_lexer::LangLexer;
 use crate::lexer::TokenKind::{And, Comma};
@@ -164,10 +164,10 @@ impl<'a> LangParser<'a> {
                                 }
                                 TokenKind::Period => {
                                     // this is a method call
-                                    self.consume(TokenKind::Period)?;
-                                    let function_name = self.current_token()?;
-                                    println!("function: {:?}", function_name);
-                                    todo!("implement method calls");
+                                    let res = self.parse_method_call(ident)?;
+                                    self.consume(TokenKind::Semicolon)?;
+                                    ast.add_node(res);
+                                    continue;
                                 }
                                 _ => {
                                 }
@@ -187,6 +187,7 @@ impl<'a> LangParser<'a> {
                     }
                 }
                 _ => {
+                    println!("peek: {:?}", self.peek_token()?);
                     return Err(format!("unexpected token: {:?} while parsing", self.current_token()?));
                 }
             }
@@ -251,6 +252,14 @@ impl<'a> LangParser<'a> {
                         return Ok(Node::Atomic { value: Value::Bin(integer as u32) });
                     }
                     _ => {}
+                }
+                
+                if self.current_token()?.kind == TokenKind::Period {
+                    let res = self.parse_method_call(name)?;
+                    if self.current_token()?.kind == TokenKind::Semicolon {
+                        self.advance();
+                    }
+                    return Ok(res);
                 }
                 
                 // parse potential function
@@ -382,6 +391,9 @@ impl<'a> LangParser<'a> {
                             index: Box::from(index),
                         })
                     }
+                    TokenKind::Period => {
+                        Ok(Node::Ident { name: name.value, kind: "var".to_string() })
+                    }
                     _ => {
                         Ok(Node::AssignStmt {
                             left: Box::from(Node::Ident { name: name.value, kind: "var".to_string() }),
@@ -441,7 +453,15 @@ impl<'a> LangParser<'a> {
                 let node = self.parse_node()?;
                 Ok(Node::UnaryExpression { operator: TokenKind::Negation, right: Box::from(node) })
             }
+            TokenKind::LessThan => {
+                // parsing a new Hashmap
+                self.consume(TokenKind::LessThan)?;
+                self.consume(TokenKind::GreaterThan)?;
+                // TODO: there is currently only support for empty initialization
+                Ok(Node::HMap { values: Default::default() })
+            }
             _ => {
+                println!("peek: {:?}", self.peek_token()?);
                 Err(format!("unexpected token: {:?}", self.current_token()?))
             }
         }
@@ -496,7 +516,6 @@ impl<'a> LangParser<'a> {
             || self.current_token()?.kind == TokenKind::ShiftLeft
             || self.current_token()?.kind == TokenKind::ShiftRight
         {
-            
             let op = self.current_token()?;
             self.advance();
 
@@ -518,16 +537,46 @@ impl<'a> LangParser<'a> {
             self.consume(TokenKind::Semicolon)?;
             return Ok(ident)
         }
-        println!("left node: {:?}", left);
+        
         let ident = Node::AssignStmt {
             left: Box::from(Node::Ident { name: name.value, kind: "var".to_string() }),
             right: Box::from(left),
             kind: "str".to_string(),
         };
         
-        self.consume(TokenKind::Semicolon)?;
+        // TODO: this is so ugly. Will need to find a way to unify semicolon consumption
+        if self.current_token()?.kind == TokenKind::Semicolon {
+            self.consume(TokenKind::Semicolon)?;    
+        }
+        
         
         Ok(ident)
+    }
+    
+    fn parse_method_call(&mut self, target: Token) -> Result<Node, String> {
+        self.consume(TokenKind::Period)?;
+        let function_name = self.current_token()?;
+        self.consume(TokenKind::Word)?;
+        self.consume(TokenKind::LeftParenthesis)?;
+        let mut arguments = Vec::new();
+        while self.current_token()?.kind != TokenKind::RightParenthesis {
+            let arg = self.parse_node()?;
+            arguments.push(arg);
+            if self.current_token()?.kind == TokenKind::RightParenthesis {
+                break;
+            }
+            self.consume(Comma)?;
+        }
+        self.consume(TokenKind::RightParenthesis)?;
+
+        let right = Node::MethodCall {
+            name: function_name.value,
+            target: target.value,
+            arguments,
+            returns: vec![],
+        };
+
+        Ok(right)
     }
     
     fn parse_for_loop(&mut self) -> Result<Node, String> {
@@ -782,7 +831,9 @@ impl<'a> LangParser<'a> {
             self.advance();
             Ok(())
         } else {
-            println!("{:?}", self.tokens[self.position].kind);
+            println!("position: {:?}", self.position);
+            println!("Val: {:?}", self.tokens[self.position].value);
+            println!("Kind: {:?}", self.tokens[self.position].kind);
             println!("{:?}", self.tokens);
             Err(format!(
                 "Expected {:?} but found {:?}",

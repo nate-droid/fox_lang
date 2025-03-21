@@ -4,7 +4,7 @@ use crate::parser::Node::{Atomic, Break, EmptyNode, Ident};
 use crate::parser::{compare_value, Node, Value};
 use std::collections::HashMap;
 use std::fmt::Arguments;
-use crate::internal_types::{fetch_array, fetch_integer, fetch_string};
+use crate::internal_types::{fetch_array, fetch_hash_map, fetch_integer, fetch_string};
 
 #[derive(Debug)]
 pub struct Ast {
@@ -89,8 +89,10 @@ impl Ast {
                     body,
                 });
             }
+            Node::Atomic { value } => {}
             EmptyNode => {}
-            Atomic { value } => {
+            Node::HMap { values } => {
+                self.declarations.insert(String::from(""), Node::HMap { values });
             }
             _ => {
                 return Err(format!("Invalid node type: {:?}", node));
@@ -135,7 +137,7 @@ impl Ast {
                 return Ok(res);
             }
             Node::Identifier { value: _value, .. } => {
-                todo!("Identifiers");
+                ("Identifiers");
             }
             Node::AssignStmt {
                 left,
@@ -266,6 +268,17 @@ impl Ast {
                 let res = self.replace_var(*value.clone())?;
                 return Ok(res);
             }
+            Node::HMap {..} => {
+                // TODO: only supports empty initialization
+                return Ok(Node::HMap { values: Default::default() });
+            }
+            Node::MethodCall { name, target, arguments, returns } => {
+                let res = self.eval_method_call(name, target, arguments)?;
+                if let EmptyNode{} = res {
+                    return Ok(EmptyNode);
+                }
+                return Ok(res);
+            }
             _ => {
                 println!("{:?}", ast);
                 todo!("Unknown node");
@@ -283,7 +296,7 @@ impl Ast {
                 ..
             } => {
                 let name = fetch_string(*left.clone())?;
-                
+
                 let res = self
                     .declarations
                     .get(&name)
@@ -766,6 +779,34 @@ impl Ast {
         Ok(EmptyNode)
     }
 
+    fn eval_method_call(&mut self, name: String, target: String, arguments: Vec<Node>) -> Result<Node, String> {
+        match name.as_str() {
+            "push" => {
+                let array = self.declarations.get(&target).expect("missing declaration").clone();
+                let mut elements = fetch_hash_map(array.clone())?;
+                elements.insert(arguments[0].clone(), arguments[1].clone());
+                
+                let ident = Node::AssignStmt {
+                    left: Box::new(Node::Ident { name: target, kind: "var".to_string() }),
+                    right: Box::from(Node::HMap { values: elements }),
+                    kind: "var".to_string(),
+                };
+                self.upsert_declaration(ident)?;
+                Ok(EmptyNode)
+            }
+            "get" => {
+                let array = self.declarations.get(&target).expect("missing declaration").clone();
+                let elements = fetch_hash_map(array.clone())?;
+                let key = arguments[0].clone();
+                let value = elements.get(&key).expect("missing key").clone();
+                Ok(value)
+            }
+            _ => {
+                Err(format!("Unknown method call {}", name))
+            }
+        }
+    }
+    
     fn eval_function(&mut self, node: Node, arguments: Vec<Node>) -> Result<Node, String> {
         // make sure that the node is a function
         if let Node::FunctionDecl {
