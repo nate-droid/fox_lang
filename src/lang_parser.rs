@@ -230,7 +230,8 @@ impl<'a> LangParser<'a> {
                         // TODO: there needs to be a more generic parse expression available for nodes
                         self.consume(TokenKind::LeftParenthesis)?;
                         let value = self.parse_node()?;
-                        let integer = fetch_integer(value)?;
+                        
+                        
 
                         self.consume(TokenKind::RightParenthesis)?;
                         
@@ -240,12 +241,13 @@ impl<'a> LangParser<'a> {
                             let right = self.parse_node()?;
                             
                             return Ok(Node::BinaryExpression {
-                                left: Box::from(Node::Atomic { value: Value::Bin(integer as u32) }),
+                                // left: Box::from(Node::Atomic { value: Value::Bin(integer as u32) }),
+                                left: Box::from(value),
                                 operator: op.kind,
                                 right: Box::from(right),
                             });
                         }
-                        
+                        let integer = fetch_integer(value)?;
                         return Ok(Node::Atomic { value: Value::Bin(integer as u32) });
                     }
                     _ => {}
@@ -705,10 +707,8 @@ impl<'a> LangParser<'a> {
         let operator = self.current_token()?;
 
         self.advance();
-
-        let right = self.current_token()?;
-        self.advance();
         
+        let right = self.parse_node()?;
         // TODO: add support for the right side being a variable
         let node = Node::BinaryExpression {
             left: Box::from(Node::AssignStmt {
@@ -719,9 +719,7 @@ impl<'a> LangParser<'a> {
                 kind: "Nat".to_string(),
             }),
             operator: operator.kind,
-            right: Box::from(Node::Atomic {
-                value: Value::Int(right.value.parse::<i32>().unwrap()),
-            }),
+            right: Box::from(right),
         };
         
         if self.current_token()?.kind != And && self.current_token()?.kind != TokenKind::Or {

@@ -513,7 +513,6 @@ impl Ast {
             TokenKind::BitwiseAnd => {
                 if let Node::AssignStmt {
                     right: _left_val,
-                    left: _name,
                     ..
                 } = left.clone()
                 {
@@ -521,7 +520,6 @@ impl Ast {
                 }
                 if let Node::AssignStmt {
                     right: _right_val,
-                    left: _name,
                     ..
                 } = right.clone()
                 {
@@ -530,11 +528,21 @@ impl Ast {
 
                 if let Atomic { value: left_val } = left {
                     if let Atomic { value: right_val } = right {
-                        return match (left_val, right_val) {
+                        return match (left_val.clone(), right_val.clone()) {
                             (Value::Bin(left), Value::Bin(right)) => Ok(Atomic {
                                 value: Value::Bin(left & right),
                             }),
-                            _ => Err("Invalid types".to_string()),
+                            (Value::Int(left), Value::Bin(right)) => Ok(Atomic {
+                                value: Value::Bin(left as u32 & right),
+                            }),
+                            (Value::Int(left), Value::Int(right)) => Ok(Atomic {
+                                value: Value::Bin(left as u32 & right as u32),
+                            }),
+                            _ => {
+                                println!("left_val: {:?}", left_val);
+                                println!("right_val: {:?}", right_val);
+                                Err("Invalid types".to_string()) 
+                            },
                         };
                     }
                 }
@@ -542,7 +550,6 @@ impl Ast {
             TokenKind::BitwiseOr => {
                 if let Node::AssignStmt {
                     right: _left_val,
-                    left: _name,
                     ..
                 } = left.clone()
                 {
@@ -550,7 +557,6 @@ impl Ast {
                 }
                 if let Node::AssignStmt {
                     right: _right_val,
-                    left: _name,
                     ..
                 } = right.clone()
                 {
@@ -563,6 +569,12 @@ impl Ast {
                             (Value::Bin(left), Value::Bin(right)) => Ok(Atomic {
                                 value: Value::Bin(left | right),
                             }),
+                            (Value::Int(left), Value::Bin(right)) => Ok(Atomic {
+                                value: Value::Bin(left as u32 | right),
+                            }),
+                            (Value::Int(left), Value::Int(right)) => Ok(Atomic {
+                                value: Value::Bin(left as u32 | right as u32),
+                            }),
                             _ => Err("Invalid types".to_string()),
                         };
                     }
@@ -571,7 +583,6 @@ impl Ast {
             TokenKind::BitwiseXor => {
                 if let Node::AssignStmt {
                     right: _left_val,
-                    left: _name,
                     ..
                 } = left.clone()
                 {
@@ -579,7 +590,6 @@ impl Ast {
                 }
                 if let Node::AssignStmt {
                     right: _right_val,
-                    left: _name,
                     ..
                 } = right.clone()
                 {
@@ -591,6 +601,12 @@ impl Ast {
                         return match (left_val, right_val) {
                             (Value::Bin(left), Value::Bin(right)) => Ok(Atomic {
                                 value: Value::Bin(left ^ right),
+                            }),
+                            (Value::Int(left), Value::Bin(right)) => Ok(Atomic {
+                                value: Value::Bin(left as u32 ^ right),
+                            }),
+                            (Value::Int(left), Value::Int(right)) => Ok(Atomic {
+                                value: Value::Bin(left as u32 ^ right as u32),
                             }),
                             _ => Err("Invalid types".to_string()),
                         };
@@ -617,11 +633,21 @@ impl Ast {
 
                 if let Atomic { value: left_val } = left {
                     if let Atomic { value: right_val } = right {
-                        return match (left_val, right_val) {
+                        return match (left_val.clone(), right_val.clone()) {
                             (Value::Bin(left), Value::Int(right)) => Ok(Atomic {
                                 value: Value::Bin(left << right),
                             }),
-                            _ => Err("Invalid types".to_string()),
+                            (Value::Int(left), Value::Bin(right)) => Ok(Atomic {
+                                value: Value::Bin(left as u32 & right),
+                            }),
+                            (Value::Int(left), Value::Int(right)) => Ok(Atomic {
+                                value: Value::Bin((left << right) as u32),
+                            }),
+                            _ => {
+                                println!("left_val: {:?}", left_val);
+                                println!("right_val: {:?}", right_val);
+                                Err("Invalid types".to_string()) 
+                            },
                         };
                     }
                 }
@@ -729,10 +755,10 @@ impl Ast {
                 let func = self.declarations.get(&name).expect("unexpected failure").clone();
 
                 let node = self.eval_function(func, arguments)?;
-                
+
                 // upsert node
                 self.upsert_declaration(node.clone())?;
-                
+
                 return Ok(node);
             }
         }
@@ -760,24 +786,24 @@ impl Ast {
                     kind: "Nat".to_string(),
                 })?;
             }
-            
+
             for expr in body {
                 // check if node is a return statement
                 if let Node::Return { value } = expr {
-                    
+
                     // TODO: this assumes a variable, eventually this should also evaluate a node
                     ret = self.replace_var(*value)?;
                     break;
                 }
-                
-                
+
+
                 self.eval_node(expr)?;
             }
 
             for arg in args {
                 self.remove_declaration(&fetch_string(arg)?)?;
             }
-            
+
             return Ok(ret);
         }
 

@@ -11,7 +11,7 @@ mod tests {
         }";
         let mut ast = LangParser::new(input);
         let mut ast = ast.parse().expect("unexpected failure");
-        
+
         println!("{:?}", ast);
         // evaluate the ast
         match ast.eval() {
@@ -19,7 +19,7 @@ mod tests {
             Err(e) => panic!("{:?}", e),
         }
     }
-    
+
     #[test]
     fn call_function() {
         let input = "fn add(x, y) {
@@ -30,14 +30,14 @@ mod tests {
         add(5, 10);";
         let mut ast = LangParser::new(input);
         let mut ast = ast.parse().expect("unexpected failure");
-        
+
         // evaluate the ast
         match ast.eval() {
             Ok(_) => (),
             Err(e) => panic!("{:?}", e),
         }
     }
-    
+
     #[test]
     fn prep_for_binary_conversion() {
         let input = "
@@ -59,7 +59,7 @@ mod tests {
             Err(e) => panic!("{:?}", e),
         }
     }
-    
+
     #[test]
     fn binary_type() {
         let input = "\
@@ -72,7 +72,7 @@ mod tests {
             Err(e) => panic!("{:?}", e),
         }
     }
-    
+
     #[test]
     fn bitwise_and() {
         let input = "
@@ -88,7 +88,7 @@ mod tests {
             Err(e) => panic!("{:?}", e),
         }
     }
-    
+
     #[test]
     fn bitwise_or() {
         let input = "let a = bin(7);
@@ -102,7 +102,7 @@ mod tests {
             Err(e) => panic!("{:?}", e),
         }
     }
-    
+
     #[test]
     fn bitwise_xor() {
         let input = "let a = bin(7);
@@ -116,7 +116,7 @@ mod tests {
             Err(e) => panic!("{:?}", e),
         }
     }
-    
+
     #[test]
     fn bitwise_not() {
         let input = "let a = bin(7);
@@ -129,7 +129,7 @@ mod tests {
             Err(e) => panic!("{:?}", e),
         }
     }
-    
+
     #[test]
     fn shift_left() {
         let input = "let a = bin(7);
@@ -142,7 +142,7 @@ mod tests {
             Err(e) => panic!("{:?}", e),
         }
     }
-    
+
     #[test]
     fn shift_right() {
         let input = "let a = bin(7);
@@ -155,7 +155,7 @@ mod tests {
             Err(e) => panic!("{:?}", e),
         }
     }
-    
+
     #[test]
     fn matching_masks() {
         let input = "let x = bin(7) & bin(3);
@@ -167,7 +167,7 @@ mod tests {
             Err(e) => panic!("{:?}", e),
         }
     }
-    
+
     #[test]
     fn return_values() {
         let input = "fn add(x, y) {
@@ -184,9 +184,37 @@ mod tests {
         }
         println!("decls: {:?}", ast.declarations);
     }
-    
+
     #[test]
     fn generate_mask() {
+        let input = "let a = 1;
+        let x = bin(a) & bin(3);
+        print(x);";
+        let mut ast = LangParser::new(input);
+        let mut ast = ast.parse().expect("unexpected failure");
+        match ast.eval() {
+            Ok(_) => (),
+            Err(e) => panic!("{:?}", e),
+        }
+    }
+    
+    #[test]
+    fn loop_mask() {
+        let input = "
+        let input = bin(110);
+        for i in 0..8 {
+            let mask = bin(i) << 5;
+            let res = input & mask;
+            if (res == mask) {
+                print(33);
+            }
+        }";
+        let mut ast = LangParser::new(input);
+        let mut ast = ast.parse().expect("unexpected failure");
+        match ast.eval() {
+            Ok(_) => (),
+            Err(e) => panic!("{:?}", e),
+        }
         
     }
 }

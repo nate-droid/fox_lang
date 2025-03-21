@@ -1,9 +1,35 @@
 print("This is a mask function");
 
 fn mask(a, b) {
+    print("hi");
+    print(a);
+    print(b);
     let x = bin(1) << b;
     print(x);
 }
+
 let a = 1;
-let b = 2;
+let b = 4;
 mask(a, b);
+let c = bin(1) << 4;
+print(c);
+
+for i in 0..5 {
+    let x = i << 2;
+    print(x);
+}
+
+print("trying some stuff out");
+let input = bin(110);
+print(input);
+for i in 0..8 {
+    let mask = bin(i) << 5;  
+    let res = input & mask;
+    if (res == mask) {
+        print("found");
+        print(i);
+    }
+    print(res);
+}
+
+print("done");
