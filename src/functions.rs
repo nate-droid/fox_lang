@@ -3,6 +3,7 @@ use crate::lang_parser::LangParser;
 
 #[cfg(test)]
 mod tests {
+    use std::collections::HashMap;
     use super::*;
     #[test]
     fn simple_function() {
@@ -197,7 +198,7 @@ mod tests {
             Err(e) => panic!("{:?}", e),
         }
     }
-    
+
     #[test]
     fn loop_mask() {
         let input = "
@@ -215,6 +216,51 @@ mod tests {
             Ok(_) => (),
             Err(e) => panic!("{:?}", e),
         }
-        
+    }
+
+    #[test]
+    fn bit_ranges() {
+        let value = 0b1101_0110_1001_0011_1110_0101_0111;
+        let start_bit = 2u32;
+        let end_bit = start_bit + 2;
+        let range_width = end_bit - start_bit + 1;
+        println!("range width: {}", range_width);
+        let mask = (1 << range_width) - 1;
+        let shifted_val = value >> start_bit;
+        println!("res: {:b}", (shifted_val & mask));
+
+        let mut i : i32 = 8;
+        while i > 1 {
+            let start = i - 2;
+            let end = (i) as u32;
+            // let range = end - start_bit + 1;
+            let range = 3;
+            println!("range: {}", range);
+            let mask = (1 << range) - 1;
+            let shifted = value >> i;
+            println!("shifted: {:b}", shifted & mask);
+            println!("bits: {:b}", shifted);
+            i -= 1;
+        }
+        // iterate_3bit_slices(value)
+    }
+
+    #[test]
+    fn stuff() {
+        let mut i = 7;
+        let rule = 110u8;
+        let mut rules = HashMap::new(); 
+        while i >= 0 {
+            // println!("i: {:03b}", i);
+            // println!("is_set: {}", (rule >> i) & 1);
+            rules.insert(i, (rule >> i) & 1);
+            i -= 1;
+        }
+        // for i in (0..8).rev() {
+        //     let bit = (rule >> i) & 1;
+        //     println!("bit: {}", bit);
+        // }
+        println!("rules: {:?}", rules);
+        println!("rule: {:03b}", rules.get(&2).unwrap());
     }
 }
