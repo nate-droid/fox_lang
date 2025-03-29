@@ -1,5 +1,5 @@
 use std::cmp::PartialEq;
-use std::collections::{BTreeMap, HashMap};
+use std::collections::{BTreeMap};
 use crate::lexer::{Token, TokenKind};
 use crate::lexer::DefaultLexer;
 
@@ -20,7 +20,7 @@ pub trait Lexer {
 }
 
 use std::fmt;
-use std::fmt::{write, Display};
+use std::fmt::{Display};
 use std::hash::{Hash, Hasher};
 use crate::lang_lexer::LangLexer;
 use crate::lexer::TokenKind::{ForAll, Identifier, RightParenthesis, SetVar};
@@ -36,7 +36,7 @@ pub enum ParseError {
     UnclosedParenthesis,
 }
 
-impl fmt::Display for ParseError {
+impl Display for ParseError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             ParseError::UnexpectedToken => write!(f, "Unexpected token"),
@@ -172,30 +172,30 @@ impl Display for Node {
             Node::BinaryExpression { left, operator, right } => {
                 match operator {
                     ForAll => {
-                        write!(f, "∀{}{}", left.to_string(), right.to_string())
+                        write!(f, "∀{}{}", left, right)
                     }
                     TokenKind::Equality => {
-                        write!(f, "{} = {}", left.to_string(), right.to_string())
+                        write!(f, "{} = {}", left, right)
                     }
                     TokenKind::ElementOf => {
-                        write!(f, "{} ∈ {}", left.to_string(), right.to_string())
+                        write!(f, "{} ∈ {}", left, right)
                     }
                     TokenKind::Exists => {
-                        write!(f, "∃{}{}", left.to_string(), right.to_string())
+                        write!(f, "∃{}{}", left, right)
                     }
                     TokenKind::Implies => {
-                        write!(f, "({} → {})", left.to_string(), right.to_string())
+                        write!(f, "({} → {})", left, right)
                     }
                     TokenKind::Disjunction => {
-                        write!(f, "{} ∨ {}", left.to_string(), right.to_string())
+                        write!(f, "{} ∨ {}", left, right)
                     }
                     _ => {
-                        write!(f, "({} {} {})", left.to_string(), operator, right.to_string())
+                        write!(f, "({} {} {})", left, operator, right)
                     }
                 }
             }
             Node::UnaryExpression { operator, right } => {
-                write!(f, "({} {})", operator, right.to_string())
+                write!(f, "({} {})", operator, right)
             }
             Node::Identifier { value } => {
                 write!(f, "{}", value.clone())
@@ -225,7 +225,7 @@ impl Display for Node {
             Node::EmptyNode => {
                 write!(f, "")
             }
-            Node::Object { name, kind } => {
+            Node::Object { name, .. } => {
                 write!(f, "{}", name)
             }
             Node::Array { elements } => {
@@ -259,16 +259,16 @@ impl Node {
 
     pub fn operator(&self) -> TokenKind {
         match self {
-            Node::BinaryExpression { left: _left, operator, right: _right } => {
+            Node::BinaryExpression { operator, .. } => {
                 operator.clone()
             }
-            Node::UnaryExpression { operator, right: _right } => {
+            Node::UnaryExpression { operator, .. } => {
                 operator.clone()
             }
-            Node::Identifier { value: _value } => {
+            Node::Identifier { .. } => {
                 Identifier
             }
-            Node::MMExpression { expression: _expression } => {
+            Node::MMExpression { .. } => {
                 TokenKind::MMExpression
             }
             Node::AssignStmt {..} => {
