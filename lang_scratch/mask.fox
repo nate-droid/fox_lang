@@ -1,5 +1,5 @@
 print("This is a mask function");
-
+// comment
 fn mask(a, b) {
     print("hi");
     print(a);

@@ -25,9 +25,10 @@ impl<'a> LangLexer<'a> {
                 ' ' => {}
                 '/' => {
                     if self.peek() == '/' {
-                        while self.char.is_some() {
+                        while self.char != Some('\n') {
                             self.next_char();
                         }
+                        
                         self.tokens.push(Token {
                             value: self.current_char().to_string(),
                             kind: TokenKind::Comment,

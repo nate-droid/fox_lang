@@ -882,7 +882,10 @@ mod tests {
 
     #[test]
     fn ignore_comments() {
-        let input = "print(\"hello world!\"); // this is a comment";
+        let input = "
+        print(\"hello world!\");
+        // this is a comment
+        print(\"there was a comment before this\");";
 
         let mut parser = LangParser::new(input);
 

@@ -1216,4 +1216,16 @@ mod tests {
         ast.eval().expect("unexpected failure");
         println!("{:?}", ast);
     }
+    
+    #[test]
+    fn ignore_comment() {
+        let input = "let x = 1; \
+        // this is a comment
+        print(x);
+        ";
+        let mut ast = Ast::new();
+        ast.parse(input).expect("unexpected failure");
+        ast.eval().expect("unexpected failure");
+        println!("{:?}", ast);
+    }
 }
