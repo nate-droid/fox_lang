@@ -802,15 +802,28 @@ impl<'a> LangParser<'a> {
     fn parse_print(&mut self) -> Result<Node, String> {
         self.consume(TokenKind::LeftParenthesis)?;
 
-        // let input = self.current_token()?;
         let input = self.parse_node()?;
-        println!("node to print: {:?}", input);
+        
         self.advance();
 
         self.consume(TokenKind::Semicolon)?;
 
         let node = Node::Call {
             name: "print".to_string(),
+            arguments: vec![input],
+            returns: vec![],
+        };
+        Ok(node)
+    }
+    
+    fn parse_len(&mut self) -> Result<Node, String> {
+        self.consume(TokenKind::LeftParenthesis)?;
+        let input = self.parse_node()?;
+        self.consume(TokenKind::RightParenthesis)?;
+        self.consume(TokenKind::Semicolon)?;
+        
+        let node = Node::Call {
+            name: "len".to_string(),
             arguments: vec![input],
             returns: vec![],
         };

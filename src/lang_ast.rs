@@ -750,6 +750,12 @@ impl Ast {
                 // check if the first argument is an Object
                 let temp2 = *arguments[0].left()?;
                 
+                if let Node::Call { name, arguments, returns } = temp2 {
+                    let x = self.eval_call(name, arguments)?;
+                    println!("{:?}", x.val());
+                    return Ok(EmptyNode)
+                }
+                
                 if let  Node::IndexExpression { left, index } = temp2 {
                     let x = self.eval_array(Node::IndexExpression { left, index })?;
                     println!("{:?}", x);
@@ -761,6 +767,14 @@ impl Ast {
             }
             "reduce" => {
                 println!("{:?}", arguments[0].left());
+            }
+            "len" => {
+                let name = fetch_string(arguments[0].clone())?;
+                let array = self.declarations.get(&name).expect("missing declaration").clone();
+                let elements = fetch_array(array.clone())?;
+                return Ok(Atomic {
+                    value: Value::Int(elements.len() as i32),
+                });
             }
             _ => {
                 println!("arguments: {:?}", arguments);

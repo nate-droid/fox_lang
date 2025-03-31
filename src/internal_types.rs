@@ -35,6 +35,10 @@ pub(crate) fn fetch_string(node: Node) -> Result<String, String> {
                 Err("expected string".to_string())
             }
         }
+        Node::AssignStmt { left, right, kind } => {
+            let left = fetch_string(*left)?;
+            Ok(left)
+        }
         _ => Err(format!("unexpected node {:?}", node)),
     }
 }

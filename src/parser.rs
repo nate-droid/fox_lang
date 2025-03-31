@@ -293,6 +293,9 @@ impl Node {
             Node::BinaryExpression { left, .. } => Ok(Box::from(*left.clone())),
             Node::Object { name, kind } => Ok(Box::from(Node::Object { name: name.clone(), kind: kind.clone() })),
             Node::IndexExpression { left, index } => Ok(Box::from(Node::IndexExpression { left: left.clone(), index: index.clone() })),
+            Node::Call { name, arguments, .. } => {
+                Ok(Box::from(Node::Call { name: name.clone(), arguments: arguments.clone(), returns: vec![] }))
+            }
             _ => {
                 Err(format!("unexpected token {:?}", self)) 
             },
