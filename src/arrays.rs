@@ -220,3 +220,16 @@ fn add_to_array() {
         Err(e) => panic!("{:?}", e),
     }
 }
+
+
+#[test]
+fn index_strings() {
+    let input = "let x = \"hello\";
+    print(x[0]);";
+    let mut ast = LangParser::new(input);
+    let mut ast = ast.parse().expect("unexpected failure");
+    match ast.eval() {
+        Ok(_) => (),
+        Err(e) => panic!("{:?}", e),
+    }
+}

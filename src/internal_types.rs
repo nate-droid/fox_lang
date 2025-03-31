@@ -28,6 +28,13 @@ pub(crate) fn fetch_string(node: Node) -> Result<String, String> {
             let left = fetch_string(*left)?;
             Ok(left)
         }
+        Node::Atomic { value, .. } => {
+            if let crate::parser::Value::Str(s) = value {
+                Ok(s)
+            } else {
+                Err("expected string".to_string())
+            }
+        }
         _ => Err(format!("unexpected node {:?}", node)),
     }
 }

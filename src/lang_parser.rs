@@ -583,8 +583,10 @@ impl<'a> LangParser<'a> {
         let variable = self.current_token()?;
         self.consume(TokenKind::Word)?;
 
-        self.consume(TokenKind::Word)?;
+        self.consume(TokenKind::Word)?; // consume "in"
+        
         let start = self.current_token()?;
+        
         self.consume(TokenKind::Number)?;
         self.consume(TokenKind::Range)?;
         let end = self.current_token()?;

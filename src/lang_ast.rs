@@ -1020,6 +1020,32 @@ impl Ast {
                     
                     return Ok(last);
                 }
+                
+                if let Node::AssignStmt { left, .. } = *left {
+                    if let Ident { name, .. } = *left {
+                        let string_node = self.declarations.get(&name).expect("missing x").clone(); 
+                        match string_node.node_type() {
+                            "Array" => {
+                                let array = fetch_array(string_node)?;
+                                let index = fetch_integer(*sub_index)?;
+                                let v = array[index as usize].clone();
+                                return Ok(v);
+                            }
+                            "Atomic" => {
+                                let s = fetch_string(string_node)?;
+                                let index = fetch_integer(*sub_index)?;
+                                let v = s.as_bytes()[index as usize];
+
+                                return Ok(Atomic { value: Value::Str(v.to_string()) });
+                            }
+                            _ => {
+                                println!("kind: {:?}", string_node.node_type());
+                                return Err("Invalid type".to_string());
+                            }
+                        }
+                    }
+                }
+
                 Ok(EmptyNode)
             }
             Ident {name, kind} => {

@@ -313,6 +313,21 @@ impl Node {
             _ => Value::Str("".to_string()),
         }
     }
+    
+    pub fn node_type(&self) -> &str {
+        match self {
+            Node::BinaryExpression { .. } => "BinaryExpression",
+            Node::UnaryExpression { .. } => "UnaryExpression",
+            Node::Array { .. } => "Array",
+            Node::AssignStmt { .. } => "AssignStmt",
+            Node::Ident { .. } => "Ident",
+            Atomic { .. } => "Atomic",
+            Node::Call { .. } => "Call",
+            Node::Conditional { .. } => "Conditional",
+            Node::EmptyNode => "EmptyNode",
+            _ => "MissingType",
+        }
+    }
 }
 
 impl Parser {
