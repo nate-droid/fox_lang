@@ -771,10 +771,30 @@ impl Ast {
             "len" => {
                 let name = fetch_string(arguments[0].clone())?;
                 let array = self.declarations.get(&name).expect("missing declaration").clone();
-                let elements = fetch_array(array.clone())?;
-                return Ok(Atomic {
-                    value: Value::Int(elements.len() as i32),
-                });
+                
+                return match array.node_type() {
+                    "Array" => {
+                        let elements = fetch_array(array.clone())?;
+                        Ok(Atomic {
+                            value: Value::Int(elements.len() as i32),
+                        })
+                    }
+                    "Hashmap" => {
+                        let elements = fetch_hash_map(array.clone())?;
+                        Ok(Atomic {
+                            value: Value::Int(elements.len() as i32),
+                        })
+                    }
+                    "Atomic" => {
+                        let s = fetch_string(array.clone())?;
+                        Ok(Atomic {
+                            value: Value::Int(s.len() as i32),
+                        })
+                    }
+                    _ => {
+                        return Err(format!("Unknown type {}", array.node_type()));
+                    }
+                }
             }
             _ => {
                 println!("arguments: {:?}", arguments);

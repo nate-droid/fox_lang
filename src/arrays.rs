@@ -245,3 +245,15 @@ fn array_length() {
         Err(e) => panic!("{:?}", e),
     }
 }
+
+#[test]
+fn string_length() {
+    let input = "let x = \"hello\";
+    print(len(x));";
+    let mut ast = LangParser::new(input);
+    let mut ast = ast.parse().expect("unexpected failure");
+    match ast.eval() {
+        Ok(_) => (),
+        Err(e) => panic!("{:?}", e),
+    }
+}
