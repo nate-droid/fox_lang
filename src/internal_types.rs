@@ -1,4 +1,6 @@
 use std::collections::{BTreeMap, HashMap};
+use parser::Value;
+use crate::parser;
 use crate::parser::Node;
 
 pub(crate) fn fetch_array(node: Node) -> Result<Vec<Node>, String> {
@@ -29,7 +31,7 @@ pub(crate) fn fetch_string(node: Node) -> Result<String, String> {
             Ok(left)
         }
         Node::Atomic { value, .. } => {
-            if let crate::parser::Value::Str(s) = value {
+            if let Value::Str(s) = value {
                 Ok(s)
             } else {
                 Err("expected string".to_string())
@@ -46,20 +48,23 @@ pub(crate) fn fetch_string(node: Node) -> Result<String, String> {
 pub(crate) fn fetch_integer(node: Node) -> Result<i32, String> {
     match node {
         Node::Atomic { value } => {
-            if let crate::parser::Value::Int(i) = value {
+            if let Value::Int(i) = value {
                 Ok(i)
             } else {
-                Err("expected integer".to_string())
+                Err(format!("expected integer, got {:?}", value))
             }
         }
-        _ => Err("expected integer".to_string()),
+        _ => {
+            println!("expected integer but got: {:?}", node);
+            Err(format!("expected integer, got {:?}", node)) 
+        },
     }
 }
 
 pub(crate) fn fetch_boolean(node: Node) -> Result<bool, String> {
     match node {
         Node::Atomic { value } => {
-            if let crate::parser::Value::Bool(b) = value {
+            if let Value::Bool(b) = value {
                 Ok(b)
             } else {
                 Err("expected boolean".to_string())
@@ -72,7 +77,7 @@ pub(crate) fn fetch_boolean(node: Node) -> Result<bool, String> {
 pub(crate) fn fetch_binary(node: Node) -> Result<u32, String> {
     match node {
         Node::Atomic { value } => {
-            if let crate::parser::Value::Bin(b) = value {
+            if let Value::Bin(b) = value {
                 Ok(b)
             } else {
                 Err(format!("expected binary operator but got {:?}", value))

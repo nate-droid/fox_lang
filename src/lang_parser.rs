@@ -590,34 +590,72 @@ impl<'a> LangParser<'a> {
         self.consume(TokenKind::Number)?;
         self.consume(TokenKind::Range)?;
         let end = self.current_token()?;
-        self.consume(TokenKind::Number)?;
-        self.consume(TokenKind::LBracket)?;
+        match end.kind {
+            TokenKind::Number => {
+                // self.consume(TokenKind::Number)?;
+                self.advance();
+                self.consume(TokenKind::LBracket)?;
 
 
-        let mut bracket_count = 1;
+                let mut bracket_count = 1;
 
-        let mut nodes = Vec::new();
-        //while self.current_token()?.kind != TokenKind::RBracket {
-        while bracket_count > 0 {
-            
-            let node = self.parse_node()?;
-            nodes.push(node);
-            if self.current_token()?.kind == TokenKind::LBracket {
-                bracket_count += 1;
-            } else if self.current_token()?.kind == TokenKind::RBracket {
-                bracket_count -= 1;
+                let mut nodes = Vec::new();
+                //while self.current_token()?.kind != TokenKind::RBracket {
+                while bracket_count > 0 {
+
+                    let node = self.parse_node()?;
+                    nodes.push(node);
+                    if self.current_token()?.kind == TokenKind::LBracket {
+                        bracket_count += 1;
+                    } else if self.current_token()?.kind == TokenKind::RBracket {
+                        bracket_count -= 1;
+                    }
+                }
+                self.consume(TokenKind::RBracket)?;
+
+                Ok(Node::ForLoop {
+                    variable: variable.value,
+                    range: (
+                        Box::from(Node::Atomic { value: Value::Int(start.value.parse::<i32>().unwrap()) }),
+                        Box::from(Node::Atomic { value: Value::Int(end.value.parse::<i32>().unwrap()) }),
+                    ),
+                    body: nodes,
+                })
+            }
+            TokenKind::Word => {
+                self.consume(TokenKind::Word)?;
+                self.consume(TokenKind::LBracket)?;
+
+                let mut bracket_count = 1;
+
+                let mut nodes = Vec::new();
+                //while self.current_token()?.kind != TokenKind::RBracket {
+                while bracket_count > 0 {
+
+                    let node = self.parse_node()?;
+                    nodes.push(node);
+                    if self.current_token()?.kind == TokenKind::LBracket {
+                        bracket_count += 1;
+                    } else if self.current_token()?.kind == TokenKind::RBracket {
+                        bracket_count -= 1;
+                    }
+                }
+                self.consume(TokenKind::RBracket)?;
+
+                Ok(Node::ForLoop {
+                    variable: variable.value,
+                    range: (
+                        Box::from(Node::Atomic { value: Value::Int(start.value.parse::<i32>().unwrap()) }),
+                        Box::from(Node::Ident { name: end.value, kind: "var".to_string() }),
+                    ),
+                    body: nodes,
+                })
+            }
+            _ => {
+                Err(format!("expected number, got {:?}", end))
             }
         }
-        self.consume(TokenKind::RBracket)?;
         
-        Ok(Node::ForLoop {
-            variable: variable.value,
-            range: (
-                start.value.parse::<i32>().unwrap(),
-                end.value.parse::<i32>().unwrap(),
-            ),
-            body: nodes,
-        })
     }
     
     fn parse_condition_header(&mut self) -> Result<Node, String> {

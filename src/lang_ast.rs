@@ -750,19 +750,30 @@ impl Ast {
                 // check if the first argument is an Object
                 let temp2 = *arguments[0].left()?;
                 
-                if let Node::Call { name, arguments, returns } = temp2 {
-                    let x = self.eval_call(name, arguments)?;
-                    println!("{:?}", x.val());
-                    return Ok(EmptyNode)
-                }
-                
-                if let  Node::IndexExpression { left, index } = temp2 {
-                    let x = self.eval_array(Node::IndexExpression { left, index })?;
-                    println!("{:?}", x);
-                    return Ok(EmptyNode)
+                match temp2 {
+                    Node::Call { name, arguments, returns } => {
+                        let x = self.eval_call(name, arguments)?;
+                        println!("{:?}", x.val());
+                        return Ok(EmptyNode)
+                    }
+                    Node::IndexExpression { left, index } => {
+                        let x = self.eval_array(Node::IndexExpression { left, index })?;
+                        if let Atomic { value } = x {
+                            if let Value::Str(_0) = value {
+                                println!("[{:?}]", _0);
+                            } else {
+                                println!("{:?}", value);
+                            }
+                        } else {
+                            println!("{:?}", x);
+                        }
+                        
+                        return Ok(EmptyNode)
+                    }
+                    _ => {}
                 };
 
-                println!("{:?}", self.replace_var(temp2).expect("unexpected failure").to_string());
+                println!("{:?}", self.replace_var(temp2).expect("unexpected failure"));
                 return Ok(EmptyNode)
             }
             "reduce" => {
@@ -770,29 +781,29 @@ impl Ast {
             }
             "len" => {
                 let name = fetch_string(arguments[0].clone())?;
-                let array = self.declarations.get(&name).expect("missing declaration").clone();
+                let n = self.declarations.get(&name).expect("missing declaration").clone();
                 
-                return match array.node_type() {
+                return match n.node_type() {
                     "Array" => {
-                        let elements = fetch_array(array.clone())?;
+                        let elements = fetch_array(n.clone())?;
                         Ok(Atomic {
                             value: Value::Int(elements.len() as i32),
                         })
                     }
                     "Hashmap" => {
-                        let elements = fetch_hash_map(array.clone())?;
+                        let elements = fetch_hash_map(n.clone())?;
                         Ok(Atomic {
                             value: Value::Int(elements.len() as i32),
                         })
                     }
                     "Atomic" => {
-                        let s = fetch_string(array.clone())?;
+                        let s = fetch_string(n.clone())?;
                         Ok(Atomic {
                             value: Value::Int(s.len() as i32),
                         })
                     }
                     _ => {
-                        return Err(format!("Unknown type {}", array.node_type()));
+                        return Err(format!("Unknown type {}", n.node_type()));
                     }
                 }
             }
@@ -870,7 +881,6 @@ impl Ast {
                     ret = self.replace_var(*value)?;
                     break;
                 }
-
 
                 self.eval_node(expr)?;
             }
@@ -1066,9 +1076,11 @@ impl Ast {
                                 return Ok(v);
                             }
                             "Atomic" => {
-                                let s = fetch_string(string_node)?;
-                                let index = fetch_integer(*sub_index)?;
-                                let v = s.as_bytes()[index as usize];
+                                let replaced = self.replace_var(Ident { name, kind: "".to_string() })?;
+                                let s = fetch_string(replaced)?;
+                                let replaced_index = self.replace_var(*sub_index)?;
+                                let index = fetch_integer(replaced_index)?;
+                                let v = s.as_bytes()[index as usize] as char;
 
                                 return Ok(Atomic { value: Value::Str(v.to_string()) });
                             }
@@ -1092,21 +1104,30 @@ impl Ast {
         }
     }
     
-    fn parse_for(&mut self, variable: String, range: (i32, i32), body: Vec<Node>) -> Result<(), String> {
-
+    fn parse_for(&mut self, variable: String, range: (Box<Node>, Box<Node>), body: Vec<Node>) -> Result<(), String> {
+        let start_node = self.replace_var(*range.0)?;
+        let end_node = self.replace_var(*range.1)?;
+        
+        let start = fetch_integer(start_node)?;
+        let replaced_end = self.replace_var(end_node)?;
+        println!("start node: {:?}", start);
+        println!("end node: {:?}", replaced_end);
+        let end = fetch_integer(replaced_end)?;
+        
+        
         self.upsert_declaration(Node::AssignStmt {
             left: Box::new(Node::Ident {
                 name: variable.clone(),
                 kind: "var".to_string(),
             }),
             right: Box::new(Atomic {
-                value: Value::Int(range.0),
+                value: Value::Int(start.clone()),
             }),
             kind: "Nat".to_string(),
         })?;
 
-        let start = range.0;
-        let end = range.1;
+        // let start = range.0;
+        // let end = range.1;
         let mut i = start;
 
         while i < end {

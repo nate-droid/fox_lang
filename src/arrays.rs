@@ -173,9 +173,9 @@ fn test_string_assign() {
         Ok(_) => (),
         Err(e) => panic!("{:?}", e),
     }
-
+    
     let x = ast.declarations.get("x").unwrap();
-
+    
     assert_eq!(x.to_string(), "hello");
 }
 
@@ -250,6 +250,41 @@ fn array_length() {
 fn string_length() {
     let input = "let x = \"hello\";
     print(len(x));";
+    let mut ast = LangParser::new(input);
+    let mut ast = ast.parse().expect("unexpected failure");
+    match ast.eval() {
+        Ok(_) => (),
+        Err(e) => panic!("{:?}", e),
+    }
+}
+
+#[test]
+fn iterate_string() {
+    let input = "let x = \"hello\";
+    let l = len(x);
+    for i in 0..l {
+        print(x[i]);
+    }";
+    let mut ast = LangParser::new(input);
+    let mut ast = ast.parse().expect("unexpected failure");
+    match ast.eval() {
+        Ok(_) => (),
+        Err(e) => panic!("{:?}", e),
+    }
+}
+
+#[test]
+fn string_split() {
+    let input = "let x = \"hello world this is a long string\";\
+    // let l = len(x);
+    // for i in 0..l {
+    //     if (x[i] == \" \") {
+    //         print(\" empty space! \");
+    //     } else {
+    //         print(x[i]);
+    //     }
+    // }
+    ";
     let mut ast = LangParser::new(input);
     let mut ast = ast.parse().expect("unexpected failure");
     match ast.eval() {

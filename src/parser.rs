@@ -134,7 +134,8 @@ pub enum Node {
     },
     ForLoop {
         variable: String,
-        range: (i32, i32),
+        // range: (i32, i32),
+        range: (Box<Node>, Box<Node>),
         body: Vec<Node>,
     },
     Array {
