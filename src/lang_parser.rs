@@ -201,271 +201,239 @@ impl<'a> LangParser<'a> {
 
     fn parse_node(&mut self) -> Result<Node, String> {
         match self.current_token()?.kind {
-            TokenKind::Number => {
-                let val = Value::from_string(self.current_token()?.value);
-                self.advance();
-                Ok(Node::Atomic { value: val })
-            }
-            TokenKind::Word => {
-                let name = self.current_token()?;
-                self.advance();
-
-                match name.value.as_str() {
-                    "print" => return self.parse_print(),
-                    "let" => {
-                        let ident = self.parse_let()?;
-
-                        return Ok(ident);
-                    }
-                    "if" => return self.parse_if(),
-                    "break" => {
-                        self.consume(TokenKind::Semicolon)?;
-                        return Ok(Node::Break{});
-                    }
-                    "return" => {
-                        let value = self.parse_node()?;
-                        self.consume(TokenKind::Semicolon)?;
-                        return Ok(Node::Return { value: Box::from(value) });
-                    }
-                    "true" => {
-                        return Ok(Node::Atomic { value: Value::Bool(true) });
-                    }
-                    "false" => {
-                        return Ok(Node::Atomic { value: Value::Bool(false) });
-                    }
-                    "bin" => {
-                        // TODO: there needs to be a more generic parse expression available for nodes
-                        self.consume(TokenKind::LeftParenthesis)?;
-                        let value = self.parse_node()?;
-                        
-                        
-
-                        self.consume(TokenKind::RightParenthesis)?;
-                        
-                        if self.current_token()?.kind.is_binary_operator()  {
-                            let op = self.current_token()?;
-                            self.advance();
-                            let right = self.parse_node()?;
-                            
-                            return Ok(Node::BinaryExpression {
-                                // left: Box::from(Node::Atomic { value: Value::Bin(integer as u32) }),
-                                left: Box::from(value),
-                                operator: op.kind,
-                                right: Box::from(right),
-                            });
-                        }
-                        let integer = fetch_integer(value)?;
-                        return Ok(Node::Atomic { value: Value::Bin(integer as u32) });
-                    }
-                    _ => {}
-                }
-                
-                if self.current_token()?.kind == TokenKind::Period {
-                    let res = self.parse_method_call(name)?;
-                    if self.current_token()?.kind == TokenKind::Semicolon {
-                        self.advance();
-                    }
-                    return Ok(res);
-                }
-                
-                // parse potential function
-                if self.current_token()?.kind == TokenKind::LeftParenthesis {
-                    self.consume(TokenKind::LeftParenthesis)?;
-                    let mut arguments = Vec::new();
-                    while self.current_token()?.kind != TokenKind::RightParenthesis {
-                        let arg = self.parse_node()?;
-                        arguments.push(arg);
-                        if self.current_token()?.kind == TokenKind::RightParenthesis {
-                            break;
-                        }
-                        self.consume(Comma)?;
-                    }
-                    self.consume(TokenKind::RightParenthesis)?;
-                    return Ok(Node::Call {
-                        name: name.value,
-                        arguments,
-                        returns: vec![],
-                    });
-                }
-
-                match self.current_token()?.kind {
-                    TokenKind::Equality => {
-                        self.consume(TokenKind::Equality)?;
-                        let value = self.parse_node()?;
-                        self.consume(TokenKind::Semicolon)?;
-                        Ok(Node::AssignStmt {
-                            left: Box::from(Node::Ident { name: name.value, kind: "var".to_string() }),
-                            kind: "Nat".to_string(),
-                            right: Box::from(value),
-                        })
-                    }
-                    TokenKind::Add => {
-                        self.consume(TokenKind::Add)?;
-                        let right = self.parse_node()?;
-                        Ok(Node::BinaryExpression {
-                            left: Box::from(Node::AssignStmt {
-                                left: Box::from(Node::Ident { name: name.value, kind: "var".to_string() }),
-                                right: Box::from(Node::Atomic {
-                                    value: Value::Int(0),
-                                }),
-                                kind: "Nat".to_string(),
-                            }),
-                            operator: TokenKind::Add,
-                            right: Box::from(right),
-                        })
-                    }
-                    TokenKind::Subtract => {
-                        self.consume(TokenKind::Subtract)?;
-                        let right = self.parse_node()?;
-                        Ok(Node::BinaryExpression {
-                            left: Box::from(Node::AssignStmt {
-                                left: Box::from(Node::Ident { name: name.value, kind: "var".to_string() }),
-                                right: Box::from(Node::Atomic {
-                                    value: Value::Int(0),
-                                }),
-                                kind: "Nat".to_string(),
-                            }),
-                            operator: TokenKind::Subtract,
-                            right: Box::from(right),
-                        })
-                    }
-                    TokenKind::Multiply => {
-                        self.consume(TokenKind::Multiply)?;
-                        let right = self.parse_node()?;
-                        Ok(Node::BinaryExpression {
-                            left: Box::from(Node::AssignStmt {
-                                left: Box::from(Node::Ident { name: name.value, kind: "var".to_string() }),
-                                right: Box::from(Node::Atomic {
-                                    value: Value::Int(0),
-                                }),
-                                kind: "Nat".to_string(),
-                            }),
-                            operator: TokenKind::Multiply,
-                            right: Box::from(right),
-                        })
-                    }
-                    TokenKind::Divide => {
-                        self.consume(TokenKind::Divide)?;
-                        let right = self.parse_node()?;
-                        Ok(Node::BinaryExpression {
-                            left: Box::from(Node::AssignStmt {
-                                left: Box::from(Node::Ident { name: name.value, kind: "var".to_string() }),
-                                right: Box::from(Node::Atomic {
-                                    value: Value::Int(0),
-                                }),
-                                kind: "Nat".to_string(),
-                            }),
-                            operator: TokenKind::Divide,
-                            right: Box::from(right),
-                        })
-                    }
-                    TokenKind::LBracket => {
-                        self.consume(TokenKind::LBracket)?;
-                        let index = self.parse_node()?;
-
-                        self.consume(TokenKind::RBracket)?;
-                        
-                        // TODO: Check for nested arrays
-                        if self.current_token()?.kind == TokenKind::LBracket {
-                            self.consume(TokenKind::LBracket)?;
-                            let index2 = self.parse_node()?;
-                            self.consume(TokenKind::RBracket)?;
-                            
-                            if self.current_token()?.kind == TokenKind::Equality {
-                                self.consume(TokenKind::Equality)?;
-                                let right = self.parse_node()?;
-                                panic!("not yet implemented");
-                            }
-                            
-                            return Ok(Node::IndexExpression {
-                                left: Box::from(Node::IndexExpression {
-                                    left: Box::from(Node::Ident {name: name.value, kind: "var".to_string()}),
-                                    index: Box::from(index),
-                                }),
-                                index: Box::from(index2),
-                            });
-                        }
-                        
-                        Ok(Node::IndexExpression {
-                            left: Box::from(Node::AssignStmt {
-                                left: Box::from(Node::Ident { name: name.value, kind: "var".to_string() }),
-                                right: Box::from(Node::Atomic {
-                                    value: Value::Int(0),
-                                }),
-                                kind: "Nat".to_string(),
-                            }),
-                            index: Box::from(index),
-                        })
-                    }
-                    TokenKind::Period => {
-                        Ok(Node::Ident { name: name.value, kind: "var".to_string() })
-                    }
-                    _ => {
-                        Ok(Node::Ident { name: name.value, kind: "var".to_string() })
-                    }
-                }
-            }
-            TokenKind::LeftParenthesis => {
-                // at the moment, the language expects this to be an expression. This might need to be rethought as the language grows
-                let mut expression: String = "(".to_string();
-                self.consume(TokenKind::LeftParenthesis)?;
-                while self.current_token()?.kind != TokenKind::Semicolon {
-                    expression.push_str(&self.current_token()?.value);
-                    self.advance();
-                }
-
-                Ok(Node::MMExpression { expression })
-            }
-            TokenKind::Identifier => {
-                let name = self.current_token()?;
-                self.advance();
-                Ok(Node::AssignStmt {
-                    left: Box::from(Node::Ident { name: name.value, kind: "var".to_string() }),
-                    right: Box::from(Node::Atomic {
-                        value: Value::Int(0),
-                    }),
-                    kind: "Nat".to_string(),
-                })
-            }
-            TokenKind::LBracket => {
-                // parse array
-                self.consume(TokenKind::LBracket)?;
-                let mut nodes = Vec::new();
-                
-                while self.current_token()?.kind != TokenKind::RBracket {
-                    nodes.push(self.parse_node()?);
-                    if self.current_token()?.kind == TokenKind::RBracket {
-                        break;
-                    }
-                    self.consume(Comma)?;
-                }
-                self.consume(TokenKind::RBracket)?;
-                
-                Ok(Node::Array { elements: nodes })
-            }
-            TokenKind::String => {
-                let val = Value::Str(self.current_token()?.value.clone());
-                self.advance();
-                Ok(Node::Atomic { value: val })
-            }
-            TokenKind::Negation => {
-                self.consume(TokenKind::Negation)?;
-                let node = self.parse_node()?;
-                Ok(Node::UnaryExpression { operator: TokenKind::Negation, right: Box::from(node) })
-            }
-            TokenKind::LessThan => {
-                // parsing a new Hashmap
-                self.consume(TokenKind::LessThan)?;
-                self.consume(TokenKind::GreaterThan)?;
-                // TODO: there is currently only support for empty initialization
-                Ok(Node::HMap { values: Default::default() })
-            }
+            TokenKind::Number => { self.parse_number() }
+            TokenKind::Word => { self.parse_word() }
+            TokenKind::LeftParenthesis => { self.parse_left_parenthesis() }
+            TokenKind::Identifier => { self.parse_identifier() }
+            TokenKind::LBracket => { self.parse_left_bracket() }
+            TokenKind::String => { self.parse_string() }
+            TokenKind::Negation => { self.parse_negation() }
+            TokenKind::LessThan => { self.parse_less_than() }
             _ => {
                 println!("current: {:?}", self.current_token()?);
                 println!("peek: {:?}", self.peek_token()?);
                 Err(format!("unexpected token: {:?}", self.current_token()?))
             }
         }
+    }
+    
+    fn parse_number(&mut self) -> Result<Node, String> {
+        let val = Value::from_string(self.current_token()?.value);
+        self.advance();
+        Ok(Node::Atomic { value: val })
+    }
+    
+    fn parse_word(&mut self) -> Result<Node, String> {
+        let name = self.current_token()?;
+        self.advance();
+
+        match name.value.as_str() {
+            "print" => return self.parse_print(),
+            "let" => {
+                let ident = self.parse_let()?;
+
+                return Ok(ident);
+            }
+            "if" => return self.parse_if(),
+            "break" => {
+                self.consume(TokenKind::Semicolon)?;
+                return Ok(Node::Break{});
+            }
+            "return" => {
+                let value = self.parse_node()?;
+                self.consume(TokenKind::Semicolon)?;
+                return Ok(Node::Return { value: Box::from(value) });
+            }
+            "true" => {
+                return Ok(Node::Atomic { value: Value::Bool(true) });
+            }
+            "false" => {
+                return Ok(Node::Atomic { value: Value::Bool(false) });
+            }
+            "bin" => {
+                self.consume(TokenKind::LeftParenthesis)?;
+                let value = self.parse_node()?;
+                
+                self.consume(TokenKind::RightParenthesis)?;
+
+                if self.current_token()?.kind.is_binary_operator()  {
+                    let op = self.current_token()?;
+                    self.advance();
+                    let right = self.parse_node()?;
+
+                    return Ok(Node::BinaryExpression {
+                        left: Box::from(value),
+                        operator: op.kind,
+                        right: Box::from(right),
+                    });
+                }
+                let integer = fetch_integer(value)?;
+                return Ok(Node::Atomic { value: Value::Bin(integer as u32) });
+            }
+            _ => {}
+        }
+
+        if self.current_token()?.kind == TokenKind::Period {
+            let res = self.parse_method_call(name)?;
+            if self.current_token()?.kind == TokenKind::Semicolon {
+                self.advance();
+            }
+            return Ok(res);
+        }
+
+        // parse potential function
+        if self.current_token()?.kind == TokenKind::LeftParenthesis {
+            self.consume(TokenKind::LeftParenthesis)?;
+            let mut arguments = Vec::new();
+            while self.current_token()?.kind != TokenKind::RightParenthesis {
+                let arg = self.parse_node()?;
+                arguments.push(arg);
+                if self.current_token()?.kind == TokenKind::RightParenthesis {
+                    break;
+                }
+                self.consume(Comma)?;
+            }
+            self.consume(TokenKind::RightParenthesis)?;
+            return Ok(Node::Call {
+                name: name.value,
+                arguments,
+                returns: vec![],
+            });
+        }
+
+        match self.current_token()?.kind {
+            TokenKind::Equality => {
+                self.consume(TokenKind::Equality)?;
+                let value = self.parse_node()?;
+                self.consume(TokenKind::Semicolon)?;
+                Ok(Node::AssignStmt {
+                    left: Box::from(Node::Ident { name: name.value, kind: "var".to_string() }),
+                    kind: "Nat".to_string(),
+                    right: Box::from(value),
+                })
+            }
+            TokenKind::Add | TokenKind::Subtract | TokenKind::Multiply | TokenKind::Divide => {
+                let operator = self.current_token()?;
+                self.advance();
+                let right = self.parse_node()?;
+                Ok(Node::BinaryExpression {
+                    left: Box::from(Node::AssignStmt {
+                        left: Box::from(Node::Ident { name: name.value, kind: "var".to_string() }),
+                        right: Box::from(Node::Atomic {
+                            value: Value::Int(0),
+                        }),
+                        kind: "Nat".to_string(),
+                    }),
+                    operator: operator.kind,
+                    right: Box::from(right),
+                })
+            }
+            TokenKind::LBracket => {
+                self.consume(TokenKind::LBracket)?;
+                let index = self.parse_node()?;
+
+                self.consume(TokenKind::RBracket)?;
+
+                // TODO: Check for nested arrays
+                if self.current_token()?.kind == TokenKind::LBracket {
+                    self.consume(TokenKind::LBracket)?;
+                    let index2 = self.parse_node()?;
+                    self.consume(TokenKind::RBracket)?;
+
+                    if self.current_token()?.kind == TokenKind::Equality {
+                        self.consume(TokenKind::Equality)?;
+                        let right = self.parse_node()?;
+                        panic!("not yet implemented");
+                    }
+
+                    return Ok(Node::IndexExpression {
+                        left: Box::from(Node::IndexExpression {
+                            left: Box::from(Node::Ident {name: name.value, kind: "var".to_string()}),
+                            index: Box::from(index),
+                        }),
+                        index: Box::from(index2),
+                    });
+                }
+
+                Ok(Node::IndexExpression {
+                    left: Box::from(Node::AssignStmt {
+                        left: Box::from(Node::Ident { name: name.value, kind: "var".to_string() }),
+                        right: Box::from(Node::Atomic {
+                            value: Value::Int(0),
+                        }),
+                        kind: "Nat".to_string(),
+                    }),
+                    index: Box::from(index),
+                })
+            }
+            TokenKind::Period => {
+                Ok(Node::Ident { name: name.value, kind: "var".to_string() })
+            }
+            _ => {
+                Ok(Node::Ident { name: name.value, kind: "var".to_string() })
+            }
+        }
+    }
+    
+    fn parse_left_parenthesis(&mut self) -> Result<Node, String> {
+        // at the moment, the language expects this to be an expression. This might need to be rethought as the language grows
+        let mut expression: String = "(".to_string();
+        self.consume(TokenKind::LeftParenthesis)?;
+        while self.current_token()?.kind != TokenKind::Semicolon {
+            expression.push_str(&self.current_token()?.value);
+            self.advance();
+        }
+
+        Ok(Node::MMExpression { expression })
+    }
+    
+    fn parse_identifier(&mut self) -> Result<Node, String> {
+        let name = self.current_token()?;
+        self.advance();
+        Ok(Node::AssignStmt {
+            left: Box::from(Node::Ident { name: name.value, kind: "var".to_string() }),
+            right: Box::from(Node::Atomic {
+                value: Value::Int(0),
+            }),
+            kind: "Nat".to_string(),
+        })
+    }
+    
+    fn parse_left_bracket(&mut self) -> Result<Node, String> {
+        // parse array
+        self.consume(TokenKind::LBracket)?;
+        let mut nodes = Vec::new();
+
+        while self.current_token()?.kind != TokenKind::RBracket {
+            nodes.push(self.parse_node()?);
+            if self.current_token()?.kind == TokenKind::RBracket {
+                break;
+            }
+            self.consume(Comma)?;
+        }
+        self.consume(TokenKind::RBracket)?;
+
+        Ok(Node::Array { elements: nodes })
+    }
+    
+    fn parse_string(&mut self) -> Result<Node, String> {
+        let val = Value::Str(self.current_token()?.value.clone());
+        self.advance();
+        Ok(Node::Atomic { value: val })
+    }
+    
+    fn parse_negation(&mut self) -> Result<Node, String> {
+        self.consume(TokenKind::Negation)?;
+        let node = self.parse_node()?;
+        Ok(Node::UnaryExpression { operator: TokenKind::Negation, right: Box::from(node) })
+    }
+    
+    fn parse_less_than(&mut self) -> Result<Node, String> {
+        // parsing a new Hashmap
+        self.consume(TokenKind::LessThan)?;
+        self.consume(TokenKind::GreaterThan)?;
+        // TODO: there is currently only support for empty initialization
+        Ok(Node::HMap { values: Default::default() })
     }
     
     fn parse_if(&mut self) -> Result<Node, String> {
