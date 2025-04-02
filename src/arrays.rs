@@ -276,9 +276,10 @@ fn iterate_string() {
 #[test]
 fn string_split() {
     let input = "let x = \"hello world this is a long string\";\
-    // let l = len(x);
+    let l = len(x);
     // for i in 0..l {
-    //     if (x[i] == \" \") {
+    //     let space = \" \";
+    //     if (x[i] == space) {
     //         print(\" empty space! \");
     //     } else {
     //         print(x[i]);

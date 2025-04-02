@@ -67,13 +67,13 @@ impl<'a> LangLexer<'a> {
                 '{' => {
                     self.tokens.push(Token {
                         value: self.current_char().to_string(),
-                        kind: TokenKind::LBracket,
+                        kind: TokenKind::LCurlyBracket,
                     });
                 }
                 '}' => {
                     self.tokens.push(Token {
                         value: self.current_char().to_string(),
-                        kind: TokenKind::RBracket,
+                        kind: TokenKind::RCurlyBracket,
                     });
                 }
                 ',' => {

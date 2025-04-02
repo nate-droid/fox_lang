@@ -461,6 +461,7 @@ impl<'a> LangParser<'a> {
                 Ok(Node::HMap { values: Default::default() })
             }
             _ => {
+                println!("current: {:?}", self.current_token()?);
                 println!("peek: {:?}", self.peek_token()?);
                 Err(format!("unexpected token: {:?}", self.current_token()?))
             }
@@ -470,7 +471,7 @@ impl<'a> LangParser<'a> {
     fn parse_if(&mut self) -> Result<Node, String> {
         
         let condition = self.parse_condition_header()?;
-        self.consume(TokenKind::LBracket)?;
+        self.consume(TokenKind::LCurlyBracket)?;
 
         // parse consequence
         let consequence = self.parse_consequence()?;
@@ -484,7 +485,7 @@ impl<'a> LangParser<'a> {
         }
         
         self.consume(TokenKind::Word)?;
-        self.consume(TokenKind::LBracket)?;
+        self.consume(TokenKind::LCurlyBracket)?;
         
         let alternative = self.parse_consequence()?;
 
@@ -594,7 +595,7 @@ impl<'a> LangParser<'a> {
             TokenKind::Number => {
                 // self.consume(TokenKind::Number)?;
                 self.advance();
-                self.consume(TokenKind::LBracket)?;
+                self.consume(TokenKind::LCurlyBracket)?;
 
 
                 let mut bracket_count = 1;
@@ -605,13 +606,13 @@ impl<'a> LangParser<'a> {
 
                     let node = self.parse_node()?;
                     nodes.push(node);
-                    if self.current_token()?.kind == TokenKind::LBracket {
+                    if self.current_token()?.kind == TokenKind::LCurlyBracket {
                         bracket_count += 1;
-                    } else if self.current_token()?.kind == TokenKind::RBracket {
+                    } else if self.current_token()?.kind == TokenKind::RCurlyBracket {
                         bracket_count -= 1;
                     }
                 }
-                self.consume(TokenKind::RBracket)?;
+                self.consume(TokenKind::RCurlyBracket)?;
 
                 Ok(Node::ForLoop {
                     variable: variable.value,
@@ -624,7 +625,7 @@ impl<'a> LangParser<'a> {
             }
             TokenKind::Word => {
                 self.consume(TokenKind::Word)?;
-                self.consume(TokenKind::LBracket)?;
+                self.consume(TokenKind::LCurlyBracket)?;
 
                 let mut bracket_count = 1;
 
@@ -634,13 +635,13 @@ impl<'a> LangParser<'a> {
 
                     let node = self.parse_node()?;
                     nodes.push(node);
-                    if self.current_token()?.kind == TokenKind::LBracket {
+                    if self.current_token()?.kind == TokenKind::LCurlyBracket {
                         bracket_count += 1;
-                    } else if self.current_token()?.kind == TokenKind::RBracket {
+                    } else if self.current_token()?.kind == TokenKind::RCurlyBracket {
                         bracket_count -= 1;
                     }
                 }
-                self.consume(TokenKind::RBracket)?;
+                self.consume(TokenKind::RCurlyBracket)?;
 
                 Ok(Node::ForLoop {
                     variable: variable.value,
@@ -663,12 +664,17 @@ impl<'a> LangParser<'a> {
         self.consume(TokenKind::LeftParenthesis)?;
         match self.current_token()?.kind {
             TokenKind::Word => {
+                
+                // TODO: This should be a more generic parse node
                 let n = self.parse_condition()?;
 
                 if self.current_token()?.kind == TokenKind::RightParenthesis {
                     self.advance();
                     return Ok(n);
                 }
+                println!("n is: {:?}", n);
+                // parse node needs to be able to return just x[i]
+                // todo!("implement more complex conditionals");
                 let operator = self.current_token()?;
                 self.advance();
                 let right = self.parse_condition()?;
@@ -720,7 +726,7 @@ impl<'a> LangParser<'a> {
 
         // TODO: ignoring return types for now :(
 
-        self.consume(TokenKind::LBracket)?;
+        self.consume(TokenKind::LCurlyBracket)?;
 
         let body = self.parse_body()?;
 
@@ -796,6 +802,7 @@ impl<'a> LangParser<'a> {
         let operator = self.current_token()?;
 
         self.advance();
+        println!("operator: {:?}", operator);
         
         let right = self.parse_node()?;
         // TODO: add support for the right side being a variable
@@ -829,11 +836,11 @@ impl<'a> LangParser<'a> {
 
     fn parse_consequence(&mut self) -> Result<Vec<Node>, String> {
         let mut nodes = Vec::new();
-        while self.current_token()?.kind != TokenKind::RBracket {
+        while self.current_token()?.kind != TokenKind::RCurlyBracket {
             nodes.push(self.parse_node()?);
         }
         
-        self.consume(TokenKind::RBracket)?;
+        self.consume(TokenKind::RCurlyBracket)?;
         Ok(nodes)
     }
     
@@ -870,11 +877,11 @@ impl<'a> LangParser<'a> {
 
     fn parse_body(&mut self) -> Result<Vec<Node>, String> {
         let mut nodes = Vec::new();
-        while self.current_token()?.kind != TokenKind::RBracket {
+        while self.current_token()?.kind != TokenKind::RCurlyBracket {
             nodes.push(self.parse_node()?);
         }
         
-        self.consume(TokenKind::RBracket)?;
+        self.consume(TokenKind::RCurlyBracket)?;
         Ok(nodes)
     }
 

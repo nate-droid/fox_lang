@@ -75,6 +75,8 @@ pub enum TokenKind {
     
     LBracket,
     RBracket,
+    LCurlyBracket,
+    RCurlyBracket,
     Range,
     Comma,
     Index,
@@ -136,6 +138,8 @@ impl std::fmt::Display for TokenKind {
             TokenKind::Equinumerosity => write!(f, "≈"),
             TokenKind::LBracket => write!(f, "LBracket"),
             TokenKind::RBracket => write!(f, "RBracket"),
+            TokenKind::LCurlyBracket => write!(f, "LCurlyBracket"),
+            TokenKind::RCurlyBracket => write!(f, "RCurlyBracket"),
             TokenKind::Comma => write!(f, ","),
             TokenKind::Range => write!(f, "Range"),
             TokenKind::IsEqual => write!(f, "=="),
