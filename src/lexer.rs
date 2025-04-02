@@ -176,7 +176,9 @@ impl TokenKind {
             | TokenKind::BitwiseAnd 
             | TokenKind::BitwiseXor 
             | TokenKind::ShiftLeft 
-            | TokenKind::ShiftRight)
+            | TokenKind::ShiftRight
+            | TokenKind::Or
+            | TokenKind::And)
     }
 
     pub fn is_unary_operator(&self) -> bool {

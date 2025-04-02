@@ -297,6 +297,7 @@ impl Node {
             Node::Call { name, arguments, .. } => {
                 Ok(Box::from(Node::Call { name: name.clone(), arguments: arguments.clone(), returns: vec![] }))
             }
+            Node::Ident { name, kind } => Ok(Box::from(Node::Ident { name: name.clone(), kind: kind.clone() })),
             _ => {
                 Err(format!("unexpected token {:?}", self)) 
             },

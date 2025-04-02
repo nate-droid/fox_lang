@@ -227,6 +227,12 @@ impl<'a> LangParser<'a> {
                         self.consume(TokenKind::Semicolon)?;
                         return Ok(Node::Return { value: Box::from(value) });
                     }
+                    "true" => {
+                        return Ok(Node::Atomic { value: Value::Bool(true) });
+                    }
+                    "false" => {
+                        return Ok(Node::Atomic { value: Value::Bool(false) });
+                    }
                     "bin" => {
                         // TODO: there needs to be a more generic parse expression available for nodes
                         self.consume(TokenKind::LeftParenthesis)?;
@@ -395,13 +401,7 @@ impl<'a> LangParser<'a> {
                         Ok(Node::Ident { name: name.value, kind: "var".to_string() })
                     }
                     _ => {
-                        Ok(Node::AssignStmt {
-                            left: Box::from(Node::Ident { name: name.value, kind: "var".to_string() }),
-                            right: Box::from(Node::Atomic {
-                                value: Value::Int(0),
-                            }),
-                            kind: "Nat".to_string(),
-                        })
+                        Ok(Node::Ident { name: name.value, kind: "var".to_string() })
                     }
                 }
             }
@@ -471,6 +471,7 @@ impl<'a> LangParser<'a> {
     fn parse_if(&mut self) -> Result<Node, String> {
         
         let condition = self.parse_condition_header()?;
+        println!("condition: {:?}", condition);
         self.consume(TokenKind::LCurlyBracket)?;
 
         // parse consequence
@@ -664,20 +665,56 @@ impl<'a> LangParser<'a> {
         self.consume(TokenKind::LeftParenthesis)?;
         match self.current_token()?.kind {
             TokenKind::Word => {
+                let n = self.parse_node()?;
                 
-                // TODO: This should be a more generic parse node
-                let n = self.parse_condition()?;
-
                 if self.current_token()?.kind == TokenKind::RightParenthesis {
                     self.advance();
                     return Ok(n);
                 }
-                println!("n is: {:?}", n);
-                // parse node needs to be able to return just x[i]
-                // todo!("implement more complex conditionals");
+                
                 let operator = self.current_token()?;
                 self.advance();
-                let right = self.parse_condition()?;
+                
+                let right = self.parse_node()?;
+                
+                // todo: check if the current token is a binary operator
+                if self.current_token()?.kind.is_binary_operator() {
+                    let op = self.current_token()?;
+                    self.advance();
+                    let right_left = self.parse_node()?;
+
+                    if self.current_token()?.kind != TokenKind::RightParenthesis {
+                        let op_right = self.current_token()?;
+                        self.advance();
+                        // more expressions to parse
+                        let right_right = self.parse_node()?;
+                        self.consume(TokenKind::RightParenthesis)?;
+                        return Ok(Node::BinaryExpression {
+                            left: Box::from(Node::BinaryExpression {
+                                left: Box::from(n),
+                                operator: operator.kind,
+                                right: Box::from(right),
+                            }),
+                            operator: op.kind,
+                            right: Box::from(Node::BinaryExpression {
+                                left: Box::from(right_left),
+                                operator: op_right.kind,
+                                right: Box::from(right_right),
+                            }),
+                        });
+                    }
+                    
+                    return Ok(Node::BinaryExpression {
+                        left: Box::from(Node::BinaryExpression {
+                            left: Box::from(n),
+                            operator: operator.kind,
+                            right: Box::from(right),
+                        }),
+                        operator: op.kind,
+                        right: Box::from(right_left),
+                    });
+                }
+                self.consume(TokenKind::RightParenthesis)?;
                 
                 Ok(Node::BinaryExpression {
                     left: Box::from(n),
@@ -703,6 +740,18 @@ impl<'a> LangParser<'a> {
             }
             _ => {
                 Err(format!("invalid conditional: {:?}", self.current_token()?))
+            }
+        }
+    }
+    
+    // parse_expression will parse any potential expressions
+    // example x will return a unary expression node
+    // example x + 1 will return a BinaryExpression node
+    // example: x == 1 will return a BinaryExpression node
+    fn parse_expression(&mut self) -> Result<Node, String> {
+        match self.current_token()?.kind {
+            _ => {
+                Err("not yet implemented".to_string())
             }
         }
     }

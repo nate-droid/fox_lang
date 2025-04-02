@@ -277,14 +277,14 @@ fn iterate_string() {
 fn string_split() {
     let input = "let x = \"hello world this is a long string\";\
     let l = len(x);
-    // for i in 0..l {
-    //     let space = \" \";
-    //     if (x[i] == space) {
-    //         print(\" empty space! \");
-    //     } else {
-    //         print(x[i]);
-    //     }
-    // }
+    for i in 0..l {
+        let space = \" \";
+        if (x[i] == space) {
+            print(\" empty space! \");
+        } else {
+            print(x[i]);
+        }
+    }
     ";
     let mut ast = LangParser::new(input);
     let mut ast = ast.parse().expect("unexpected failure");

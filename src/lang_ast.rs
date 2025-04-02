@@ -379,6 +379,7 @@ impl Ast {
     ) -> Result<Node, String> {
         match operator {
             TokenKind::Add => {
+                // TODO: fix this. it is ugly
                 if let Node::AssignStmt {
                     right: _left_val,
                     left: _name,
@@ -386,7 +387,10 @@ impl Ast {
                 } = left.clone()
                 {
                     left = self.replace_var(left)?;
+                } else if let Ident { name, kind } = left.clone() {
+                    left = self.replace_var(left)?;
                 }
+                
                 if let Node::AssignStmt {
                     right: _right_val,
                     left: _name,
@@ -394,8 +398,10 @@ impl Ast {
                 } = right.clone()
                 {
                     right = self.replace_var(right)?;
+                } else if let Ident { name, kind } = right.clone() {
+                    right = self.replace_var(right)?;
                 }
-
+                
                 if let Atomic { value: left_val } = left {
                     if let Atomic { value: right_val } = right {
                         return match (left_val, right_val) {
@@ -406,6 +412,7 @@ impl Ast {
                         };
                     }
                 }
+                return Err("Invalid type".to_string())
             }
             TokenKind::Subtract => {
                 if let Node::AssignStmt {
@@ -749,7 +756,7 @@ impl Ast {
             "print" => {
                 // check if the first argument is an Object
                 let temp2 = *arguments[0].left()?;
-                
+
                 match temp2 {
                     Node::Call { name, arguments, returns } => {
                         let x = self.eval_call(name, arguments)?;
@@ -767,7 +774,7 @@ impl Ast {
                         } else {
                             println!("{:?}", x);
                         }
-                        
+
                         return Ok(EmptyNode)
                     }
                     _ => {}
@@ -782,7 +789,7 @@ impl Ast {
             "len" => {
                 let name = fetch_string(arguments[0].clone())?;
                 let n = self.declarations.get(&name).expect("missing declaration").clone();
-                
+
                 return match n.node_type() {
                     "Array" => {
                         let elements = fetch_array(n.clone())?;
@@ -1064,10 +1071,10 @@ impl Ast {
                     
                     return Ok(last);
                 }
-                
+
                 if let Node::AssignStmt { left, .. } = *left {
                     if let Ident { name, .. } = *left {
-                        let string_node = self.declarations.get(&name).expect("missing x").clone(); 
+                        let string_node = self.declarations.get(&name).expect("missing x").clone();
                         match string_node.node_type() {
                             "Array" => {
                                 let array = fetch_array(string_node)?;
@@ -1107,14 +1114,14 @@ impl Ast {
     fn parse_for(&mut self, variable: String, range: (Box<Node>, Box<Node>), body: Vec<Node>) -> Result<(), String> {
         let start_node = self.replace_var(*range.0)?;
         let end_node = self.replace_var(*range.1)?;
-        
+
         let start = fetch_integer(start_node)?;
         let replaced_end = self.replace_var(end_node)?;
         println!("start node: {:?}", start);
         println!("end node: {:?}", replaced_end);
         let end = fetch_integer(replaced_end)?;
-        
-        
+
+
         self.upsert_declaration(Node::AssignStmt {
             left: Box::new(Node::Ident {
                 name: variable.clone(),
@@ -1297,7 +1304,7 @@ mod tests {
         ast.eval().expect("unexpected failure");
         println!("{:?}", ast);
     }
-    
+
     #[test]
     fn ignore_comment() {
         let input = "let x = 1; \
