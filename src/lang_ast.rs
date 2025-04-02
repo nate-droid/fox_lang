@@ -962,14 +962,26 @@ impl Ast {
                                 }
                             }
                     }
-                    TokenKind::LessThan => {
+                    TokenKind::LessThan | TokenKind::GreaterThan => {
                         let replaced_left = self.replace_var(*left.clone())?;
+                        
+                        let mut ordering = std::cmp::Ordering::Greater;
+                        match operator {
+                            TokenKind::LessThan => {
+                                ordering = std::cmp::Ordering::Less;
+                            }
+                            TokenKind::GreaterThan => {
+                                ordering = std::cmp::Ordering::Greater;
+                            }
+                            _ => {}
+                        }
+                        
                         match replaced_left.val() {
                             Value::Int(i) => {
                                 match right.val() {
                                     Value::Int(ii) => {
                                         match i.cmp(&ii) {
-                                            std::cmp::Ordering::Less => {
+                                            _ordering => {
                                                 for node in consequence.clone() {
                                                     let res = self.eval_node(node)?;
                                                     self.upsert_declaration(res)?
@@ -995,40 +1007,6 @@ impl Ast {
                             }
                         }
                         
-                    }
-                    TokenKind::GreaterThan => {
-                        let replaced_left = self.replace_var(*left.clone())?;
-                        
-                        match replaced_left.val() {
-                            Value::Int(i) => {
-                                match right.val() {
-                                    Value::Int(ii) => {
-                                        match i.cmp(&ii) {
-                                            std::cmp::Ordering::Greater => {
-                                                for node in consequence.clone() {
-                                                    let res = self.eval_node(node)?;
-                                                    self.upsert_declaration(res)?
-                                                }
-                                            }
-                                            _ => {
-                                                for node in alternative.clone() {
-                                                    let res = self.eval_node(node)?;
-                                                    self.upsert_declaration(res)?
-                                                }
-                                            }
-                                        }
-                                    }
-                                    _ => {
-                                        println!("right: {:?}", right);
-                                        return Err("Invalid types".to_string());
-                                    }
-                                }
-                            }
-                            _ => {
-                                println!("left: {:?}", left);
-                                return Err("Invalid types".to_string());
-                            }
-                        }
                     }
                     _ => {
                         println!("operator: {:?}", operator);
@@ -1297,17 +1275,8 @@ mod tests {
     }
 
     #[test]
-    fn custom_types() {
-        let input = "type nat;";
-        let mut ast = Ast::new();
-        ast.parse(input).expect("unexpected failure");
-        ast.eval().expect("unexpected failure");
-        println!("{:?}", ast);
-    }
-
-    #[test]
     fn ignore_comment() {
-        let input = "let x = 1; \
+        let input = "let x = 1;
         // this is a comment
         print(x);
         ";

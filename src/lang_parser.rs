@@ -56,6 +56,7 @@ impl<'a> LangParser<'a> {
                             continue;
                         }
                         "type" => {
+                            panic!();
                             self.consume(TokenKind::Word)?;
                             let type_name = self.current_token()?;
                             self.consume(TokenKind::Word)?;
@@ -216,13 +217,13 @@ impl<'a> LangParser<'a> {
             }
         }
     }
-    
+
     fn parse_number(&mut self) -> Result<Node, String> {
         let val = Value::from_string(self.current_token()?.value);
         self.advance();
         Ok(Node::Atomic { value: val })
     }
-    
+
     fn parse_word(&mut self) -> Result<Node, String> {
         let name = self.current_token()?;
         self.advance();
@@ -253,7 +254,7 @@ impl<'a> LangParser<'a> {
             "bin" => {
                 self.consume(TokenKind::LeftParenthesis)?;
                 let value = self.parse_node()?;
-                
+
                 self.consume(TokenKind::RightParenthesis)?;
 
                 if self.current_token()?.kind.is_binary_operator()  {
@@ -374,7 +375,7 @@ impl<'a> LangParser<'a> {
             }
         }
     }
-    
+
     fn parse_left_parenthesis(&mut self) -> Result<Node, String> {
         // at the moment, the language expects this to be an expression. This might need to be rethought as the language grows
         let mut expression: String = "(".to_string();
@@ -386,7 +387,7 @@ impl<'a> LangParser<'a> {
 
         Ok(Node::MMExpression { expression })
     }
-    
+
     fn parse_identifier(&mut self) -> Result<Node, String> {
         let name = self.current_token()?;
         self.advance();
@@ -398,7 +399,7 @@ impl<'a> LangParser<'a> {
             kind: "Nat".to_string(),
         })
     }
-    
+
     fn parse_left_bracket(&mut self) -> Result<Node, String> {
         // parse array
         self.consume(TokenKind::LBracket)?;
@@ -415,19 +416,19 @@ impl<'a> LangParser<'a> {
 
         Ok(Node::Array { elements: nodes })
     }
-    
+
     fn parse_string(&mut self) -> Result<Node, String> {
         let val = Value::Str(self.current_token()?.value.clone());
         self.advance();
         Ok(Node::Atomic { value: val })
     }
-    
+
     fn parse_negation(&mut self) -> Result<Node, String> {
         self.consume(TokenKind::Negation)?;
         let node = self.parse_node()?;
         Ok(Node::UnaryExpression { operator: TokenKind::Negation, right: Box::from(node) })
     }
-    
+
     fn parse_less_than(&mut self) -> Result<Node, String> {
         // parsing a new Hashmap
         self.consume(TokenKind::LessThan)?;
@@ -435,7 +436,7 @@ impl<'a> LangParser<'a> {
         // TODO: there is currently only support for empty initialization
         Ok(Node::HMap { values: Default::default() })
     }
-    
+
     fn parse_if(&mut self) -> Result<Node, String> {
         
         let condition = self.parse_condition_header()?;
@@ -976,14 +977,6 @@ mod tests {
 
         let mut parser = LangParser::new(input);
 
-        let ast = parser.parse().expect("TODO: panic message");
-        println!("{:?}", ast);
-    }
-
-    #[test]
-    fn custom_types() {
-        let input = "type nat;";
-        let mut parser = LangParser::new(input);
         let ast = parser.parse().expect("TODO: panic message");
         println!("{:?}", ast);
     }
