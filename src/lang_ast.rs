@@ -3,7 +3,6 @@ use crate::lexer::{TokenKind};
 use crate::parser::Node::{Atomic, Break, EmptyNode, Ident};
 use crate::parser::{compare_value, Node, Value};
 use std::collections::HashMap;
-use std::fmt::Arguments;
 use crate::internal_types::{fetch_array, fetch_hash_map, fetch_integer, fetch_string};
 
 #[derive(Debug)]
@@ -20,14 +19,14 @@ impl Default for Ast {
 
 fn print_with_indent(node: Node, indent: usize) {
     match node {
-        Node::AssignStmt { left, right, kind } => {
+        Node::AssignStmt { left, right, .. } => {
             // println!("{:indent$}{:?} = {:?};", "", left, right, indent=indent);
             // left
             print_with_indent(*left.clone(), indent +2);
             // right
             print_with_indent(*right.clone(), indent +2);
         }
-        Node::Ident { name, kind } => {
+        Ident { name, .. } => {
             print_with_indent(Node::Identifier { value: name }, indent +2);
         }
         _ => {
@@ -57,7 +56,7 @@ impl Ast {
                     Node::Identifier { value: _name } => {
                         self.declarations.insert(_name, *right);
                     }
-                    Ident { name, kind } => {
+                    Ident { name, .. } => {
                         self.declarations.insert(name, *right);
                     }
                     Node::IndexExpression { left: left2, index } => {
@@ -89,7 +88,7 @@ impl Ast {
                     body,
                 });
             }
-            Node::Atomic { value } => {}
+            Atomic { .. } => {}
             EmptyNode => {}
             Node::HMap { values } => {
                 self.declarations.insert(String::from(""), Node::HMap { values });
@@ -137,7 +136,7 @@ impl Ast {
                 return Ok(res);
             }
             Node::Identifier { value: _value, .. } => {
-                ("Identifiers");
+                "Identifiers";
             }
             Node::AssignStmt {
                 left,
@@ -161,7 +160,7 @@ impl Ast {
                 }
 
                 let mut res = EmptyNode;
-                if let Node::Call { name, arguments, returns } = *right.clone() {
+                if let Node::Call { name, arguments, .. } = *right.clone() {
                     res = self.eval_call(name, arguments)?;
                 } else {
                     let replaced = self.replace_var(*right.clone())?;
@@ -224,7 +223,7 @@ impl Ast {
 
                 // ensure that "y" is an array
                 return match y.clone() {
-                    Node::AssignStmt { left, right, kind } => {
+                    Node::AssignStmt { left, .. } => {
                         let name = fetch_string(*left.clone())?;
                         
                         // fetch the name from the declarations
@@ -272,7 +271,7 @@ impl Ast {
                 // TODO: only supports empty initialization
                 return Ok(Node::HMap { values: Default::default() });
             }
-            Node::MethodCall { name, target, arguments, returns } => {
+            Node::MethodCall { name, target, arguments, .. } => {
                 let res = self.eval_method_call(name, target, arguments)?;
                 if let EmptyNode{} = res {
                     return Ok(EmptyNode);
@@ -317,7 +316,7 @@ impl Ast {
             Node::IndexExpression { left, index } => {
                 return self.replace_var_assign(*left, index);
             }
-            Ident { name, kind } => {
+            Ident { name, .. } => {
                 let res = self
                     .declarations
                     .get(&name)
@@ -334,7 +333,7 @@ impl Ast {
 
     fn replace_var_assign(&mut self, node: Node, index: Box<Node>) -> Result<Node, String> {
         match node.clone() {
-            Node::AssignStmt { left, right, kind } => {
+            Node::AssignStmt { left, .. } => {
                 let name = fetch_string(*left.clone())?;
 
                 // fetch the name from the declarations
@@ -348,7 +347,7 @@ impl Ast {
                     value: result[i].val(),
                 })
             }
-            Node::IndexExpression {left, index} => {
+            Node::IndexExpression {index, .. } => {
                 let name = fetch_string(node)?;
                 
                 let array = self.declarations.get(&name).expect("var not found").clone();
@@ -387,7 +386,7 @@ impl Ast {
                 } = left.clone()
                 {
                     left = self.replace_var(left)?;
-                } else if let Ident { name, kind } = left.clone() {
+                } else if let Ident { .. } = left.clone() {
                     left = self.replace_var(left)?;
                 }
                 
@@ -398,7 +397,7 @@ impl Ast {
                 } = right.clone()
                 {
                     right = self.replace_var(right)?;
-                } else if let Ident { name, kind } = right.clone() {
+                } else if let Ident { .. } = right.clone() {
                     right = self.replace_var(right)?;
                 }
                 
@@ -758,7 +757,7 @@ impl Ast {
                 let temp2 = *arguments[0].left()?;
 
                 match temp2 {
-                    Node::Call { name, arguments, returns } => {
+                    Node::Call { name, arguments, .. } => {
                         let x = self.eval_call(name, arguments)?;
                         println!("{:?}", x.val());
                         return Ok(EmptyNode)
@@ -839,7 +838,7 @@ impl Ast {
                 elements.insert(arguments[0].clone(), arguments[1].clone());
                 
                 let ident = Node::AssignStmt {
-                    left: Box::new(Node::Ident { name: target, kind: "var".to_string() }),
+                    left: Box::new(Ident { name: target, kind: "var".to_string() }),
                     right: Box::from(Node::HMap { values: elements }),
                     kind: "var".to_string(),
                 };
@@ -862,10 +861,10 @@ impl Ast {
     fn eval_function(&mut self, node: Node, arguments: Vec<Node>) -> Result<Node, String> {
         // make sure that the node is a function
         if let Node::FunctionDecl {
-                name,
-                arguments: args,
-                returns,
-                body} = node
+            name: _name, 
+            arguments: args,
+            returns: _returns,
+            body} = node
         {
             let mut ret = EmptyNode;
             for i in 0..args.len() {
@@ -910,7 +909,6 @@ impl Ast {
                 operator,
                 right,
             } => {
-
                 match operator {
                     TokenKind::IsEqual => {
                         // TODO: This is using left.left and right.left which is an oopsie
@@ -980,19 +978,10 @@ impl Ast {
                             Value::Int(i) => {
                                 match right.val() {
                                     Value::Int(ii) => {
-                                        match i.cmp(&ii) {
-                                            _ordering => {
-                                                for node in consequence.clone() {
-                                                    let res = self.eval_node(node)?;
-                                                    self.upsert_declaration(res)?
-                                                }
-                                            }
-                                            _ => {
-                                                for node in alternative.clone() {
-                                                    let res = self.eval_node(node)?;
-                                                    self.upsert_declaration(res)?
-                                                }
-                                            }
+                                        let _ordering = i.cmp(&ii);
+                                        for node in consequence.clone() {
+                                            let res = self.eval_node(node)?;
+                                            self.upsert_declaration(res)?
                                         }
                                     }
                                     _ => {
@@ -1053,12 +1042,12 @@ impl Ast {
                 if let Node::AssignStmt { left, .. } = *left {
                     if let Ident { name, .. } = *left {
                         let string_node = self.declarations.get(&name).expect("missing x").clone();
-                        match string_node.node_type() {
+                        return match string_node.node_type() {
                             "Array" => {
                                 let array = fetch_array(string_node)?;
                                 let index = fetch_integer(*sub_index)?;
                                 let v = array[index as usize].clone();
-                                return Ok(v);
+                                Ok(v)
                             }
                             "Atomic" => {
                                 let replaced = self.replace_var(Ident { name, kind: "".to_string() })?;
@@ -1067,11 +1056,11 @@ impl Ast {
                                 let index = fetch_integer(replaced_index)?;
                                 let v = s.as_bytes()[index as usize] as char;
 
-                                return Ok(Atomic { value: Value::Str(v.to_string()) });
+                                Ok(Atomic { value: Value::Str(v.to_string()) })
                             }
                             _ => {
                                 println!("kind: {:?}", string_node.node_type());
-                                return Err("Invalid type".to_string());
+                                Err("Invalid type".to_string())
                             }
                         }
                     }
@@ -1101,12 +1090,12 @@ impl Ast {
 
 
         self.upsert_declaration(Node::AssignStmt {
-            left: Box::new(Node::Ident {
+            left: Box::new(Ident {
                 name: variable.clone(),
                 kind: "var".to_string(),
             }),
             right: Box::new(Atomic {
-                value: Value::Int(start.clone()),
+                value: Value::Int(start),
             }),
             kind: "Nat".to_string(),
         })?;
@@ -1131,7 +1120,7 @@ impl Ast {
             i += 1;
 
             self.upsert_declaration(Node::AssignStmt {
-                left: Box::new(Node::Ident {
+                left: Box::new(Ident {
                     name: variable.clone(),
                     kind: "var".to_string(),
                 }),
@@ -1166,7 +1155,7 @@ mod tests {
     fn test_var() {
         let mut ast = Ast::new();
         ast.add_node(Node::AssignStmt {
-            left: Box::new(Node::Ident {
+            left: Box::new(Ident {
                 name: "x".to_string(),
                 kind: "var".to_string(),
             }),
