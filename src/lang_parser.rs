@@ -3,7 +3,7 @@ use crate::lang_ast::Ast;
 use crate::lang_lexer::LangLexer;
 use crate::lexer::TokenKind::{And, Comma};
 use crate::lexer::{Token, TokenKind};
-use crate::parser::{Node, Value};
+use crate::parser::{Node};
 
 pub struct LangParser<'a> {
     lexer: LangLexer<'a>,
@@ -98,7 +98,7 @@ impl<'a> LangParser<'a> {
 
                             self.consume(TokenKind::RightParenthesis)?;
 
-                            ast.add_node(Node::Atomic { value: Value::Bin(bin) });
+                            ast.add_node(Node::Atomic { value: ast::ast::Value::Bin(bin) });
                             continue;
                         }
                         _ => {
@@ -219,7 +219,7 @@ impl<'a> LangParser<'a> {
     }
 
     fn parse_number(&mut self) -> Result<Node, String> {
-        let val = Value::from_string(self.current_token()?.value);
+        let val = ast::ast::Value::from_string(self.current_token()?.value);
         self.advance();
         Ok(Node::Atomic { value: val })
     }
@@ -246,10 +246,10 @@ impl<'a> LangParser<'a> {
                 return Ok(Node::Return { value: Box::from(value) });
             }
             "true" => {
-                return Ok(Node::Atomic { value: Value::Bool(true) });
+                return Ok(Node::Atomic { value: ast::ast::Value::Bool(true) });
             }
             "false" => {
-                return Ok(Node::Atomic { value: Value::Bool(false) });
+                return Ok(Node::Atomic { value: ast::ast::Value::Bool(false) });
             }
             "bin" => {
                 self.consume(TokenKind::LeftParenthesis)?;
@@ -269,7 +269,7 @@ impl<'a> LangParser<'a> {
                     });
                 }
                 let integer = fetch_integer(value)?;
-                return Ok(Node::Atomic { value: Value::Bin(integer as u32) });
+                return Ok(Node::Atomic { value: ast::ast::Value::Bin(integer as u32) });
             }
             _ => {}
         }
@@ -321,7 +321,7 @@ impl<'a> LangParser<'a> {
                     left: Box::from(Node::AssignStmt {
                         left: Box::from(Node::Ident { name: name.value, kind: "var".to_string() }),
                         right: Box::from(Node::Atomic {
-                            value: Value::Int(0),
+                            value: ast::ast::Value::Int(0),
                         }),
                         kind: "Nat".to_string(),
                     }),
@@ -360,7 +360,7 @@ impl<'a> LangParser<'a> {
                     left: Box::from(Node::AssignStmt {
                         left: Box::from(Node::Ident { name: name.value, kind: "var".to_string() }),
                         right: Box::from(Node::Atomic {
-                            value: Value::Int(0),
+                            value: ast::ast::Value::Int(0),
                         }),
                         kind: "Nat".to_string(),
                     }),
@@ -394,7 +394,7 @@ impl<'a> LangParser<'a> {
         Ok(Node::AssignStmt {
             left: Box::from(Node::Ident { name: name.value, kind: "var".to_string() }),
             right: Box::from(Node::Atomic {
-                value: Value::Int(0),
+                value: ast::ast::Value::Int(0),
             }),
             kind: "Nat".to_string(),
         })
@@ -418,7 +418,7 @@ impl<'a> LangParser<'a> {
     }
 
     fn parse_string(&mut self) -> Result<Node, String> {
-        let val = Value::Str(self.current_token()?.value.clone());
+        let val = ast::ast::Value::Str(self.current_token()?.value.clone());
         self.advance();
         Ok(Node::Atomic { value: val })
     }
@@ -587,8 +587,8 @@ impl<'a> LangParser<'a> {
                 Ok(Node::ForLoop {
                     variable: variable.value,
                     range: (
-                        Box::from(Node::Atomic { value: Value::Int(start.value.parse::<i32>().unwrap()) }),
-                        Box::from(Node::Atomic { value: Value::Int(end.value.parse::<i32>().unwrap()) }),
+                        Box::from(Node::Atomic { value: ast::ast::Value::Int(start.value.parse::<i32>().unwrap()) }),
+                        Box::from(Node::Atomic { value: ast::ast::Value::Int(end.value.parse::<i32>().unwrap()) }),
                     ),
                     body: nodes,
                 })
@@ -616,7 +616,7 @@ impl<'a> LangParser<'a> {
                 Ok(Node::ForLoop {
                     variable: variable.value,
                     range: (
-                        Box::from(Node::Atomic { value: Value::Int(start.value.parse::<i32>().unwrap()) }),
+                        Box::from(Node::Atomic { value: ast::ast::Value::Int(start.value.parse::<i32>().unwrap()) }),
                         Box::from(Node::Ident { name: end.value, kind: "var".to_string() }),
                     ),
                     body: nodes,
@@ -700,7 +700,7 @@ impl<'a> LangParser<'a> {
                 
                 let node = Node::BinaryExpression {
                     left: Box::from(Node::Atomic {
-                        value: Value::Int(left.value.parse::<i32>().unwrap()),
+                        value: ast::ast::Value::Int(left.value.parse::<i32>().unwrap()),
                     }),
                     operator: operator.kind,
                     right: Box::from(right),
@@ -784,12 +784,12 @@ impl<'a> LangParser<'a> {
         if left.value == "true" {
             self.advance();
             return Ok(Node::Atomic {
-                value: Value::Bool(true),
+                value: ast::ast::Value::Bool(true),
             });
         } else if left.value == "false" {
             self.advance();
             return Ok(Node::Atomic {
-                value: Value::Bool(false),
+                value: ast::ast::Value::Bool(false),
             });
         }
         
@@ -800,7 +800,7 @@ impl<'a> LangParser<'a> {
             if self.current_token()?.kind != TokenKind::Number {
                 self.consume(TokenKind::RightParenthesis)?;
                 return Ok(Node::Atomic {
-                    value: Value::Int(val.parse().unwrap()),
+                    value: ast::ast::Value::Int(val.parse().unwrap()),
                 });
             }
 
@@ -810,7 +810,7 @@ impl<'a> LangParser<'a> {
             return Ok(Node::AssignStmt {
                 left: Box::from(Node::Ident { name: left.value, kind: "var".to_string() }),
                 right: Box::from(Node::Atomic {
-                    value: Value::Int(0),
+                    value: ast::ast::Value::Int(0),
                 }),
                 kind: "Nat".to_string(),
             });
@@ -828,7 +828,7 @@ impl<'a> LangParser<'a> {
             left: Box::from(Node::AssignStmt {
                 left: Box::from(Node::Ident { name: left.value, kind: "var".to_string() }),
                 right: Box::from(Node::Atomic {
-                    value: Value::Int(0),
+                    value: ast::ast::Value::Int(0),
                 }),
                 kind: "Nat".to_string(),
             }),

@@ -1,7 +1,7 @@
 use crate::cut::Axiom;
 use crate::lexer::{TokenKind};
 use crate::parser::Node::{Atomic, Break, EmptyNode, Ident};
-use crate::parser::{compare_value, Node, Value};
+use crate::parser::{ Node};
 use std::collections::HashMap;
 use crate::internal_types::{fetch_array, fetch_hash_map, fetch_integer, fetch_string};
 
@@ -404,8 +404,8 @@ impl Ast {
                 if let Atomic { value: left_val } = left {
                     if let Atomic { value: right_val } = right {
                         return match (left_val, right_val) {
-                            (Value::Int(left), Value::Int(right)) => Ok(Atomic {
-                                value: Value::Int(left + right),
+                            (ast::ast::Value::Int(left), ast::ast::Value::Int(right)) => Ok(Atomic {
+                                value: ast::ast::Value::Int(left + right),
                             }),
                             _ => Err("Invalid types".to_string()),
                         };
@@ -434,8 +434,8 @@ impl Ast {
                 if let Atomic { value: left_val } = left {
                     if let Atomic { value: right_val } = right {
                         return match (left_val, right_val) {
-                            (Value::Int(left), Value::Int(right)) => Ok(Atomic {
-                                value: Value::Int(left - right),
+                            (ast::ast::Value::Int(left), ast::ast::Value::Int(right)) => Ok(Atomic {
+                                value: ast::ast::Value::Int(left - right),
                             }),
                             _ => Err("Invalid types".to_string()),
                         };
@@ -463,8 +463,8 @@ impl Ast {
                 if let Atomic { value: left_val } = left {
                     if let Atomic { value: right_val } = right {
                         return match (left_val, right_val) {
-                            (Value::Int(left), Value::Int(right)) => Ok(Atomic {
-                                value: Value::Int(left * right),
+                            (ast::ast::Value::Int(left), ast::ast::Value::Int(right)) => Ok(Atomic {
+                                value: ast::ast::Value::Int(left * right),
                             }),
                             _ => Err("Invalid types".to_string()),
                         };
@@ -492,8 +492,8 @@ impl Ast {
                 if let Atomic { value: left_val } = left {
                     if let Atomic { value: right_val } = right {
                         return match (left_val, right_val) {
-                            (Value::Int(left), Value::Int(right)) => Ok(Atomic {
-                                value: Value::Int(left / right),
+                            (ast::ast::Value::Int(left), ast::ast::Value::Int(right)) => Ok(Atomic {
+                                value: ast::ast::Value::Int(left / right),
                             }),
                             _ => Err("Invalid types".to_string()),
                         };
@@ -521,8 +521,8 @@ impl Ast {
                 if let Atomic { value: left_val } = left {
                     if let Atomic { value: right_val } = right {
                         return match (left_val, right_val) {
-                            (Value::Int(left), Value::Int(right)) => Ok(Atomic {
-                                value: Value::Int(left % right),
+                            (ast::ast::Value::Int(left), ast::ast::Value::Int(right)) => Ok(Atomic {
+                                value: ast::ast::Value::Int(left % right),
                             }),
                             _ => Err("Invalid types".to_string()),
                         };
@@ -548,14 +548,14 @@ impl Ast {
                 if let Atomic { value: left_val } = left {
                     if let Atomic { value: right_val } = right {
                         return match (left_val.clone(), right_val.clone()) {
-                            (Value::Bin(left), Value::Bin(right)) => Ok(Atomic {
-                                value: Value::Bin(left & right),
+                            (ast::ast::Value::Bin(left), ast::ast::Value::Bin(right)) => Ok(Atomic {
+                                value: ast::ast::Value::Bin(left & right),
                             }),
-                            (Value::Int(left), Value::Bin(right)) => Ok(Atomic {
-                                value: Value::Bin(left as u32 & right),
+                            (ast::ast::Value::Int(left), ast::ast::Value::Bin(right)) => Ok(Atomic {
+                                value: ast::ast::Value::Bin(left as u32 & right),
                             }),
-                            (Value::Int(left), Value::Int(right)) => Ok(Atomic {
-                                value: Value::Bin(left as u32 & right as u32),
+                            (ast::ast::Value::Int(left), ast::ast::Value::Int(right)) => Ok(Atomic {
+                                value: ast::ast::Value::Bin(left as u32 & right as u32),
                             }),
                             _ => {
                                 println!("left_val: {:?}", left_val);
@@ -585,14 +585,14 @@ impl Ast {
                 if let Atomic { value: left_val } = left {
                     if let Atomic { value: right_val } = right {
                         return match (left_val, right_val) {
-                            (Value::Bin(left), Value::Bin(right)) => Ok(Atomic {
-                                value: Value::Bin(left | right),
+                            (ast::ast::Value::Bin(left), ast::ast::Value::Bin(right)) => Ok(Atomic {
+                                value: ast::ast::Value::Bin(left | right),
                             }),
-                            (Value::Int(left), Value::Bin(right)) => Ok(Atomic {
-                                value: Value::Bin(left as u32 | right),
+                            (ast::ast::Value::Int(left), ast::ast::Value::Bin(right)) => Ok(Atomic {
+                                value: ast::ast::Value::Bin(left as u32 | right),
                             }),
-                            (Value::Int(left), Value::Int(right)) => Ok(Atomic {
-                                value: Value::Bin(left as u32 | right as u32),
+                            (ast::ast::Value::Int(left), ast::ast::Value::Int(right)) => Ok(Atomic {
+                                value: ast::ast::Value::Bin(left as u32 | right as u32),
                             }),
                             _ => Err("Invalid types".to_string()),
                         };
@@ -618,14 +618,14 @@ impl Ast {
                 if let Atomic { value: left_val } = left {
                     if let Atomic { value: right_val } = right {
                         return match (left_val, right_val) {
-                            (Value::Bin(left), Value::Bin(right)) => Ok(Atomic {
-                                value: Value::Bin(left ^ right),
+                            (ast::ast::Value::Bin(left), ast::ast::Value::Bin(right)) => Ok(Atomic {
+                                value: ast::ast::Value::Bin(left ^ right),
                             }),
-                            (Value::Int(left), Value::Bin(right)) => Ok(Atomic {
-                                value: Value::Bin(left as u32 ^ right),
+                            (ast::ast::Value::Int(left), ast::ast::Value::Bin(right)) => Ok(Atomic {
+                                value: ast::ast::Value::Bin(left as u32 ^ right),
                             }),
-                            (Value::Int(left), Value::Int(right)) => Ok(Atomic {
-                                value: Value::Bin(left as u32 ^ right as u32),
+                            (ast::ast::Value::Int(left), ast::ast::Value::Int(right)) => Ok(Atomic {
+                                value: ast::ast::Value::Bin(left as u32 ^ right as u32),
                             }),
                             _ => Err("Invalid types".to_string()),
                         };
@@ -653,14 +653,14 @@ impl Ast {
                 if let Atomic { value: left_val } = left {
                     if let Atomic { value: right_val } = right {
                         return match (left_val.clone(), right_val.clone()) {
-                            (Value::Bin(left), Value::Int(right)) => Ok(Atomic {
-                                value: Value::Bin(left << right),
+                            (ast::ast::Value::Bin(left), ast::ast::Value::Int(right)) => Ok(Atomic {
+                                value: ast::ast::Value::Bin(left << right),
                             }),
-                            (Value::Int(left), Value::Bin(right)) => Ok(Atomic {
-                                value: Value::Bin(left as u32 & right),
+                            (ast::ast::Value::Int(left), ast::ast::Value::Bin(right)) => Ok(Atomic {
+                                value: ast::ast::Value::Bin(left as u32 & right),
                             }),
-                            (Value::Int(left), Value::Int(right)) => Ok(Atomic {
-                                value: Value::Bin((left << right) as u32),
+                            (ast::ast::Value::Int(left), ast::ast::Value::Int(right)) => Ok(Atomic {
+                                value: ast::ast::Value::Bin((left << right) as u32),
                             }),
                             _ => {
                                 println!("left_val: {:?}", left_val);
@@ -692,8 +692,8 @@ impl Ast {
                 if let Atomic { value: left_val } = left {
                     if let Atomic { value: right_val } = right {
                         return match (left_val, right_val) {
-                            (Value::Bin(left), Value::Int(right)) => Ok(Atomic {
-                                value: Value::Bin(left >> right),
+                            (ast::ast::Value::Bin(left), ast::ast::Value::Int(right)) => Ok(Atomic {
+                                value: ast::ast::Value::Bin(left >> right),
                             }),
                             _ => Err("Invalid types".to_string()),
                         };
@@ -724,8 +724,8 @@ impl Ast {
 
                 if let Atomic { value: right_val } = right {
                     return match right_val {
-                        Value::Bin(right) => Ok(Atomic {
-                            value: Value::Bin(!right),
+                        ast::ast::Value::Bin(right) => Ok(Atomic {
+                            value: ast::ast::Value::Bin(!right),
                         }),
                         _ => Err("Invalid types".to_string()),
                     };
@@ -765,7 +765,7 @@ impl Ast {
                     Node::IndexExpression { left, index } => {
                         let x = self.eval_array(Node::IndexExpression { left, index })?;
                         if let Atomic { value } = x {
-                            if let Value::Str(_0) = value {
+                            if let ast::ast::Value::Str(_0) = value {
                                 println!("[{:?}]", _0);
                             } else {
                                 println!("{:?}", value);
@@ -793,19 +793,19 @@ impl Ast {
                     "Array" => {
                         let elements = fetch_array(n.clone())?;
                         Ok(Atomic {
-                            value: Value::Int(elements.len() as i32),
+                            value: ast::ast::Value::Int(elements.len() as i32),
                         })
                     }
                     "Hashmap" => {
                         let elements = fetch_hash_map(n.clone())?;
                         Ok(Atomic {
-                            value: Value::Int(elements.len() as i32),
+                            value: ast::ast::Value::Int(elements.len() as i32),
                         })
                     }
                     "Atomic" => {
                         let s = fetch_string(n.clone())?;
                         Ok(Atomic {
-                            value: Value::Int(s.len() as i32),
+                            value: ast::ast::Value::Int(s.len() as i32),
                         })
                     }
                     _ => {
@@ -918,7 +918,7 @@ impl Ast {
                         let pre_right = right.left()?;
                         let replaced_right = self.replace_var(*pre_right.clone())?;
                         
-                        let best = compare_value(&replaced_left.val(), &replaced_right.val());
+                        let best = ast::ast::compare_value(&replaced_left.val(), &replaced_right.val());
                         if best {
                             for node in consequence.clone() {
                                 let res = self.eval_node(node)?;
@@ -939,7 +939,7 @@ impl Ast {
                         let replaced_sub_right = self.replace_var(sub_right.clone())?;
                         
                         // check the truthiness of the left and right
-                        let left_truth = compare_value(&replaced_sub_left.val(), &replaced_sub_right.val());
+                        let left_truth = ast::ast::compare_value(&replaced_sub_left.val(), &replaced_sub_right.val());
                         
                         let sub_right_left = right.left()?;
                         let sub_right_right = right.right()?;
@@ -947,7 +947,7 @@ impl Ast {
                         let replaced_sub_right_left = self.replace_var(*sub_right_left.clone())?;
                         let replaced_sub_right_right = self.replace_var(sub_right_right.clone())?;
                         
-                        let right_truth = compare_value(&replaced_sub_right_left.val(), &replaced_sub_right_right.val());
+                        let right_truth = ast::ast::compare_value(&replaced_sub_right_left.val(), &replaced_sub_right_right.val());
                         
                         if left_truth || right_truth {
                             for node in consequence.clone() {
@@ -975,9 +975,9 @@ impl Ast {
                         }
                         
                         match replaced_left.val() {
-                            Value::Int(i) => {
+                            ast::ast::Value::Int(i) => {
                                 match right.val() {
-                                    Value::Int(ii) => {
+                                    ast::ast::Value::Int(ii) => {
                                         let _ordering = i.cmp(&ii);
                                         for node in consequence.clone() {
                                             let res = self.eval_node(node)?;
@@ -1004,7 +1004,7 @@ impl Ast {
                 }
             }
             Atomic { value } => {
-                if value == Value::Bool(true) {
+                if value == ast::ast::Value::Bool(true) {
                     for node in consequence.clone() {
                         let res = self.eval_node(node)?;
                         self.upsert_declaration(res)?
@@ -1056,7 +1056,7 @@ impl Ast {
                                 let index = fetch_integer(replaced_index)?;
                                 let v = s.as_bytes()[index as usize] as char;
 
-                                Ok(Atomic { value: Value::Str(v.to_string()) })
+                                Ok(Atomic { value: ast::ast::Value::Str(v.to_string()) })
                             }
                             _ => {
                                 println!("kind: {:?}", string_node.node_type());
@@ -1095,7 +1095,7 @@ impl Ast {
                 kind: "var".to_string(),
             }),
             right: Box::new(Atomic {
-                value: Value::Int(start),
+                value: ast::ast::Value::Int(start),
             }),
             kind: "Nat".to_string(),
         })?;
@@ -1125,7 +1125,7 @@ impl Ast {
                     kind: "var".to_string(),
                 }),
                 right: Box::new(Atomic {
-                    value: Value::Int(i),
+                    value: ast::ast::Value::Int(i),
                 }),
                 kind: "Nat".to_string(),
             })?;
@@ -1138,7 +1138,7 @@ impl Ast {
 
 fn extract_index(index: Node) -> Result<usize, String> {
     match index {
-        Atomic { value: Value::Int(i) } => Ok(i as usize),
+        Atomic { value: ast::ast::Value::Int(i) } => Ok(i as usize),
         _ => {
             Err(format!("expected atomic but received {:?} while extracting index", index))
         }
@@ -1149,7 +1149,7 @@ fn extract_index(index: Node) -> Result<usize, String> {
 mod tests {
     use super::*;
     use crate::lang_parser::LangParser;
-    use crate::parser::{Node, Value};
+    use crate::parser::{Node};
 
     #[test]
     fn test_var() {
@@ -1160,7 +1160,7 @@ mod tests {
                 kind: "var".to_string(),
             }),
             right: Box::from(Atomic {
-                value: Value::Int(10),
+                value: ast::ast::Value::Int(10),
             }),
             kind: "Nat".to_string(),
         });
@@ -1173,7 +1173,7 @@ mod tests {
         ast.add_node(Node::Call {
             name: "print".to_string(),
             arguments: vec![Atomic {
-                value: Value::Str("hello, world".to_string()),
+                value: ast::ast::Value::Str("hello, world".to_string()),
             }],
             returns: vec![],
         });
@@ -1190,7 +1190,7 @@ mod tests {
 
         let res = ast.declarations.get("x").expect("unexpected failure");
 
-        assert_eq!(res.val(), Value::Int(3));
+        assert_eq!(res.val(), ast::ast::Value::Int(3));
     }
 
     #[test]
@@ -1203,7 +1203,7 @@ mod tests {
 
         let res = ast.declarations.get("x").expect("unexpected failure");
 
-        assert_eq!(res.val(), Value::Int(-1));
+        assert_eq!(res.val(), ast::ast::Value::Int(-1));
     }
 
     #[test]
@@ -1216,7 +1216,7 @@ mod tests {
 
         let res = ast.declarations.get("x").expect("unexpected failure");
 
-        assert_eq!(res.val(), Value::Int(6));
+        assert_eq!(res.val(), ast::ast::Value::Int(6));
     }
 
     #[test]
@@ -1229,7 +1229,7 @@ mod tests {
 
         let res = ast.declarations.get("x").expect("unexpected failure");
 
-        assert_eq!(res.val(), Value::Int(2));
+        assert_eq!(res.val(), ast::ast::Value::Int(2));
     }
 
     #[test]
@@ -1241,7 +1241,7 @@ mod tests {
         ast.eval().expect("unexpected failure");
         println!("{:?}", ast);
         let res = ast.declarations.get("z").expect("unexpected failure");
-        assert_eq!(res.val(), Value::Int(3));
+        assert_eq!(res.val(), ast::ast::Value::Int(3));
     }
 
     #[test]

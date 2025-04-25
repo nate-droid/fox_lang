@@ -1,5 +1,4 @@
 use crate::lang_parser::LangParser;
-use crate::parser::Value;
 
 #[test]
 fn if_statement() {
@@ -44,7 +43,7 @@ fn variables_in_conditionals() {
     }
 
     let res = ast.declarations.get("x").expect("unexpected failure");
-    assert_eq!(res.val(), Value::Int(7));
+    assert_eq!(res.val(), ast::ast::Value::Int(7));
 }
 
 #[test]
@@ -71,7 +70,7 @@ fn simple_modulo() {
         }
         Err(e) => panic!("{:?}", e),
     }
-    assert_eq!(ast.declarations.get("x").unwrap().val(), Value::Int(1));
+    assert_eq!(ast.declarations.get("x").unwrap().val(), ast::ast::Value::Int(1));
 }
 
 #[test]
@@ -209,5 +208,5 @@ fn test_break() {
     }
     
     let res = ast.declarations.get("b").expect("unexpected failure");
-    assert_eq!(res.val(), Value::Int(2));
+    assert_eq!(res.val(), ast::ast::Value::Int(2));
 }

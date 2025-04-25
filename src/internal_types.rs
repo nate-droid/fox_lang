@@ -1,6 +1,5 @@
-use std::collections::{BTreeMap, HashMap};
-use parser::Value;
-use crate::parser;
+use std::collections::{BTreeMap};
+use ast::ast::Value;
 use crate::parser::Node;
 
 pub(crate) fn fetch_array(node: Node) -> Result<Vec<Node>, String> {

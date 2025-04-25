@@ -50,38 +50,6 @@ impl Display for ParseError {
 
 impl std::error::Error for ParseError {}
 
-#[derive(Debug, Clone, Eq, Hash)]
-#[derive(PartialEq)]
-#[derive(PartialOrd)]
-#[derive(Ord)]
-pub enum Value {
-    Int(i32),
-    Str(String),
-    Bool(bool),
-    Bin(u32),
-    // Add other types as needed
-}
-
-impl Value {
-    pub fn from_string(s: String) -> Self {
-        if let Ok(i) = s.parse::<i32>() {
-            return Value::Int(i);
-        }
-        Value::Str(s)
-    }
-}
-
-impl Display for Value {
-    fn fmt(&self,f: &mut fmt::Formatter) -> fmt::Result {
-        match self {
-            Value::Int (i) => write!(f, "{}", i),
-            // Value::Float(fl) => write!(f, "{}", fl),
-            Value::Str(s) => write!(f, "{}", s),
-            Value::Bool(b) => write!(f, "{}", b),
-            Value::Bin(b) => write!(f, "{:b}", b),
-        }
-    }
-}
 
 #[derive(Debug, Clone, PartialOrd)]
 #[derive(Eq, PartialEq, Ord)]
@@ -108,7 +76,7 @@ pub enum Node {
         kind: String,
     },
     Atomic {
-        value: Value,
+        value: ast::ast::Value,
     },
     Call {
         name: String,
@@ -122,7 +90,7 @@ pub enum Node {
         returns: Vec<Node>,
     },
     MMExpression {
-      expression: String,  
+      expression: String,
     },
     Type {
         name: String,
@@ -147,7 +115,7 @@ pub enum Node {
         kind: String,
     },
     Break {
-        
+
     },
     IndexExpression {
         left: Box<Node>,
@@ -312,10 +280,10 @@ impl Node {
         }
     }
 
-    pub fn val(&self) -> Value {
+    pub fn val(&self) -> ast::ast::Value {
         match self {
             Node::Atomic { value } => value.clone(),
-            _ => Value::Str("".to_string()),
+            _ => ast::ast::Value::Str("".to_string()),
         }
     }
     
@@ -972,17 +940,6 @@ impl Parser {
     pub fn dump_state(&mut self) {
         println!("Position: {}", self.position);
         println!("Tokens: {:?}", self.tokens);
-    }
-}
-
-
-pub fn compare_value(first: &Value, second: &Value) -> bool {
-    match (first, second) {
-        (Value::Int(i), Value::Int(j)) => i == j,
-        //(Value::Float(f), Value::Float(g)) => f == g,
-        (Value::Str(s), Value::Str(t)) => s == t,
-        (Value::Bool(b), Value::Bool(c)) => b == c,
-        _ => false,
     }
 }
 

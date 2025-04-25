@@ -1,11 +1,11 @@
 use crate::lang_parser::LangParser;
-use crate::parser::{Node, Value};
+use crate::parser::{Node};
 
 pub fn print_matrix(matrix: &Vec<Node>) {
     for element in matrix {
         if let Node::Array { elements } = element {
             for e in elements {
-                if let Node::Atomic { value: Value::Int(i) } = e {
+                if let Node::Atomic { value: ast::ast::Value::Int(i) } = e {
                     print!("{}, ", i);
                 } else {
                     panic!("element is not an atomic integer");
