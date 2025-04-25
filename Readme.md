@@ -21,6 +21,15 @@ This is a work and progress, and I imagine the structure will change quite signi
 At the moment, Fox is able to parse the first batch of axioms from MetaMath. Most notably are the axiom of infinity and the
 axiom of choice. 
 
+# Installation
+
+To install Fox, you can clone the repository and run the following command:
+
+```
+cargo build
+```
+
+
 ## General Purpose Features
 
 At the time of writing, Fox has a few general-purpose features:
