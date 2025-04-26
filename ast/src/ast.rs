@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use crate::internal_types::{fetch_array, fetch_hash_map, fetch_integer, fetch_string};
 use crate::node::{Node, OperatorKind};
+use crate::value::Value;
 
 #[derive(Debug)]
 pub struct Ast {
@@ -102,7 +103,7 @@ impl Ast {
         Ok(())
     }
 
-    pub fn add_node(&mut self, node: crate::node::Node) {
+    pub fn add_node(&mut self, node: Node) {
         self.nodes.push(node);
     }
 
@@ -113,10 +114,10 @@ impl Ast {
         Ok(())
     }
 
-    fn eval_node(&mut self, ast: crate::node::Node) -> Result<crate::node::Node, String> {
+    fn eval_node(&mut self, ast: Node) -> Result<Node, String> {
         // traverse and evaluate the AST
         match ast {
-            crate::node::Node::BinaryExpression {
+            Node::BinaryExpression {
                 left,
                 operator,
                 right,
@@ -125,7 +126,7 @@ impl Ast {
 
                 return Ok(res);
             }
-            crate::node::Node::UnaryExpression {
+            Node::UnaryExpression {
                 operator,
                 right,
             } => {
@@ -164,22 +165,22 @@ impl Ast {
                     res = self.eval_node(replaced)?;
                 }
 
-                self.upsert_declaration(crate::node::Node::AssignStmt {
+                self.upsert_declaration(Node::AssignStmt {
                     left,
                     right: Box::from(res.clone()),
                     kind: _kind,
                 })?;
                 return Ok(res);
             }
-            crate::node::Node::Call {
+            Node::Call {
                 name,
                 arguments,
                 returns: _returns,
             } => {
                 self.eval_call(name, arguments)?;
             }
-            crate::node::Node::Atomic { value } => {
-                return Ok(crate::node::Node::Atomic { value });
+            Node::Atomic { value } => {
+                return Ok(Node::Atomic { value });
             }
             Node::MMExpression { expression } => {
                 // todo!("will be migrated")
@@ -188,7 +189,7 @@ impl Ast {
                 // println!("{:?}", axiom.steps);
             }
             Node::Type { name: _name } => {
-                return Ok(crate::node::Node::EmptyNode);
+                return Ok(Node::EmptyNode);
             }
             Node::Conditional {
                 condition,
@@ -207,21 +208,21 @@ impl Ast {
             Node::EmptyNode => {
                 return Ok(Node::EmptyNode);
             }
-            crate::node::Node::Break { .. } => {
+            Node::Break { .. } => {
                 return Err("Break".to_string());
             }
-            crate::node::Node::Array {elements: _elements } => {
-                let x = crate::node::Node::Array {
+            Node::Array {elements: _elements } => {
+                let x = Node::Array {
                     elements: _elements,
                 };
                 return Ok(x);
             }
-            crate::node::Node::IndexExpression { left, index } => {
+            Node::IndexExpression { left, index } => {
                 let y = *left;
 
                 // ensure that "y" is an array
                 return match y.clone() {
-                    crate::node::Node::AssignStmt { left, .. } => {
+                    Node::AssignStmt { left, .. } => {
                         let name = fetch_string(*left.clone())?;
 
                         // fetch the name from the declarations
@@ -232,7 +233,7 @@ impl Ast {
                         let i = extract_index(*index.clone())?;
 
                         // Using only Atomic values for now
-                        Ok(crate::node::Node::Atomic {
+                        Ok(Node::Atomic {
                             value: result[i].val(),
                         })
                     }
@@ -242,13 +243,13 @@ impl Ast {
                     }
                 }
             }
-            crate::node::Node::FunctionDecl {
+            Node::FunctionDecl {
                 name,
                 arguments,
                 returns,
                 body,
             } => {
-                let res = crate::node::Node::FunctionDecl {
+                let res = Node::FunctionDecl {
                     name,
                     arguments,
                     returns,
@@ -258,21 +259,21 @@ impl Ast {
 
                 self.upsert_declaration(res)?;
 
-                return Ok(crate::node::Node::EmptyNode);
+                return Ok(Node::EmptyNode);
             }
-            crate::node::Node::Return { value } => {
+            Node::Return { value } => {
                 // fetch the latest value of the variable
                 let res = self.replace_var(*value.clone())?;
                 return Ok(res);
             }
-            crate::node::Node::HMap {..} => {
+            Node::HMap {..} => {
                 // TODO: only supports empty initialization
-                return Ok(crate::node::Node::HMap { values: Default::default() });
+                return Ok(Node::HMap { values: Default::default() });
             }
-            crate::node::Node::MethodCall { name, target, arguments, .. } => {
+            Node::MethodCall { name, target, arguments, .. } => {
                 let res = self.eval_method_call(name, target, arguments)?;
-                if let crate::node::Node::EmptyNode{} = res {
-                    return Ok(crate::node::Node::EmptyNode);
+                if let Node::EmptyNode{} = res {
+                    return Ok(Node::EmptyNode);
                 }
                 return Ok(res);
             }
@@ -282,12 +283,12 @@ impl Ast {
             }
         }
 
-        Ok(crate::node::Node::EmptyNode)
+        Ok(Node::EmptyNode)
     }
 
-    fn replace_var(&mut self, node: crate::node::Node) -> Result<crate::node::Node, String> {
+    fn replace_var(&mut self, node: Node) -> Result<Node, String> {
         match node.clone() {
-            crate::node::Node::AssignStmt {
+            Node::AssignStmt {
                 right: _left_val,
                 left,
                 ..
@@ -345,7 +346,7 @@ impl Ast {
                     value: result[i].val(),
                 })
             }
-            crate::node::Node::IndexExpression {index, .. } => {
+            Node::IndexExpression {index, .. } => {
                 let name = fetch_string(node)?;
 
                 let array = self.declarations.get(&name).expect("var not found").clone();
@@ -402,8 +403,8 @@ impl Ast {
                 if let Node::Atomic { value: left_val } = left {
                     if let Node::Atomic { value: right_val } = right {
                         return match (left_val, right_val) {
-                            (crate::value::Value::Int(left), crate::value::Value::Int(right)) => Ok(Node::Atomic {
-                                value: crate::value::Value::Int(left + right),
+                            (Value::Int(left), Value::Int(right)) => Ok(Node::Atomic {
+                                value: Value::Int(left + right),
                             }),
                             _ => Err("Invalid types".to_string()),
                         };
@@ -432,8 +433,8 @@ impl Ast {
                 if let Node::Atomic { value: left_val } = left {
                     if let Node::Atomic { value: right_val } = right {
                         return match (left_val, right_val) {
-                            (crate::value::Value::Int(left), crate::value::Value::Int(right)) => Ok(Node::Atomic {
-                                value: crate::value::Value::Int(left - right),
+                            (Value::Int(left), Value::Int(right)) => Ok(Node::Atomic {
+                                value: Value::Int(left - right),
                             }),
                             _ => Err("Invalid types".to_string()),
                         };
@@ -461,8 +462,8 @@ impl Ast {
                 if let Node::Atomic { value: left_val } = left {
                     if let Node::Atomic { value: right_val } = right {
                         return match (left_val, right_val) {
-                            (crate::value::Value::Int(left), crate::value::Value::Int(right)) => Ok(Node::Atomic {
-                                value: crate::value::Value::Int(left * right),
+                            (Value::Int(left), Value::Int(right)) => Ok(Node::Atomic {
+                                value: Value::Int(left * right),
                             }),
                             _ => Err("Invalid types".to_string()),
                         };
@@ -490,8 +491,8 @@ impl Ast {
                 if let Node::Atomic { value: left_val } = left {
                     if let Node::Atomic { value: right_val } = right {
                         return match (left_val, right_val) {
-                            (crate::value::Value::Int(left), crate::value::Value::Int(right)) => Ok(Node::Atomic {
-                                value: crate::value::Value::Int(left / right),
+                            (Value::Int(left), Value::Int(right)) => Ok(Node::Atomic {
+                                value: Value::Int(left / right),
                             }),
                             _ => Err("Invalid types".to_string()),
                         };
@@ -519,8 +520,8 @@ impl Ast {
                 if let Node::Atomic { value: left_val } = left {
                     if let Node::Atomic { value: right_val } = right {
                         return match (left_val, right_val) {
-                            (crate::value::Value::Int(left), crate::value::Value::Int(right)) => Ok(Node::Atomic {
-                                value: crate::value::Value::Int(left % right),
+                            (Value::Int(left), Value::Int(right)) => Ok(Node::Atomic {
+                                value: Value::Int(left % right),
                             }),
                             _ => Err("Invalid types".to_string()),
                         };
@@ -546,14 +547,14 @@ impl Ast {
                 if let Node::Atomic { value: left_val } = left {
                     if let Node::Atomic { value: right_val } = right {
                         return match (left_val.clone(), right_val.clone()) {
-                            (crate::value::Value::Bin(left), crate::value::Value::Bin(right)) => Ok(Node::Atomic {
-                                value: crate::value::Value::Bin(left & right),
+                            (Value::Bin(left), Value::Bin(right)) => Ok(Node::Atomic {
+                                value: Value::Bin(left & right),
                             }),
-                            (crate::value::Value::Int(left), crate::value::Value::Bin(right)) => Ok(Node::Atomic {
-                                value: crate::value::Value::Bin(left as u32 & right),
+                            (Value::Int(left), Value::Bin(right)) => Ok(Node::Atomic {
+                                value: Value::Bin(left as u32 & right),
                             }),
-                            (crate::value::Value::Int(left), crate::value::Value::Int(right)) => Ok(Node::Atomic {
-                                value: crate::value::Value::Bin(left as u32 & right as u32),
+                            (Value::Int(left), Value::Int(right)) => Ok(Node::Atomic {
+                                value: Value::Bin(left as u32 & right as u32),
                             }),
                             _ => {
                                 println!("left_val: {:?}", left_val);
@@ -583,14 +584,14 @@ impl Ast {
                 if let Node::Atomic { value: left_val } = left {
                     if let Node::Atomic { value: right_val } = right {
                         return match (left_val, right_val) {
-                            (crate::value::Value::Bin(left), crate::value::Value::Bin(right)) => Ok(Node::Atomic {
-                                value: crate::value::Value::Bin(left | right),
+                            (Value::Bin(left), Value::Bin(right)) => Ok(Node::Atomic {
+                                value: Value::Bin(left | right),
                             }),
-                            (crate::value::Value::Int(left), crate::value::Value::Bin(right)) => Ok(Node::Atomic {
-                                value: crate::value::Value::Bin(left as u32 | right),
+                            (Value::Int(left), Value::Bin(right)) => Ok(Node::Atomic {
+                                value: Value::Bin(left as u32 | right),
                             }),
-                            (crate::value::Value::Int(left), crate::value::Value::Int(right)) => Ok(Node::Atomic {
-                                value: crate::value::Value::Bin(left as u32 | right as u32),
+                            (Value::Int(left), Value::Int(right)) => Ok(Node::Atomic {
+                                value: Value::Bin(left as u32 | right as u32),
                             }),
                             _ => Err("Invalid types".to_string()),
                         };
@@ -616,14 +617,14 @@ impl Ast {
                 if let Node::Atomic { value: left_val } = left {
                     if let Node::Atomic { value: right_val } = right {
                         return match (left_val, right_val) {
-                            (crate::value::Value::Bin(left), crate::value::Value::Bin(right)) => Ok(Node::Atomic {
-                                value: crate::value::Value::Bin(left ^ right),
+                            (Value::Bin(left), Value::Bin(right)) => Ok(Node::Atomic {
+                                value: Value::Bin(left ^ right),
                             }),
-                            (crate::value::Value::Int(left), crate::value::Value::Bin(right)) => Ok(Node::Atomic {
-                                value: crate::value::Value::Bin(left as u32 ^ right),
+                            (Value::Int(left), Value::Bin(right)) => Ok(Node::Atomic {
+                                value: Value::Bin(left as u32 ^ right),
                             }),
-                            (crate::value::Value::Int(left), crate::value::Value::Int(right)) => Ok(Node::Atomic {
-                                value: crate::value::Value::Bin(left as u32 ^ right as u32),
+                            (Value::Int(left), Value::Int(right)) => Ok(Node::Atomic {
+                                value: Value::Bin(left as u32 ^ right as u32),
                             }),
                             _ => Err("Invalid types".to_string()),
                         };
@@ -651,14 +652,14 @@ impl Ast {
                 if let Node::Atomic { value: left_val } = left {
                     if let Node::Atomic { value: right_val } = right {
                         return match (left_val.clone(), right_val.clone()) {
-                            (crate::value::Value::Bin(left), crate::value::Value::Int(right)) => Ok(Node::Atomic {
-                                value: crate::value::Value::Bin(left << right),
+                            (Value::Bin(left), Value::Int(right)) => Ok(Node::Atomic {
+                                value: Value::Bin(left << right),
                             }),
-                            (crate::value::Value::Int(left), crate::value::Value::Bin(right)) => Ok(Node::Atomic {
-                                value: crate::value::Value::Bin(left as u32 & right),
+                            (Value::Int(left), Value::Bin(right)) => Ok(Node::Atomic {
+                                value: Value::Bin(left as u32 & right),
                             }),
-                            (crate::value::Value::Int(left), crate::value::Value::Int(right)) => Ok(Node::Atomic {
-                                value: crate::value::Value::Bin((left << right) as u32),
+                            (Value::Int(left), Value::Int(right)) => Ok(Node::Atomic {
+                                value: Value::Bin((left << right) as u32),
                             }),
                             _ => {
                                 println!("left_val: {:?}", left_val);
@@ -690,8 +691,8 @@ impl Ast {
                 if let Node::Atomic { value: left_val } = left {
                     if let Node::Atomic { value: right_val } = right {
                         return match (left_val, right_val) {
-                            (crate::value::Value::Bin(left), crate::value::Value::Int(right)) => Ok(Node::Atomic {
-                                value: crate::value::Value::Bin(left >> right),
+                            (Value::Bin(left), Value::Int(right)) => Ok(Node::Atomic {
+                                value: Value::Bin(left >> right),
                             }),
                             _ => Err("Invalid types".to_string()),
                         };
@@ -722,8 +723,8 @@ impl Ast {
 
                 if let Node::Atomic { value: right_val } = right {
                     return match right_val {
-                        crate::value::Value::Bin(right) => Ok(Node::Atomic {
-                            value: crate::value::Value::Bin(!right),
+                        Value::Bin(right) => Ok(Node::Atomic {
+                            value: Value::Bin(!right),
                         }),
                         _ => Err("Invalid types".to_string()),
                     };
@@ -738,15 +739,15 @@ impl Ast {
     // pub fn parse(&mut self, input: &str) -> Result<(), String> {
     //     let mut parser = crate::lang_parser::LangParser::new(input);
     //     let ast = parser.parse().expect("unexpected failure");
-    // 
+    //
     //     for node in ast.nodes {
     //         self.add_node(node);
     //     }
-    // 
+    //
     //     Ok(())
     // }
 
-    fn eval_call(&mut self, name: String, arguments: Vec<crate::node::Node>) -> Result<crate::node::Node, String> {
+    fn eval_call(&mut self, name: String, arguments: Vec<Node>) -> Result<Node, String> {
         // TODO: Have the call names be enums
 
         match name.as_str() {
@@ -761,9 +762,9 @@ impl Ast {
                         return Ok(Node::EmptyNode)
                     }
                     Node::IndexExpression { left, index } => {
-                        let x = self.eval_array(crate::node::Node::IndexExpression { left, index })?;
+                        let x = self.eval_array(Node::IndexExpression { left, index })?;
                         if let Node::Atomic { value } = x {
-                            if let crate::value::Value::Str(_0) = value {
+                            if let Value::Str(_0) = value {
                                 println!("[{:?}]", _0);
                             } else {
                                 println!("{:?}", value);
@@ -791,19 +792,19 @@ impl Ast {
                     "Array" => {
                         let elements = fetch_array(n.clone())?;
                         Ok(Node::Atomic {
-                            value: crate::value::Value::Int(elements.len() as i32),
+                            value: Value::Int(elements.len() as i32),
                         })
                     }
                     "Hashmap" => {
                         let elements = fetch_hash_map(n.clone())?;
                         Ok(Node::Atomic {
-                            value: crate::value::Value::Int(elements.len() as i32),
+                            value: Value::Int(elements.len() as i32),
                         })
                     }
                     "Atomic" => {
                         let s = fetch_string(n.clone())?;
                         Ok(Node::Atomic {
-                            value: crate::value::Value::Int(s.len() as i32),
+                            value: Value::Int(s.len() as i32),
                         })
                     }
                     _ => {
@@ -835,9 +836,9 @@ impl Ast {
                 let mut elements = fetch_hash_map(array.clone())?;
                 elements.insert(arguments[0].clone(), arguments[1].clone());
 
-                let ident = crate::node::Node::AssignStmt {
+                let ident = Node::AssignStmt {
                     left: Box::new(Node::Ident { name: target, kind: "var".to_string() }),
-                    right: Box::from(crate::node::Node::HMap { values: elements }),
+                    right: Box::from(Node::HMap { values: elements }),
                     kind: "var".to_string(),
                 };
                 self.upsert_declaration(ident)?;
@@ -856,9 +857,9 @@ impl Ast {
         }
     }
 
-    fn eval_function(&mut self, node: crate::node::Node, arguments: Vec<crate::node::Node>) -> Result<crate::node::Node, String> {
+    fn eval_function(&mut self, node: Node, arguments: Vec<Node>) -> Result<Node, String> {
         // make sure that the node is a function
-        if let crate::node::Node::FunctionDecl {
+        if let Node::FunctionDecl {
             name: _name,
             arguments: args,
             returns: _returns,
@@ -867,7 +868,7 @@ impl Ast {
             let mut ret = Node::EmptyNode;
             for i in 0..args.len() {
                 let name = fetch_string(args[i].clone())?;
-                self.upsert_declaration(crate::node::Node::AssignStmt {
+                self.upsert_declaration(Node::AssignStmt {
                     left: Box::new(Node::Ident {
                         name: name.clone(),
                         kind: "var".to_string(),
@@ -899,10 +900,10 @@ impl Ast {
         Ok(Node::EmptyNode)
     }
 
-    fn eval_conditional(&mut self, condition: Box<crate::node::Node>, consequence: Vec<crate::node::Node>, alternative: Vec<crate::node::Node>) -> Result<(), String> {
+    fn eval_conditional(&mut self, condition: Box<Node>, consequence: Vec<Node>, alternative: Vec<Node>) -> Result<(), String> {
         // assert that node is of type Conditional
         match *condition.clone() {
-            crate::node::Node::BinaryExpression {
+            Node::BinaryExpression {
                 left,
                 operator,
                 right,
@@ -973,9 +974,9 @@ impl Ast {
                         }
 
                         match replaced_left.val() {
-                            crate::value::Value::Int(i) => {
+                            Value::Int(i) => {
                                 match right.val() {
-                                    crate::value::Value::Int(ii) => {
+                                    Value::Int(ii) => {
                                         let _ordering = i.cmp(&ii);
                                         for node in consequence.clone() {
                                             let res = self.eval_node(node)?;
@@ -1002,7 +1003,7 @@ impl Ast {
                 }
             }
             Node::Atomic { value } => {
-                if value == crate::value::Value::Bool(true) {
+                if value == Value::Bool(true) {
                     for node in consequence.clone() {
                         let res = self.eval_node(node)?;
                         self.upsert_declaration(res)?
@@ -1017,10 +1018,10 @@ impl Ast {
         Ok(())
     }
 
-    fn eval_array(&mut self, node: crate::node::Node) -> Result<crate::node::Node, String> {
+    fn eval_array(&mut self, node: Node) -> Result<Node, String> {
         match node {
-            crate::node::Node::IndexExpression { left, index: sub_index } => {
-                if let crate::node::Node::IndexExpression {left, index} = *left {
+            Node::IndexExpression { left, index: sub_index } => {
+                if let Node::IndexExpression {left, index} = *left {
                     let res = self.eval_array(*left)?;
 
                     let name = fetch_string(res.clone())?;
@@ -1076,7 +1077,7 @@ impl Ast {
         }
     }
 
-    fn parse_for(&mut self, variable: String, range: (Box<crate::node::Node>, Box<crate::node::Node>), body: Vec<crate::node::Node>) -> Result<(), String> {
+    fn parse_for(&mut self, variable: String, range: (Box<Node>, Box<Node>), body: Vec<Node>) -> Result<(), String> {
         let start_node = self.replace_var(*range.0)?;
         let end_node = self.replace_var(*range.1)?;
 
@@ -1087,13 +1088,13 @@ impl Ast {
         let end = fetch_integer(replaced_end)?;
 
 
-        self.upsert_declaration(crate::node::Node::AssignStmt {
+        self.upsert_declaration(Node::AssignStmt {
             left: Box::new(Node::Ident {
                 name: variable.clone(),
                 kind: "var".to_string(),
             }),
             right: Box::new(Node::Atomic {
-                value: crate::value::Value::Int(start),
+                value: Value::Int(start),
             }),
             kind: "Nat".to_string(),
         })?;
@@ -1123,7 +1124,7 @@ impl Ast {
                     kind: "var".to_string(),
                 }),
                 right: Box::new(Node::Atomic {
-                    value: crate::value::Value::Int(i),
+                    value: Value::Int(i),
                 }),
                 kind: "Nat".to_string(),
             })?;
@@ -1136,7 +1137,7 @@ impl Ast {
 
 fn extract_index(index: Node) -> Result<usize, String> {
     match index {
-        Node::Atomic { value: crate::value::Value::Int(i) } => Ok(i as usize),
+        Node::Atomic { value: Value::Int(i) } => Ok(i as usize),
         _ => {
             Err(format!("expected atomic but received {:?} while extracting index", index))
         }
