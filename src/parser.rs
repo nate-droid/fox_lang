@@ -3,6 +3,8 @@ use std::collections::{BTreeMap};
 use crate::lexer::{Token, TokenKind};
 use crate::lexer::DefaultLexer;
 
+use ast::node::Node;
+
 pub struct Parser {
     // lexer: L,
     position: usize,
@@ -21,8 +23,8 @@ pub trait Lexer {
 
 use std::fmt;
 use std::fmt::{Display};
-use std::hash::{Hash, Hasher};
 use crate::lang_lexer::LangLexer;
+use crate::lang_parser::token_kind_to_operator_kind;
 use crate::lexer::TokenKind::{ForAll, Identifier, RightParenthesis, SetVar};
 use crate::parser::Node::Atomic;
 use crate::parser::ParseError::{EmptyNode};
@@ -49,259 +51,6 @@ impl Display for ParseError {
 }
 
 impl std::error::Error for ParseError {}
-
-
-#[derive(Debug, Clone, PartialOrd)]
-#[derive(Eq, PartialEq, Ord)]
-pub enum Node {
-    BinaryExpression {
-        left: Box<Node>,
-        operator: TokenKind,
-        right: Box<Node>,
-    },
-    UnaryExpression {
-        operator: TokenKind,
-        right: Box<Node>,
-    },
-    Identifier {
-        value: String,
-    },
-    AssignStmt {
-        left: Box<Node>,
-        right: Box<Node>,
-        kind: String,
-    },
-    Ident {
-        name: String,
-        kind: String,
-    },
-    Atomic {
-        value: ast::ast::Value,
-    },
-    Call {
-        name: String,
-        arguments: Vec<Node>,
-        returns: Vec<Node>,
-    },
-    MethodCall {
-        name: String,
-        target: String, // what the method is called on
-        arguments: Vec<Node>,
-        returns: Vec<Node>,
-    },
-    MMExpression {
-      expression: String,
-    },
-    Type {
-        name: String,
-    },
-    Conditional {
-        condition: Box<Node>,
-        consequence: Vec<Node>,
-        alternative: Vec<Node>,
-    },
-    ForLoop {
-        variable: String,
-        // range: (i32, i32),
-        range: (Box<Node>, Box<Node>),
-        body: Vec<Node>,
-    },
-    Array {
-        elements: Vec<Node>,
-    },
-    EmptyNode,
-    Object {
-        name: String,
-        kind: String,
-    },
-    Break {
-
-    },
-    IndexExpression {
-        left: Box<Node>,
-        index: Box<Node>,
-    },
-    FunctionDecl {
-        name: Box<Node>,
-        arguments: Vec<Node>,
-        returns: Vec<Node>,
-        body: Vec<Node>,
-    },
-    Return {
-        value: Box<Node>,
-    },
-    HMap {
-        values: BTreeMap<Node, Node>,
-    },
-}
-
-impl Display for Node {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self {
-            Node::BinaryExpression { left, operator, right } => {
-                match operator {
-                    ForAll => {
-                        write!(f, "∀{}{}", left, right)
-                    }
-                    TokenKind::Equality => {
-                        write!(f, "{} = {}", left, right)
-                    }
-                    TokenKind::ElementOf => {
-                        write!(f, "{} ∈ {}", left, right)
-                    }
-                    TokenKind::Exists => {
-                        write!(f, "∃{}{}", left, right)
-                    }
-                    TokenKind::Implies => {
-                        write!(f, "({} → {})", left, right)
-                    }
-                    TokenKind::Disjunction => {
-                        write!(f, "{} ∨ {}", left, right)
-                    }
-                    _ => {
-                        write!(f, "({} {} {})", left, operator, right)
-                    }
-                }
-            }
-            Node::UnaryExpression { operator, right } => {
-                write!(f, "({} {})", operator, right)
-            }
-            Node::Identifier { value } => {
-                write!(f, "{}", value.clone())
-            }
-            Node::AssignStmt { left, right, kind } => {
-                // write!(f, "{} : {} = {:?}", name, kind, value)
-                write!(f, "{} = {}", left, right)
-            }
-            Atomic { value } => {
-                write!(f, "{}", value)
-            }
-            Node::Call { name, arguments, returns: _returns } => {
-                write!(f, "{}({:?})", name, arguments)
-            }
-            Node::MMExpression { expression } => {
-                write!(f, "{}", expression.clone())
-            }
-            Node::Type { name } => {
-                write!(f, "{}", name.clone())
-            }
-            Node::Conditional { condition, consequence, alternative } => {
-                todo!()
-            }
-            Node::ForLoop { variable, range, body } => {
-                write!(f, "for {} in {}..{} {{ {:?} }}", variable, range.0, range.1, body)
-            }
-            Node::EmptyNode => {
-                write!(f, "")
-            }
-            Node::Object { name, .. } => {
-                write!(f, "{}", name)
-            }
-            Node::Array { elements } => {
-                write!(f, "[{:?}]", elements)
-            }
-            Node::Break {} => {
-                write!(f, "break")
-            }
-            Node::IndexExpression { left, index } => {
-                write!(f, "{}[{}]", left, index)
-            }
-            Node::Ident { name, kind } => {
-                write!(f, "{} : {}", name, kind)
-            }
-            Node::FunctionDecl { name, arguments, returns, body } => {
-                write!(f, "fn {}({:?}) -> {:?} {{ {:?} }}", name, arguments, returns, body)
-            }
-            Node::Return { value } => {
-                write!(f, "return {:?}", value)
-            }
-            Node::HMap { values } => {
-                write!(f, "{:?}", values)
-            }
-            Node::MethodCall { name, target, arguments, returns } => {
-                write!(f, "{}.{}({:?}) -> {:?}", target, name, arguments, returns)
-            }
-        }
-    }
-}
-impl Node {
-
-    pub fn operator(&self) -> TokenKind {
-        match self {
-            Node::BinaryExpression { operator, .. } => {
-                operator.clone()
-            }
-            Node::UnaryExpression { operator, .. } => {
-                operator.clone()
-            }
-            Node::Identifier { .. } => {
-                Identifier
-            }
-            Node::MMExpression { .. } => {
-                TokenKind::MMExpression
-            }
-            Node::AssignStmt {..} => {
-                TokenKind::Word
-            }
-            _ => {
-                println!("{:?}", self);
-                TokenKind::End
-            }
-        }
-    }
-
-    pub fn left(&self) -> Result<Box<Node>, String> {
-
-        match self {
-            Atomic { value } => {
-                Ok(Box::from(Atomic { value: value.clone() }))
-            },
-            Node::AssignStmt { left, right, kind } => {
-                Ok(left.clone())
-            },
-            Node::BinaryExpression { left, .. } => Ok(Box::from(*left.clone())),
-            Node::Object { name, kind } => Ok(Box::from(Node::Object { name: name.clone(), kind: kind.clone() })),
-            Node::IndexExpression { left, index } => Ok(Box::from(Node::IndexExpression { left: left.clone(), index: index.clone() })),
-            Node::Call { name, arguments, .. } => {
-                Ok(Box::from(Node::Call { name: name.clone(), arguments: arguments.clone(), returns: vec![] }))
-            }
-            Node::Ident { name, kind } => Ok(Box::from(Node::Ident { name: name.clone(), kind: kind.clone() })),
-            _ => {
-                Err(format!("unexpected token {:?}", self)) 
-            },
-        }
-    }
-
-    pub fn right(&self) -> Result<&Node, String> {
-        match self {
-            Node::BinaryExpression { right, .. } => Ok(right),
-            Node::UnaryExpression { right, .. } => Ok(right),
-            _ => Err(format!("unexpected token {:?}", self)),
-        }
-    }
-
-    pub fn val(&self) -> ast::ast::Value {
-        match self {
-            Node::Atomic { value } => value.clone(),
-            _ => ast::ast::Value::Str("".to_string()),
-        }
-    }
-    
-    pub fn node_type(&self) -> &str {
-        match self {
-            Node::BinaryExpression { .. } => "BinaryExpression",
-            Node::UnaryExpression { .. } => "UnaryExpression",
-            Node::Array { .. } => "Array",
-            Node::AssignStmt { .. } => "AssignStmt",
-            Node::Ident { .. } => "Ident",
-            Atomic { .. } => "Atomic",
-            Node::Call { .. } => "Call",
-            Node::Conditional { .. } => "Conditional",
-            Node::EmptyNode => "EmptyNode",
-            _ => "MissingType",
-        }
-    }
-}
 
 impl Parser {
     pub fn new(input: String) -> Self {
@@ -347,12 +96,14 @@ impl Parser {
                     if self.peek().kind.is_binary_operator() {
                         let left = self.parse_identifier()?;
                         let operator = self.get_operator()?;
+                        let operator_kind = token_kind_to_operator_kind(operator).expect("Failed to convert token kind to operator kind");
+                        
                         self.consume(TokenKind::BinaryOperator)?;
 
                         let right = self.parse_expression()?;
                         return Ok(Node::BinaryExpression {
                             left: Box::new(left),
-                            operator,
+                            operator: operator_kind,
                             right: Box::new(right),
                         });
                     }
@@ -462,6 +213,7 @@ impl Parser {
 
                 if self.current()?.kind.is_binary_operator() {
                     let operator = self.get_operator()?;
+                    let operator_kind = token_kind_to_operator_kind(operator).expect("Failed to convert token kind to operator kind");
                     self.consume(TokenKind::BinaryOperator)?;
 
                     let right = self.parse_expression()?;
@@ -469,7 +221,7 @@ impl Parser {
 
                     Ok(Node::BinaryExpression {
                         left: Box::new(left),
-                        operator,
+                        operator: operator_kind,
                         right: Box::new(right),
                     })
                 } else if self.peek().kind == RightParenthesis {
@@ -493,6 +245,7 @@ impl Parser {
                 // peek and check if the next token is a binary operator, if yes, parse as binary node
                 if self.current()?.kind.is_binary_operator() {
                     let operator = self.get_operator()?;
+                    let operator_kind = token_kind_to_operator_kind(operator.clone()).expect("Failed to convert token kind to operator kind");
                     self.consume(TokenKind::BinaryOperator)?;
 
                     if operator == TokenKind::Equality {
@@ -501,7 +254,7 @@ impl Parser {
 
                         return Ok(Node::BinaryExpression {
                             left: Box::new(ident),
-                            operator,
+                            operator: operator_kind,
                             right: Box::new(right),
                         });
                     }
@@ -509,7 +262,7 @@ impl Parser {
                     let right = self.parse_expression()?;
                     return Ok(Node::BinaryExpression {
                         left: Box::new(ident),
-                        operator,
+                        operator: operator_kind,
                         right: Box::new(right),
                     });
                 }
@@ -521,11 +274,12 @@ impl Parser {
 
                 if self.peek().kind.is_binary_operator() {
                     let operator = self.get_operator()?;
+                    let operator_kind = token_kind_to_operator_kind(operator.clone()).expect("Failed to convert token kind to operator kind");
                     self.consume(TokenKind::BinaryOperator)?;
                     let right = self.parse_expression()?;
                     return Ok(Node::BinaryExpression {
                         left: Box::new(node),
-                        operator,
+                        operator: operator_kind,
                         right: Box::new(right),
                     });
                 }
@@ -534,6 +288,7 @@ impl Parser {
             ForAll => {
 
                 let operator = self.get_operator()?;
+                let operator_kind = token_kind_to_operator_kind(operator.clone()).expect("Failed to convert token kind to operator kind");
                 self.consume(ForAll)?;
 
                 let first = Node::Identifier {
@@ -545,7 +300,7 @@ impl Parser {
                     let second = self.parse_wff()?;
                     return Ok(Node::BinaryExpression {
                         left: Box::new(first),
-                        operator,
+                        operator: operator_kind,
                         right: Box::new(second),
                     });
                 }
@@ -554,12 +309,13 @@ impl Parser {
 
                 Ok(Node::BinaryExpression {
                     left: Box::new(first),
-                    operator,
+                    operator: operator_kind,
                     right: Box::new(second),
                 })
             }
             TokenKind::Exists => {
                 let operator = self.get_operator()?;
+                let operator_kind = token_kind_to_operator_kind(operator.clone()).expect("Failed to convert token kind to operator kind");
                 self.consume(TokenKind::Exists)?;
 
                 let first = Node::Identifier {
@@ -571,7 +327,7 @@ impl Parser {
                     let second = self.parse_wff()?;
                     return Ok(Node::BinaryExpression {
                         left: Box::new(first),
-                        operator,
+                        operator: operator_kind,
                         right: Box::new(second),
                     });
                 }
@@ -586,24 +342,25 @@ impl Parser {
                     self.consume(TokenKind::RightParenthesis)?;
                     let parent_left = Node::BinaryExpression {
                         left: Box::new(first.clone()),
-                        operator,
+                        operator: operator_kind,
                         right: Box::new(second),
                     };
 
                     let parent_operator = self.get_operator()?;
+                    let parent_operator_kind = token_kind_to_operator_kind(parent_operator.clone()).expect("Failed to convert token kind to operator kind");
                     self.consume(TokenKind::BinaryOperator)?;
 
                     let parent_right = self.parse_expression()?;
                     return Ok(Node::BinaryExpression {
                         left: Box::new(parent_left),
-                        operator: parent_operator,
+                        operator: parent_operator_kind,
                         right: Box::new(parent_right),
                     });
                 }
 
                 Ok(Node::BinaryExpression {
                     left: Box::new(first),
-                    operator,
+                    operator: operator_kind,
                     right: Box::new(second),
                 })
             }
@@ -619,6 +376,7 @@ impl Parser {
                 }
 
                 let operator = self.get_operator()?;
+                let operator_kind = token_kind_to_operator_kind(operator.clone()).expect("Failed to convert token kind to operator kind");
                 self.advance();
 
                 let right = Node::Identifier {
@@ -628,7 +386,7 @@ impl Parser {
                 self.consume(SetVar)?;
                 let parent_left = Node::BinaryExpression {
                     left: Box::new(left.clone()),
-                    operator,
+                    operator: operator_kind,
                     right: Box::new(right),
                 };
 
@@ -641,13 +399,14 @@ impl Parser {
 
 
                 let parent_op = self.get_operator()?;
+                let parent_op_kind = token_kind_to_operator_kind(parent_op.clone()).expect("Failed to convert token kind to operator kind");
                 self.consume(TokenKind::BinaryOperator)?;
 
                 let parent_right = self.parse_expression()?;
 
                 Ok(Node::BinaryExpression {
                     left: Box::new(parent_left),
-                    operator: parent_op,
+                    operator: parent_op_kind,
                     right: Box::new(parent_right),
                 })
             }
@@ -665,6 +424,7 @@ impl Parser {
                 // peek and check if the next token is a binary operator, if yes, parse as binary node
                 if self.current()?.kind.is_binary_operator() {
                     let operator = self.get_operator()?;
+                    let operator_kind = token_kind_to_operator_kind(operator.clone()).expect("Failed to convert token kind to operator kind");
                     self.consume(TokenKind::BinaryOperator)?;
 
                     if operator == TokenKind::Equality {
@@ -672,7 +432,7 @@ impl Parser {
 
                         return Ok(Node::BinaryExpression {
                             left: Box::new(ident),
-                            operator,
+                            operator: operator_kind,
                             right: Box::new(right),
                         });
                     }
@@ -680,7 +440,7 @@ impl Parser {
                     let right = self.parse_expression()?;
                     return Ok(Node::BinaryExpression {
                         left: Box::new(ident),
-                        operator,
+                        operator: operator_kind,
                         right: Box::new(right),
                     });
                 }
@@ -702,6 +462,7 @@ impl Parser {
 
     fn parse_for_all(&mut self) -> Result<Node, ParseError> {
         let operator = self.get_operator()?;
+        let operator_kind = token_kind_to_operator_kind(operator.clone()).expect("Failed to convert token kind to operator kind");
         self.consume(ForAll)?;
 
         let left = Node::Identifier {
@@ -712,13 +473,14 @@ impl Parser {
 
         Ok(Node::BinaryExpression {
             left: Box::new(left),
-            operator,
+            operator: operator_kind,
             right: Box::new(right),
         })
     }
 
     fn parse_exists(&mut self) -> Result<Node, ParseError> {
         let operator = self.get_operator()?;
+        let operator_kind = token_kind_to_operator_kind(operator.clone()).expect("Failed to convert token kind to operator kind");
         self.consume(TokenKind::Exists)?;
 
         let left = Node::Identifier {
@@ -729,7 +491,7 @@ impl Parser {
 
         Ok(Node::BinaryExpression {
             left: Box::new(left),
-            operator,
+            operator: operator_kind,
             right: Box::new(right),
         })
     }
@@ -816,6 +578,7 @@ impl Parser {
 
         if self.current()?.kind.is_binary_operator() {
             let operator = self.get_operator()?;
+            let operator_kind = token_kind_to_operator_kind(operator.clone()).expect("Failed to convert token kind to operator kind");
             self.consume(TokenKind::BinaryOperator)?;
 
             if self.current()?.kind == SetVar {
@@ -824,7 +587,7 @@ impl Parser {
                 };
                 return Ok(Node::BinaryExpression {
                     left: Box::new(left),
-                    operator,
+                    operator: operator_kind,
                     right: Box::new(right),
                 });
             }
@@ -833,7 +596,7 @@ impl Parser {
 
             return Ok(Node::BinaryExpression {
                 left: Box::new(left),
-                operator,
+                operator: operator_kind,
                 right: Box::new(right),
             });
         }
@@ -863,13 +626,14 @@ impl Parser {
         }
 
         let operator = self.get_operator()?;
+        let operator_kind = token_kind_to_operator_kind(operator.clone()).expect("Failed to convert token kind to operator kind");
         
         self.consume(TokenKind::UnaryOperator)?;
         
         let right = self.parse_expression()?;
         
         Ok(Node::UnaryExpression {
-            operator,
+            operator: operator_kind,
             right: Box::new(right),
         })
     }
@@ -885,6 +649,7 @@ impl Parser {
         self.consume(Identifier)?;
 
         let operator = self.get_operator()?;
+        let operator_kind = token_kind_to_operator_kind(operator.clone()).expect("Failed to convert token kind to operator kind");
         
         self.consume(TokenKind::BinaryOperator)?;
 
@@ -899,7 +664,7 @@ impl Parser {
         if self.current()?.kind == TokenKind::LeftParenthesis {
             return Ok(Node::BinaryExpression {
                 left: Box::new(left_node),
-                operator,
+                operator: operator_kind,
                 right: Box::new(self.parse_expression()?),
             });
         }
@@ -911,7 +676,7 @@ impl Parser {
         if self.current()?.kind.is_unary_operator() {
             return Ok(Node::BinaryExpression {
                 left: Box::new(left_node),
-                operator,
+                operator: operator_kind,
                 right: Box::new(self.parse_unary_expression()?),
             });    
         }
@@ -920,7 +685,7 @@ impl Parser {
 
         let binary_expression = Node::BinaryExpression {
             left: Box::new(left_node),
-            operator,
+            operator: operator_kind,
             right: Box::new(right_node),
         };
 
@@ -945,6 +710,7 @@ impl Parser {
 
 #[cfg(test)]
 mod tests {
+    use ast::node::OperatorKind;
     use super::*;
 
     #[test]
@@ -975,10 +741,10 @@ mod tests {
         let x = res.unwrap();
 
         if let Node::BinaryExpression {left, operator, right} = x {
-            assert_eq!(operator, TokenKind::Implies);
+            assert_eq!(operator, OperatorKind::Implies);
 
             if let Node::BinaryExpression {left: left_left, operator: left_operator, right: left_right} = *left {
-                assert_eq!(left_operator, TokenKind::Implies);
+                assert_eq!(left_operator, OperatorKind::Implies);
 
                 if let Node::Identifier {value} = *left_left {
                     assert_eq!(value, "A");
@@ -996,7 +762,7 @@ mod tests {
             }
 
             if let Node::BinaryExpression {left: right_left, operator: right_operator, right: right_right} = *right {
-                assert_eq!(right_operator, TokenKind::Implies);
+                assert_eq!(right_operator, OperatorKind::Implies);
 
                 if let Node::Identifier {value} = *right_left {
                     assert_eq!(value, "C");
@@ -1027,10 +793,10 @@ mod tests {
         println!("{:?}", x);
 
         if let Node::BinaryExpression {left, operator, right} = x {
-            assert_eq!(operator, TokenKind::Implies);
+            assert_eq!(operator, OperatorKind::Implies);
 
             if let Node::BinaryExpression {left: left_left, operator: left_operator, right: left_right} = *left {
-                assert_eq!(left_operator, TokenKind::Implies);
+                assert_eq!(left_operator, OperatorKind::Implies);
 
                 if let Node::Identifier {value} = *left_left {
                     assert_eq!(value, "A");
@@ -1065,7 +831,7 @@ mod tests {
         let x = res.unwrap();
 
         if let Node::BinaryExpression {left, operator, right} = x {
-            assert_eq!(operator, TokenKind::Implies);
+            assert_eq!(operator, OperatorKind::Implies);
 
             if let Node::Identifier {value} = *left {
                 assert_eq!(value, "A");
@@ -1074,7 +840,7 @@ mod tests {
             }
 
             if let Node::BinaryExpression {left: right_left, operator: right_operator, right: right_right} = *right {
-                assert_eq!(right_operator, TokenKind::Implies);
+                assert_eq!(right_operator, OperatorKind::Implies);
 
                 if let Node::Identifier {value} = *right_left {
                     assert_eq!(value, "B");

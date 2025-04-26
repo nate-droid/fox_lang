@@ -1,14 +1,17 @@
-use crate::internal_types::{fetch_binary, fetch_integer, fetch_string};
-use crate::lang_ast::Ast;
+// use crate::internal_types::{fetch_binary, fetch_integer, fetch_string};
 use crate::lang_lexer::LangLexer;
 use crate::lexer::TokenKind::{And, Comma};
 use crate::lexer::{Token, TokenKind};
-use crate::parser::{Node};
+
+use ast::ast::Ast;
+use ast::node::{Node, OperatorKind};
+
 
 pub struct LangParser<'a> {
     lexer: LangLexer<'a>,
     tokens: Vec<Token>,
     position: usize,
+    pub(crate) ast: Ast,
 }
 
 impl<'a> LangParser<'a> {
@@ -22,18 +25,19 @@ impl<'a> LangParser<'a> {
 
         let tokens = lexer.tokens();
         
-        println!("tokens: {:?}", tokens);
+        let ast = Ast::new();
         
         Self {
             lexer,
             tokens,
             position: 0,
+            ast,
         }
     }
 
-    pub fn parse(&mut self) -> Result<Ast, String> {
+    pub fn parse(&mut self) -> Result<ast::ast::Ast, String> {
         let mut globals = Vec::new();
-        let mut ast = Ast::new();
+        let mut ast = ast::ast::Ast::new();
 
         while self.position < self.tokens.len() {
             match self.current_token()?.kind {
@@ -63,7 +67,7 @@ impl<'a> LangParser<'a> {
 
                             self.consume(TokenKind::Semicolon)?;
 
-                            ast.add_node(Node::Type {
+                            ast.add_node(ast::node::Node::Type {
                                 name: type_name.value,
                             });
                             continue;
@@ -94,11 +98,11 @@ impl<'a> LangParser<'a> {
                             self.consume(TokenKind::Word)?;
                             self.consume(TokenKind::LeftParenthesis)?;
                             let value = self.parse_node()?;
-                            let bin = fetch_binary(value)?;
+                            let bin = ast::internal_types::fetch_binary(value)?;
 
                             self.consume(TokenKind::RightParenthesis)?;
 
-                            ast.add_node(Node::Atomic { value: ast::ast::Value::Bin(bin) });
+                            ast.add_node(ast::node::Node::Atomic { value: ast::value::Value::Bin(bin) });
                             continue;
                         }
                         _ => {
@@ -110,7 +114,7 @@ impl<'a> LangParser<'a> {
                                     self.consume(TokenKind::Equality)?;
                                     let value = self.parse_node()?;
 
-                                    ast.add_node(Node::AssignStmt {
+                                    ast.add_node(ast::node::Node::AssignStmt {
                                         left: Box::from(Node::Ident {
                                             name: ident.value,
                                             kind: "var".to_string(),
@@ -200,6 +204,17 @@ impl<'a> LangParser<'a> {
         Ok(ast)
     }
 
+    pub fn parse_input(&mut self, input: &str) -> Result<(), String> {
+        let mut parser = LangParser::new(input);
+        let ast = parser.parse().expect("unexpected failure");
+
+        for node in ast.nodes {
+            self.ast.add_node(node);
+        }
+
+        Ok(())
+    }
+    
     fn parse_node(&mut self) -> Result<Node, String> {
         match self.current_token()?.kind {
             TokenKind::Number => { self.parse_number() }
@@ -219,7 +234,7 @@ impl<'a> LangParser<'a> {
     }
 
     fn parse_number(&mut self) -> Result<Node, String> {
-        let val = ast::ast::Value::from_string(self.current_token()?.value);
+        let val = ast::value::Value::from_string(self.current_token()?.value);
         self.advance();
         Ok(Node::Atomic { value: val })
     }
@@ -246,10 +261,10 @@ impl<'a> LangParser<'a> {
                 return Ok(Node::Return { value: Box::from(value) });
             }
             "true" => {
-                return Ok(Node::Atomic { value: ast::ast::Value::Bool(true) });
+                return Ok(Node::Atomic { value: ast::value::Value::Bool(true) });
             }
             "false" => {
-                return Ok(Node::Atomic { value: ast::ast::Value::Bool(false) });
+                return Ok(Node::Atomic { value: ast::value::Value::Bool(false) });
             }
             "bin" => {
                 self.consume(TokenKind::LeftParenthesis)?;
@@ -259,17 +274,18 @@ impl<'a> LangParser<'a> {
 
                 if self.current_token()?.kind.is_binary_operator()  {
                     let op = self.current_token()?;
+                    let op_kind = token_kind_to_operator_kind(op.kind)?;
                     self.advance();
                     let right = self.parse_node()?;
 
                     return Ok(Node::BinaryExpression {
                         left: Box::from(value),
-                        operator: op.kind,
+                        operator: op_kind,
                         right: Box::from(right),
                     });
                 }
-                let integer = fetch_integer(value)?;
-                return Ok(Node::Atomic { value: ast::ast::Value::Bin(integer as u32) });
+                let integer = ast::internal_types::fetch_integer(value)?;
+                return Ok(Node::Atomic { value: ast::value::Value::Bin(integer as u32) });
             }
             _ => {}
         }
@@ -315,17 +331,19 @@ impl<'a> LangParser<'a> {
             }
             TokenKind::Add | TokenKind::Subtract | TokenKind::Multiply | TokenKind::Divide => {
                 let operator = self.current_token()?;
+                let operator_kind = token_kind_to_operator_kind(operator.kind)?;
                 self.advance();
                 let right = self.parse_node()?;
+                
                 Ok(Node::BinaryExpression {
                     left: Box::from(Node::AssignStmt {
                         left: Box::from(Node::Ident { name: name.value, kind: "var".to_string() }),
                         right: Box::from(Node::Atomic {
-                            value: ast::ast::Value::Int(0),
+                            value: ast::value::Value::Int(0),
                         }),
                         kind: "Nat".to_string(),
                     }),
-                    operator: operator.kind,
+                    operator: operator_kind,
                     right: Box::from(right),
                 })
             }
@@ -360,7 +378,7 @@ impl<'a> LangParser<'a> {
                     left: Box::from(Node::AssignStmt {
                         left: Box::from(Node::Ident { name: name.value, kind: "var".to_string() }),
                         right: Box::from(Node::Atomic {
-                            value: ast::ast::Value::Int(0),
+                            value: ast::value::Value::Int(0),
                         }),
                         kind: "Nat".to_string(),
                     }),
@@ -394,7 +412,7 @@ impl<'a> LangParser<'a> {
         Ok(Node::AssignStmt {
             left: Box::from(Node::Ident { name: name.value, kind: "var".to_string() }),
             right: Box::from(Node::Atomic {
-                value: ast::ast::Value::Int(0),
+                value: ast::value::Value::Int(0),
             }),
             kind: "Nat".to_string(),
         })
@@ -418,7 +436,7 @@ impl<'a> LangParser<'a> {
     }
 
     fn parse_string(&mut self) -> Result<Node, String> {
-        let val = ast::ast::Value::Str(self.current_token()?.value.clone());
+        let val = ast::value::Value::Str(self.current_token()?.value.clone());
         self.advance();
         Ok(Node::Atomic { value: val })
     }
@@ -426,7 +444,7 @@ impl<'a> LangParser<'a> {
     fn parse_negation(&mut self) -> Result<Node, String> {
         self.consume(TokenKind::Negation)?;
         let node = self.parse_node()?;
-        Ok(Node::UnaryExpression { operator: TokenKind::Negation, right: Box::from(node) })
+        Ok(Node::UnaryExpression { operator: OperatorKind::Negation, right: Box::from(node) })
     }
 
     fn parse_less_than(&mut self) -> Result<Node, String> {
@@ -488,13 +506,14 @@ impl<'a> LangParser<'a> {
             || self.current_token()?.kind == TokenKind::ShiftRight
         {
             let op = self.current_token()?;
+            let op_kind = token_kind_to_operator_kind(op.kind)?;
             self.advance();
 
             let right = self.parse_node()?;
 
             let n = Node::BinaryExpression {
                 left: Box::from(left),
-                operator: op.kind,
+                operator: op_kind,
                 right: Box::from(right),
             };
 
@@ -587,8 +606,8 @@ impl<'a> LangParser<'a> {
                 Ok(Node::ForLoop {
                     variable: variable.value,
                     range: (
-                        Box::from(Node::Atomic { value: ast::ast::Value::Int(start.value.parse::<i32>().unwrap()) }),
-                        Box::from(Node::Atomic { value: ast::ast::Value::Int(end.value.parse::<i32>().unwrap()) }),
+                        Box::from(Node::Atomic { value: ast::value::Value::Int(start.value.parse::<i32>().unwrap()) }),
+                        Box::from(Node::Atomic { value: ast::value::Value::Int(end.value.parse::<i32>().unwrap()) }),
                     ),
                     body: nodes,
                 })
@@ -616,7 +635,7 @@ impl<'a> LangParser<'a> {
                 Ok(Node::ForLoop {
                     variable: variable.value,
                     range: (
-                        Box::from(Node::Atomic { value: ast::ast::Value::Int(start.value.parse::<i32>().unwrap()) }),
+                        Box::from(Node::Atomic { value: ast::value::Value::Int(start.value.parse::<i32>().unwrap()) }),
                         Box::from(Node::Ident { name: end.value, kind: "var".to_string() }),
                     ),
                     body: nodes,
@@ -642,6 +661,7 @@ impl<'a> LangParser<'a> {
                 }
                 
                 let operator = self.current_token()?;
+                let operator_kind = token_kind_to_operator_kind(operator.kind)?;
                 self.advance();
                 
                 let right = self.parse_node()?;
@@ -649,11 +669,13 @@ impl<'a> LangParser<'a> {
                 // todo: check if the current token is a binary operator
                 if self.current_token()?.kind.is_binary_operator() {
                     let op = self.current_token()?;
+                    let op_kind = token_kind_to_operator_kind(op.kind)?;
                     self.advance();
                     let right_left = self.parse_node()?;
 
                     if self.current_token()?.kind != TokenKind::RightParenthesis {
                         let op_right = self.current_token()?;
+                        let op_right_kind = token_kind_to_operator_kind(op_right.kind)?;
                         self.advance();
                         // more expressions to parse
                         let right_right = self.parse_node()?;
@@ -661,13 +683,13 @@ impl<'a> LangParser<'a> {
                         return Ok(Node::BinaryExpression {
                             left: Box::from(Node::BinaryExpression {
                                 left: Box::from(n),
-                                operator: operator.kind,
+                                operator: operator_kind,
                                 right: Box::from(right),
                             }),
-                            operator: op.kind,
+                            operator: op_kind,
                             right: Box::from(Node::BinaryExpression {
                                 left: Box::from(right_left),
-                                operator: op_right.kind,
+                                operator: op_right_kind,
                                 right: Box::from(right_right),
                             }),
                         });
@@ -676,10 +698,10 @@ impl<'a> LangParser<'a> {
                     return Ok(Node::BinaryExpression {
                         left: Box::from(Node::BinaryExpression {
                             left: Box::from(n),
-                            operator: operator.kind,
+                            operator: operator_kind,
                             right: Box::from(right),
                         }),
-                        operator: op.kind,
+                        operator: op_kind,
                         right: Box::from(right_left),
                     });
                 }
@@ -687,7 +709,7 @@ impl<'a> LangParser<'a> {
                 
                 Ok(Node::BinaryExpression {
                     left: Box::from(n),
-                    operator: operator.kind,
+                    operator: operator_kind,
                     right: Box::from(right),
                 })
             }
@@ -695,14 +717,15 @@ impl<'a> LangParser<'a> {
                 let left = self.current_token()?;
                 self.advance();
                 let operator = self.current_token()?;
+                let operator_kind = token_kind_to_operator_kind(operator.kind)?;
                 self.advance();
                 let right = self.parse_condition()?;
                 
                 let node = Node::BinaryExpression {
                     left: Box::from(Node::Atomic {
-                        value: ast::ast::Value::Int(left.value.parse::<i32>().unwrap()),
+                        value: ast::value::Value::Int(left.value.parse::<i32>().unwrap()),
                     }),
-                    operator: operator.kind,
+                    operator: operator_kind,
                     right: Box::from(right),
                 };
                 Ok(node)
@@ -784,12 +807,12 @@ impl<'a> LangParser<'a> {
         if left.value == "true" {
             self.advance();
             return Ok(Node::Atomic {
-                value: ast::ast::Value::Bool(true),
+                value: ast::value::Value::Bool(true),
             });
         } else if left.value == "false" {
             self.advance();
             return Ok(Node::Atomic {
-                value: ast::ast::Value::Bool(false),
+                value: ast::value::Value::Bool(false),
             });
         }
         
@@ -800,7 +823,7 @@ impl<'a> LangParser<'a> {
             if self.current_token()?.kind != TokenKind::Number {
                 self.consume(TokenKind::RightParenthesis)?;
                 return Ok(Node::Atomic {
-                    value: ast::ast::Value::Int(val.parse().unwrap()),
+                    value: ast::value::Value::Int(val.parse().unwrap()),
                 });
             }
 
@@ -810,7 +833,7 @@ impl<'a> LangParser<'a> {
             return Ok(Node::AssignStmt {
                 left: Box::from(Node::Ident { name: left.value, kind: "var".to_string() }),
                 right: Box::from(Node::Atomic {
-                    value: ast::ast::Value::Int(0),
+                    value: ast::value::Value::Int(0),
                 }),
                 kind: "Nat".to_string(),
             });
@@ -818,9 +841,10 @@ impl<'a> LangParser<'a> {
         
         self.advance();
         let operator = self.current_token()?;
+        let operator_kind = token_kind_to_operator_kind(operator.kind)?;
 
         self.advance();
-        println!("operator: {:?}", operator);
+        println!("operator: {:?}", operator_kind);
         
         let right = self.parse_node()?;
         // TODO: add support for the right side being a variable
@@ -828,11 +852,11 @@ impl<'a> LangParser<'a> {
             left: Box::from(Node::AssignStmt {
                 left: Box::from(Node::Ident { name: left.value, kind: "var".to_string() }),
                 right: Box::from(Node::Atomic {
-                    value: ast::ast::Value::Int(0),
+                    value: ast::value::Value::Int(0),
                 }),
                 kind: "Nat".to_string(),
             }),
-            operator: operator.kind,
+            operator: operator_kind,
             right: Box::from(right),
         };
         
@@ -841,13 +865,14 @@ impl<'a> LangParser<'a> {
         }
         
         let op = self.current_token()?;
+        let op_kind = token_kind_to_operator_kind(op.kind)?;
         self.advance();
 
         let right2 = self.parse_condition()?;
 
         Ok(Node::BinaryExpression {
             left: Box::from(node),
-            operator: op.kind,
+            operator: op_kind,
             right: Box::from(right2),
         })
     }
@@ -1056,3 +1081,37 @@ mod tests {
         // for example, having an expression not terminate with a semicolon
     }
 }
+
+pub fn token_kind_to_operator_kind(kind: TokenKind) -> Result<OperatorKind, String> {
+    match kind {
+        TokenKind::Add => Ok(OperatorKind::Add),
+        TokenKind::Subtract => Ok(OperatorKind::Subtract),
+        TokenKind::Multiply => Ok(OperatorKind::Multiply),
+        TokenKind::Divide => Ok(OperatorKind::Divide),
+        TokenKind::BitwiseAnd => Ok(OperatorKind::BitwiseAnd),
+        TokenKind::BitwiseOr => Ok(OperatorKind::BitwiseOr),
+        TokenKind::BitwiseXor => Ok(OperatorKind::BitwiseXor),
+        TokenKind::ShiftLeft => Ok(OperatorKind::ShiftLeft),
+        TokenKind::ShiftRight => Ok(OperatorKind::ShiftRight),
+        TokenKind::Modulo => Ok(OperatorKind::Modulo),
+        TokenKind::IsEqual => Ok(OperatorKind::IsEqual),
+        TokenKind::LessThan => Ok(OperatorKind::LessThan),
+        TokenKind::GreaterThan => Ok(OperatorKind::GreaterThan),
+        TokenKind::Or => Ok(OperatorKind::Or),
+        TokenKind::And => Ok(OperatorKind::And),
+        TokenKind::Implies => Ok(OperatorKind::Implies),
+        TokenKind::Biconditional => Ok(OperatorKind::Biconditional),
+        TokenKind::Disjunction => Ok(OperatorKind::Disjunction),
+        TokenKind::Conjunction => Ok(OperatorKind::Conjunction),
+        TokenKind::Equality => Ok(OperatorKind::Equality),
+        TokenKind::ForAll => Ok(OperatorKind::ForAll),
+        TokenKind::Exists => Ok(OperatorKind::Exists),
+        TokenKind::ElementOf => Ok(OperatorKind::ElementOf),
+        TokenKind::Identifier => Ok(OperatorKind::Identifier),
+        TokenKind::Negation => Ok(OperatorKind::Negation),
+        TokenKind::Print => Ok(OperatorKind::Identifier),
+        _ => panic!("unexpected token kind {:?}", kind),
+    }
+}
+
+

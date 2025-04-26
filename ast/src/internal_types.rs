@@ -1,6 +1,6 @@
 use std::collections::{BTreeMap};
-use ast::ast::Value;
-use crate::parser::Node;
+use crate::node::Node;
+use crate::value::Value;
 
 pub(crate) fn fetch_array(node: Node) -> Result<Vec<Node>, String> {
     if let Node::Array { elements } = node {
@@ -44,7 +44,7 @@ pub(crate) fn fetch_string(node: Node) -> Result<String, String> {
     }
 }
 
-pub(crate) fn fetch_integer(node: Node) -> Result<i32, String> {
+pub fn fetch_integer(node: Node) -> Result<i32, String> {
     match node {
         Node::Atomic { value } => {
             if let Value::Int(i) = value {
@@ -73,7 +73,7 @@ pub(crate) fn fetch_boolean(node: Node) -> Result<bool, String> {
     }
 }
 
-pub(crate) fn fetch_binary(node: Node) -> Result<u32, String> {
+pub fn fetch_binary(node: Node) -> Result<u32, String> {
     match node {
         Node::Atomic { value } => {
             if let Value::Bin(b) = value {

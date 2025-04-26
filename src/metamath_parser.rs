@@ -1,7 +1,8 @@
 #[cfg(test)]
 mod tests {
     use crate::cut::{reduce, Axiom};
-    use crate::parser::{Node, Parser};
+    use crate::parser::{Parser};
+    use ast::node::Node;
 
     #[test]
     fn test_node_print() {

@@ -1,5 +1,9 @@
-use crate::parser::{Node, ParseError, Parser};
+use crate::parser::{ParseError, Parser};
 use crate::lexer::TokenKind;
+
+use ast::node::Node;
+use ast::node::OperatorKind;
+use crate::lexer::TokenKind::Operator;
 
 pub struct Axiom {
     index: usize,
@@ -149,7 +153,7 @@ pub fn reduce(node: Node) -> Result<(Node, Node), ReduceError>{
     match node.clone() {
         Node::UnaryExpression { operator: _operator, .. } => {
             match node.operator() {
-                TokenKind::Negation => {
+                OperatorKind::Negation => {
                     // |- ¬A becomes A |- ⊥
                     let right = node.right().unwrap();
 
@@ -162,7 +166,7 @@ pub fn reduce(node: Node) -> Result<(Node, Node), ReduceError>{
         }
         Node::BinaryExpression { left, operator: _operator, right } => {
             match node.operator() {
-                TokenKind::Implies | TokenKind::Biconditional => {
+                OperatorKind::Implies | OperatorKind::Biconditional => {
                     // |- A -> B becomes A |- B
 
                     let node_left = *left;
@@ -170,7 +174,7 @@ pub fn reduce(node: Node) -> Result<(Node, Node), ReduceError>{
 
                     Ok((node_left, node_right))
                 }
-                TokenKind::ForAll | TokenKind::Equality | TokenKind::ElementOf | TokenKind::Conjunction | TokenKind::Exists | TokenKind::Disjunction => {
+                OperatorKind::ForAll | OperatorKind::Equality | OperatorKind::ElementOf | OperatorKind::Conjunction | OperatorKind::Exists | OperatorKind::Disjunction => {
                     Ok((*left, *right))
                 }
                 _ => {
