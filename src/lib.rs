@@ -11,3 +11,6 @@ mod compile;
 mod pe;
 mod arrays;
 pub mod functions;
+pub mod bytecode;
+pub mod compiler;
+pub mod vm;
