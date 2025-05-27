@@ -18,6 +18,34 @@ pub enum OpCode {
     Divide,
     /// A temporary instruction to end execution.
     Return,
+
+    /// Pops a value, negates it, and pushes the result.
+    Negate,
+
+    /// Defines a new global variable.
+    /// Operand: 1 byte (index of the variable name in the constant pool).
+    DefineGlobal,
+
+    /// Pushes the value of a global variable onto the stack.
+    /// Operand: 1 byte (index of the variable name).
+    GetGlobal,
+
+    /// Pops a value and assigns it to an existing global variable.
+    /// Operand: 1 byte (index of the variable name).
+    SetGlobal,
+
+    OpTrue,
+    OpFalse,
+    OpNot,
+    OpEqual,
+    OpGreater,
+    OpLess,
+    OpModulo,
+
+    JumpIfFalse,
+    Jump,
+    Pop,
+    Nil,
 }
 
 // Helper to convert from your AST Operator to an OpCode

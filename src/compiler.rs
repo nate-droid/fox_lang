@@ -4,14 +4,68 @@ use ast::ast::Ast;
 pub struct Compiler;
 
 impl Compiler {
+    fn emit_jump(op: OpCode, chunk: &mut Chunk) -> usize {
+        chunk.write(op as u8);
+        chunk.write(0xff); // Placeholder byte 1
+        chunk.write(0xff); // Placeholder byte 2
+        chunk.code.len() - 2 // Return the address of the placeholder
+    }
+
+    /// Overwrites the placeholder at the given offset with the calculated jump distance.
+    fn patch_jump(offset: usize, chunk: &mut Chunk) {
+        // -3 to account for the size of the jump instruction's operand itself (2 bytes)
+        // and the jump opcode (1 byte)
+        let jump = chunk.code.len() - offset - 2;
+
+        if jump > u16::MAX as usize {
+            // Handle error: jump is too large
+            panic!("Jump too large!");
+        }
+
+        chunk.code[offset] = ((jump >> 8) & 0xff) as u8;
+        chunk.code[offset + 1] = (jump & 0xff) as u8;
+    }
     pub fn compile(ast: &Ast) -> Result<Chunk, String> {
         let mut chunk = Chunk::new();
 
-        for node in &ast.nodes {
-            // We start by compiling each top-level node in the AST
-            Self::compile_node(node, &mut chunk)?;
-        }
+        // for node in &ast.nodes {
+        //     // We start by compiling each top-level node in the AST
+        //     Self::compile_node(node, &mut chunk)?;
+        // 
+        //     if is_expression_node(node) {
+        //         chunk.write(OpCode::Pop as u8);
+        //     }
+        // }
 
+        //     if !last_node_is_expr {
+        //         chunk.write(OpCode::Nil as u8);
+        //     }
+        
+        // chunk.write(OpCode::Nil as u8);
+
+        // Handle all statements except for the very last one.
+        if let Some((last_node, preceding_nodes)) = ast.nodes.split_last() {
+            for node in preceding_nodes {
+                Self::compile_node(node, &mut chunk)?;
+                // If the node was an expression, its result is unused, so pop it.
+                if is_expression_node(node) {
+                    chunk.write(OpCode::Pop as u8);
+                }
+            }
+
+            // Now, compile the final node in the program.
+            Self::compile_node(last_node, &mut chunk)?;
+
+            // If the final node is a statement (not an expression), it produces
+            // no value, so we push `nil` as the default result of the script.
+            if !is_expression_node(last_node) {
+                chunk.write(OpCode::Nil as u8);
+            }
+        } else {
+            // The script is empty, so its result is `nil`.
+            chunk.write(OpCode::Nil as u8);
+        }
+        
         // Add a final instruction to stop the VM
         chunk.write(OpCode::Return as u8);
 
@@ -28,7 +82,22 @@ impl Compiler {
                         chunk.write(OpCode::Constant as u8);
                         chunk.write(constant_index);
                     },
-                    _ => return Err("Unsupported value type".to_string()),
+                    Value::Str(s) => {
+                        let constant_index = chunk.add_constant(Value::Str(s.clone()));
+                        chunk.write(OpCode::Constant as u8);
+                        chunk.write(constant_index);
+                    },
+                    Value::Bool(b) => {
+                        let constant_index = chunk.add_constant(Value::Bool(*b));
+                        chunk.write(OpCode::Constant as u8);
+                        chunk.write(constant_index);
+                    },
+                    _ => {
+                        // display an error for unsupported value types
+                        //
+                        // return Err("Unsupported value type".to_string())
+                        return Err(format!("Unsupported value type: {:?}", value));
+                    },
                 };
                 
             }
@@ -46,10 +115,122 @@ impl Compiler {
                 let op_code = OpCode::from(operator.clone());
                 chunk.write(op_code as u8);
             }
+            Node::UnaryExpression { operator, right } => {
+                // 1. Compile the expression on the right. Its value will be on the stack.
+                Self::compile_node(right, chunk)?;
+                // 2. Emit the operator instruction.
+                match operator {
+                    OperatorKind::Subtract => chunk.write(OpCode::Negate as u8),
+                    // You would add OperatorKind::Not for logical not, etc.
+                    _ => return Err("Unsupported unary operator".to_string()),
+                }
+            }
+
+            Node::AssignStmt { left, right, kind } => {
+                // For now, we'll treat `let my_var = ...` the same as `my_var = ...`
+                // and assume they are all global.
+
+                // 1. Compile the right-hand side. The value to be assigned is now on the stack.
+                Self::compile_node(right, chunk)?;
+
+                // 2. Get the variable name from the left-hand side.
+                if let Node::Identifier { value: name } = &**left {
+                    // 3. Add the name to the constant pool.
+                    let name_index = chunk.add_constant(Value::Str(name.clone())); // You'll need to add String to your `Value` enum!
+
+                    // 4. Emit the correct instruction.
+                    // A simple implementation could always use DefineGlobal.
+                    // A more advanced one would track declared variables.
+                    chunk.write(OpCode::DefineGlobal as u8);
+                    chunk.write(name_index);
+                } else {
+                    return Err("Invalid assignment target".to_string());
+                }
+            }
+
+            Node::Identifier { value: name } => {
+                // This is for when a variable is *used*, not assigned to.
+                // 1. Add the name to the constant pool.
+                let name_index = chunk.add_constant(Value::Str(name.clone())); // Again, needs `Value::String`
+                // 2. Emit an instruction to get the variable's value.
+                chunk.write(OpCode::GetGlobal as u8);
+                chunk.write(name_index);
+            }
+
+            // You would also need to update your `Node::Atomic` to handle your custom Value type
+            Node::Atomic { value } => {
+                let const_index = chunk.add_constant(value.clone());
+                chunk.write(OpCode::Constant as u8);
+                chunk.write(const_index);
+            }
+            Node::Conditional { condition, consequence, alternative } => {
+                // 1. Compile the condition. Its boolean result is now on the stack.
+                Self::compile_node(condition, chunk)?;
+
+                // 2. Emit a jump. It will execute and POP the condition value.
+                //    If the condition was false, it jumps to the `else` branch.
+                let else_jump = Self::emit_jump(OpCode::JumpIfFalse, chunk);
+
+                // 3. Compile the `then` branch. Our helper ensures it leaves one value.
+                Self::compile_block(consequence, chunk)?;
+
+                // 4. Emit an unconditional jump to skip over the `else` branch.
+                let end_jump = Self::emit_jump(OpCode::Jump, chunk);
+
+                // 5. Backpatch the `JumpIfFalse` to point to the start of the else logic.
+                Self::patch_jump(else_jump, chunk);
+
+                // 6. Compile the `else` branch. Our helper ensures it also leaves one value.
+                Self::compile_block(alternative, chunk)?;
+
+                // 7. Backpatch the final `Jump` to point to the end of the whole expression.
+                Self::patch_jump(end_jump, chunk);
+            }
             _ => return Err("Unsupported AST node".to_string()),
         }
         Ok(())
     }
+
+    fn compile_block(nodes: &[Node], chunk: &mut Chunk) -> Result<(), String> {
+        if let Some((last_node, preceding_nodes)) = nodes.split_last() {
+            for node in preceding_nodes {
+                Self::compile_node(node, chunk)?;
+                // If the node was an expression, its result is unused, so pop it.
+                if is_expression_node(node) {
+                    chunk.write(OpCode::Pop as u8);
+                }
+            }
+
+            // Compile the final node in the block.
+            Self::compile_node(last_node, chunk)?;
+
+            // If the final node is a statement, it produces no value,
+            // so we push `nil` as the result of the block.
+            if !is_expression_node(last_node) {
+                chunk.write(OpCode::Nil as u8);
+            }
+        } else {
+            // The block is empty, so its result is `nil`.
+            chunk.write(OpCode::Nil as u8);
+        }
+        Ok(())
+    }
+}
+
+fn is_expression_node(node: &Node) -> bool {
+    matches!(
+        node,
+        Node::BinaryExpression { .. } |
+        Node::UnaryExpression { .. } |
+        Node::Identifier { .. } |
+        Node::Atomic { .. } |
+        Node::Call { .. } |
+        Node::MethodCall { .. } |
+        Node::IndexExpression { .. } |
+        Node::Array { .. } |
+        Node::HMap { .. } |
+        Node::Conditional { .. }
+    )
 }
 
 pub mod debug {
@@ -82,6 +263,46 @@ pub mod debug {
                 simple_instruction(opcode, offset)
             }
             OpCode::Constant => constant_instruction(opcode, chunk, offset),
+            OpCode::Negate => simple_instruction(opcode, offset),
+            OpCode::DefineGlobal => {
+                // The next byte is the index of the constant (the variable name).
+                let constant_index = chunk.code[offset + 1] as usize;
+                let constant_value = &chunk.constants[constant_index];
+                println!("{:_<-16} {:4} '{}'", format!("{:?}", opcode), constant_index, constant_value);
+                offset + 2
+            }
+            OpCode::GetGlobal => {
+                // The next byte is the index of the constant (the variable name).
+                let constant_index = chunk.code[offset + 1] as usize;
+                let constant_value = &chunk.constants[constant_index];
+                println!("{:_<-16} {:4} '{}'", format!("{:?}", opcode), constant_index, constant_value);
+                offset + 2
+            }
+            OpCode::SetGlobal => {
+                // The next byte is the index of the constant (the variable name).
+                let constant_index = chunk.code[offset + 1] as usize;
+                let constant_value = &chunk.constants[constant_index];
+                println!("{:_<-16} {:4} '{}'", format!("{:?}", opcode), constant_index, constant_value);
+                offset + 2
+            }
+            OpCode::OpTrue | OpCode::OpFalse | OpCode::OpNot => {
+                simple_instruction(opcode, offset)
+            }
+            OpCode::OpEqual | OpCode::OpGreater | OpCode::OpLess | OpCode::OpModulo => {
+                simple_instruction(opcode, offset)
+            }
+            OpCode::JumpIfFalse | OpCode::Jump => {
+                // The next two bytes are the jump offset.
+                let jump_offset = ((chunk.code[offset + 1] as usize) << 8) | (chunk.code[offset + 2] as usize);
+                println!("{:_<-16} {:4} -> {}", format!("{:?}", opcode), jump_offset, offset + jump_offset + 3);
+                offset + 3
+            }
+            OpCode::Pop => {
+                simple_instruction(opcode, offset)
+            }
+            OpCode::Nil => {
+                simple_instruction(opcode, offset)
+            }
         }
     }
 

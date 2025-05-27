@@ -10,6 +10,7 @@ pub enum Value {
     Str(String),
     Bool(bool),
     Bin(u32),
+    Null,
     // Add other types as needed
 }
 
@@ -31,6 +32,7 @@ impl Display for Value {
             Value::Str(s) => write!(f, "{}", s),
             Value::Bool(b) => write!(f, "{}", b),
             Value::Bin(b) => write!(f, "{:b}", b),
+            Value::Null => write!(f, "null"),
         }
     }
 }
