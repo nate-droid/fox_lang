@@ -42,22 +42,7 @@ impl Default for VM {
 
 impl PartialEq for OpCode {
     fn eq(&self, other: &Self) -> bool {
-        // Compare the enum variants directly.
-        match (self, other) {
-            (OpCode::Return, OpCode::Return) => true,
-            (OpCode::Constant, OpCode::Constant) => true,
-            (OpCode::Nil, OpCode::Nil) => true,
-            (OpCode::OpTrue, OpCode::OpTrue) => true,
-            (OpCode::OpFalse, OpCode::OpFalse) => true,
-            (OpCode::Pop, OpCode::Pop) => true,
-            (OpCode::Add, OpCode::Add) => true,
-            (OpCode::Subtract, OpCode::Subtract) => true,
-            (OpCode::Multiply, OpCode::Multiply) => true,
-            (OpCode::Divide, OpCode::Divide) => true,
-            (OpCode::Jump, OpCode::Jump) => true,
-            (OpCode::JumpIfFalse, OpCode::JumpIfFalse) => true,
-            _ => false, // For all other cases
-        }
+        matches!((self, other), (OpCode::Return, OpCode::Return) | (OpCode::Constant, OpCode::Constant) | (OpCode::Nil, OpCode::Nil) | (OpCode::OpTrue, OpCode::OpTrue) | (OpCode::OpFalse, OpCode::OpFalse) | (OpCode::Pop, OpCode::Pop) | (OpCode::Add, OpCode::Add) | (OpCode::Subtract, OpCode::Subtract) | (OpCode::Multiply, OpCode::Multiply) | (OpCode::Divide, OpCode::Divide) | (OpCode::Jump, OpCode::Jump) | (OpCode::JumpIfFalse, OpCode::JumpIfFalse))
     }
 }
 
@@ -80,30 +65,20 @@ impl VM {
                 print!("[ {} ]", value);
             }
             println!();
-            // Disassemble the instruction
+            
             debug::disassemble_instruction(chunk, ip);
-
-            // Read the byte at the instruction pointer.
-            // let instruction = chunk.code[ip];
-            // ip += 1; // Advance the pointer
-
-            // Decode and execute the instruction.
+            
             let instruction = chunk.code[ip];
             let opcode: OpCode = unsafe { std::mem::transmute(instruction) };
             match opcode {
                 OpCode::Return => {
-                    // The script is over, pop the final value and return it.
                     return Ok(self.stack.pop().unwrap_or(Value::Null));
                 }
-
                 OpCode::Constant => {
-                    // Read the operand (the index into the constant pool).
                     let const_index = chunk.code[ip + 1] as usize;
                     self.stack.push(chunk.constants[const_index].clone());
-                    // Advance IP by 2 bytes (1 for opcode, 1 for operand).
                     ip += 2;
                 }
-
                 OpCode::Nil => {
                     self.stack.push(Value::Null);
                     ip += 1;
@@ -116,18 +91,14 @@ impl VM {
                     self.stack.push(Value::Bool(false));
                     ip += 1;
                 }
-
                 OpCode::Pop => {
-                    self.stack.pop(); // Discard
+                    self.stack.pop();
                     ip += 1;
                 }
-
                 OpCode::OpEqual | OpCode::OpGreater | OpCode::OpLess | OpCode::Add | OpCode::Subtract | OpCode::Multiply | OpCode::Divide => {
-                    // All binary ops work the same way now
                     let b = self.stack.pop().unwrap();
                     let a = self.stack.pop().unwrap();
-
-                    // In a real implementation, you'd handle type errors here.
+ 
                     if let (Value::Int(a_val), Value::Int(b_val)) = (a.clone(), b.clone()) {
                         let result = match opcode {
                             OpCode::OpEqual => Value::Bool(a_val == b_val),
@@ -137,23 +108,19 @@ impl VM {
                             OpCode::Subtract => Value::Int(a_val - b_val),
                             OpCode::Multiply => Value::Int(a_val * b_val),
                             OpCode::Divide => Value::Int(a_val / b_val),
-                            _ => unreachable!(), // Should not happen
+                            _ => unreachable!(),
                         };
                         self.stack.push(result);
+                    } else if opcode == OpCode::OpEqual {
+                        self.stack.push(Value::Bool(a == b));
                     } else {
-                        // For now, let's handle bool equality
-                        if opcode == OpCode::OpEqual {
-                            self.stack.push(Value::Bool(a == b));
-                        } else {
-                            return Err("Mismatched types for operation".to_string());
-                        }
+                        return Err("Mismatched types for operation".to_string());
                     }
                     ip += 1;
                 }
 
                 OpCode::Jump => {
                     let offset = ((chunk.code[ip + 1] as u16) << 8) | chunk.code[ip + 2] as u16;
-                    // Move ip forward by the offset. The +3 is to jump past the opcode and its operand.
                     ip += 3 + offset as usize;
                 }
                 OpCode::JumpIfFalse => {
@@ -161,10 +128,8 @@ impl VM {
                     let condition = self.stack.pop().expect("Stack underflow");
 
                     if value_is_falsey(&condition) {
-                        // The condition is false, perform the jump.
                         ip += 3 + offset as usize;
                     } else {
-                        // The condition is true, just skip the jump instruction and its operand.
                         ip += 3;
                     }
                 }
@@ -180,14 +145,13 @@ impl VM {
                     let name_index = chunk.code[ip + 1] as usize;
                     let name = chunk.constants[name_index].clone();
                     if let Value::Str(name_str) = name {
-                        // Use the value already on the stack
                         let value = self.stack.pop().expect("Stack underflow");
                         self.globals.insert(name_str.clone(), value);
                         println!("Defined global variable: {}", name_str);
                     } else {
                         return Err("Global variable name must be a string.".to_string());
                     }
-                    ip += 2; // Move to the next instruction (1 for opcode + 1 for operand)
+                    ip += 2;
                 },
                 OpCode::GetGlobal => {
                     let name_index = chunk.code[ip + 1] as usize;
@@ -204,7 +168,7 @@ impl VM {
                     } else {
                         return Err("Global variable name must be a string.".to_string());
                     }
-                    ip += 2; // Move to the next instruction
+                    ip += 2;
                 },
                 OpCode::SetGlobal => {
                     let name_index = chunk.code[ip + 1] as usize;
@@ -219,7 +183,7 @@ impl VM {
                     } else {
                         return Err("Global variable name must be a string.".to_string());
                     }
-                    ip += 2; // Move to the next instruction
+                    ip += 2;
                 },
                 OpCode::OpNot => {
                     let value = self.stack.pop().expect("Stack underflow");
@@ -247,12 +211,12 @@ impl VM {
 }
 
 fn value_is_falsey(value: &Value) -> bool {
-    matches!(value, Value::Bool(false)) // For now, only `false` is falsey. You could add `Number(0)` etc.
+    matches!(value, Value::Bool(false))
 }
 
 #[cfg(test)]
 mod tests {
-    use super::*; // Import VM
+    use super::*;
     use crate::compiler::Compiler;
     use std::collections::HashMap;
     use ast::ast::Ast;
@@ -342,15 +306,6 @@ mod tests {
         assert_eq!(result.to_string(), "25");
     }
 
-    // Helper to compile and run, for tests where the compiler part is simple.
-    fn compile_and_run(nodes: Vec<Node>) -> Result<Value, String> {
-        // This is a more realistic test helper.
-        // First, we need to adapt the real compiler to handle our test AST.
-        // This reveals the tight coupling. For now, we manually create chunks.
-        unimplemented!()
-    }
-
-
     #[test]
     fn test_unary_negation() {
         // Simulates compiling `-10`
@@ -375,26 +330,25 @@ mod tests {
         let mut chunk = Chunk::new();
 
         // Statement 1: `let a = 20;`
-        let val_idx = chunk.add_constant(Value::Int(20));
-        chunk.write(OpCode::Constant as u8); // Push 20 onto the stack
+        let val_idx = chunk.add_constant(Int(20));
+        chunk.write(OpCode::Constant as u8);
         chunk.write(val_idx);
 
         let name_idx = chunk.add_constant(Value::Str("a".to_string()));
-        chunk.write(OpCode::DefineGlobal as u8); // Define 'a' with the value on the stack
+        chunk.write(OpCode::DefineGlobal as u8);
         chunk.write(name_idx);
 
         // Statement 2: `a / 4`
-        chunk.write(OpCode::GetGlobal as u8); // Push value of 'a' onto stack
+        chunk.write(OpCode::GetGlobal as u8);
         chunk.write(name_idx);
 
         let four_idx = chunk.add_constant(Int(4));
-        chunk.write(OpCode::Constant as u8); // Push 4 onto the stack
+        chunk.write(OpCode::Constant as u8);
         chunk.write(four_idx);
 
         chunk.write(OpCode::Divide as u8); // a / 4
-        chunk.write(OpCode::Return as u8); // Return the result
+        chunk.write(OpCode::Return as u8);
 
-        // Execute it
         let mut vm = VM::new();
         let result = vm.interpret(&chunk).unwrap();
         assert_eq!(result.to_string(), "5");
@@ -464,25 +418,21 @@ mod tests {
     #[test]
     fn test_expression_statement_cleans_stack() {
         let mut chunk = Chunk::new();
-
-        // Statement: 10;
+        
         let idx10 = chunk.add_constant(Value::Int(10));
         chunk.write(OpCode::Constant as u8); chunk.write(idx10);
         chunk.write(OpCode::Pop as u8); // Pop the unused value
 
-        // Statement: 20;
         let idx20 = chunk.add_constant(Value::Int(20));
         chunk.write(OpCode::Constant as u8); chunk.write(idx20);
-        chunk.write(OpCode::Pop as u8); // Pop the unused value
+        chunk.write(OpCode::Pop as u8);
 
-        // The compiler now adds a default return value before the final return.
         chunk.write(OpCode::Nil as u8);
         chunk.write(OpCode::Return as u8);
 
         let mut vm = VM::new();
         let result = vm.interpret(&chunk).unwrap();
 
-        // The result of a script full of statements should be `nil`.
         assert_eq!(result, Value::Null);
     }
 }

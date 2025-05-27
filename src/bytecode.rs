@@ -48,8 +48,6 @@ pub enum OpCode {
     Nil,
 }
 
-// Helper to convert from your AST Operator to an OpCode
-// You'll need to fill this in with your actual OperatorKind enum
 impl From<OperatorKind> for OpCode {
     fn from(op: OperatorKind) -> Self {
         match op {
@@ -57,7 +55,6 @@ impl From<OperatorKind> for OpCode {
             OperatorKind::Subtract => OpCode::Subtract,
             OperatorKind::Multiply => OpCode::Multiply,
             OperatorKind::Divide => OpCode::Divide,
-            // ... handle other operators or panic
             _ => {
                 panic!("Unsupported operator: {:?}", op);
             }
@@ -66,10 +63,14 @@ impl From<OperatorKind> for OpCode {
 }
 
 pub struct Chunk {
-    /// The actual bytecode instructions.
     pub code: Vec<u8>,
-    /// The pool of constant values.
     pub constants: Vec<Value>,
+}
+
+impl Default for Chunk {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl Chunk {
@@ -79,8 +80,7 @@ impl Chunk {
             constants: Vec::new(),
         }
     }
-
-    /// Writes a single byte of code (like an OpCode).
+    
     pub fn write(&mut self, byte: u8) {
         self.code.push(byte);
     }
@@ -88,7 +88,6 @@ impl Chunk {
     /// Adds a constant to the pool and returns its index.
     pub fn add_constant(&mut self, value: Value) -> u8 {
         self.constants.push(value);
-        // We'll use a single byte for the index for now, so we're limited to 256 constants.
         (self.constants.len() - 1) as u8
     }
 }
