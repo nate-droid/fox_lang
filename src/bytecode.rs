@@ -46,6 +46,7 @@ pub enum OpCode {
     Jump,
     Pop,
     Nil,
+    Call,
 }
 
 impl From<OperatorKind> for OpCode {

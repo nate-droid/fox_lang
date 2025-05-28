@@ -132,7 +132,47 @@ impl Compiler {
                 
                 Self::patch_jump(end_jump, chunk);
             }
-            _ => return Err("Unsupported AST node".to_string()),
+            Node::FunctionDecl {name, arguments, returns, body} => {
+                let name_index = chunk.add_constant(Value::Str(name.clone().to_string()));
+                chunk.write(OpCode::DefineGlobal as u8);
+                chunk.write(name_index);
+
+                // Compile the function body
+                let mut function_chunk = Chunk::new();
+                
+                for arg in arguments {
+                    let arg_index = chunk.add_constant(Value::Str(arg.clone().to_string()));
+                    function_chunk.write(OpCode::DefineGlobal as u8);
+                    function_chunk.write(arg_index);
+                }
+
+                Self::compile_block(body, &mut function_chunk)?;
+                
+                // Add a return instruction at the end of the function
+                function_chunk.write(OpCode::Return as u8);
+
+                // Store the compiled function in the global scope
+                let func_index = chunk.add_constant(Value::Str(name.clone().to_string()));
+                chunk.write(OpCode::Constant as u8);
+                chunk.write(func_index);
+            }
+            Node::Call {name, arguments, returns} => {
+                let name_index = chunk.add_constant(Value::Str(name.clone()));
+                chunk.write(OpCode::GetGlobal as u8);
+                chunk.write(name_index);
+
+                for arg in arguments {
+                    Self::compile_node(arg, chunk)?;
+                }
+
+                // Call the function
+                chunk.write(OpCode::Call as u8);
+                chunk.write(arguments.len() as u8);
+            }
+            _ => { 
+                // return Err("Unsupported AST node".to_string())
+                return Err(format!("Unsupported expression node: {:?}", node));
+            },
         }
         Ok(())
     }
@@ -239,6 +279,11 @@ pub mod debug {
             OpCode::Nil => {
                 simple_instruction(opcode, offset)
             }
+            OpCode::Call => {
+                let arg_count = chunk.code[offset + 1];
+                println!("{:_<-16} {:4}", format!("{:?}", opcode), arg_count);
+                offset + 2
+            }
         }
     }
 
@@ -261,7 +306,8 @@ pub mod debug {
 mod tests {
     use super::*;
     use std::collections::HashMap;
-    
+    use crate::lang_parser::LangParser;
+
     #[test]
     fn test_compile_simple_addition() {
         // 5 + 10
@@ -340,5 +386,16 @@ mod tests {
 
         use debug::disassemble_chunk;
         disassemble_chunk(&chunk, "Test Chunk");
+    }
+    
+    #[test]
+    fn simple_function() {
+        let input = "fn add(x, y) {
+            print(\"Adding\");
+        }";
+        let mut ast = LangParser::new(input);
+        let mut ast = ast.parse().expect("unexpected failure");
+        let chunk = Compiler::compile(&ast).expect("Compilation failed");
+        assert!(!chunk.code.is_empty(), "Compiled chunk should not be empty");
     }
 }

@@ -205,6 +205,23 @@ impl VM {
                         _ => return Err("Operands must be numbers.".to_string()),
                     }
                 },
+                OpCode::Call => {
+                    // Needs to have logic to handle not built-in functions.
+                    let func_name_index = chunk.code[ip + 1] as usize;
+                    let func_name = chunk.constants[func_name_index].clone();
+                    if let Value::Str(name) = func_name {
+                        match name.as_str() {
+                            "print" => {
+                                let value = self.stack.pop().expect("Stack underflow");
+                                println!("{}", value);
+                            }
+                            _ => return Err(format!("Unknown function '{}'.", name)),
+                        }
+                    } else {
+                        return Err("Function name must be a string.".to_string());
+                    }
+                    ip += 2;
+                }
             }
         }
     }

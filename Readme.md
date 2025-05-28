@@ -1,5 +1,12 @@
 # FoxLang and Theorem Prover
 
+(Update): At the moment, I am working on splitting this project into two separate projects. This current repo will remain
+focused on the actual language design itself. The more theorem prover aspects will be migrated to a dedicated repo. I was 
+noticing that the two were becoming too tightly coupled.
+
+(More Update): I'm currently working on a bytecode VM as an alternative to the interpreter. A small subsection of the language
+already is supported by the VM, and I am now working on adding function calls.
+
 # What is FoxLang?
 
 At it's core, FoxLang is an attempt at both creating a programming language and a theorem prover all at once. While indeed,
