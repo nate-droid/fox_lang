@@ -182,7 +182,7 @@ impl Display for Node {
             Node::Identifier { value } => {
                 write!(f, "{}", value.clone())
             }
-            Node::AssignStmt { left, right, kind } => {
+            Node::AssignStmt { left, right, .. } => {
                 // write!(f, "{} : {} = {:?}", name, kind, value)
                 write!(f, "{} = {}", left, right)
             }
@@ -198,7 +198,7 @@ impl Display for Node {
             Node::Type { name } => {
                 write!(f, "{}", name.clone())
             }
-            Node::Conditional { condition, consequence, alternative } => {
+            Node::Conditional { .. } => {
                 todo!()
             }
             Node::ForLoop { variable, range, body } => {
@@ -263,7 +263,7 @@ impl Node {
             Node::Atomic { value } => {
                 Ok(Box::from(Node::Atomic { value: value.clone() }))
             },
-            Node::AssignStmt { left, right, kind } => {
+            Node::AssignStmt { left, ..} => {
                 Ok(left.clone())
             },
             Node::BinaryExpression { left, .. } => Ok(Box::from(*left.clone())),

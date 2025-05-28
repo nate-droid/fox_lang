@@ -227,12 +227,12 @@ mod tests {
         println!("range width: {}", range_width);
         let mask = (1 << range_width) - 1;
         let shifted_val = value >> start_bit;
-        println!("res: {:b}", (shifted_val & mask));
+        println!("res: {:b}", shifted_val & mask);
 
         let mut i : i32 = 8;
         while i > 1 {
             let start = i - 2;
-            let end = (i) as u32;
+            let end = i as u32;
             // let range = end - start_bit + 1;
             let range = 3;
             println!("range: {}", range);

@@ -1,12 +1,8 @@
-use crate::cut::Axiom;
-use crate::lexer::{TokenKind};
-use std::collections::HashMap;
 use ast::ast::Ast;
 use ast::node::Node;
 
 #[cfg(test)]
 mod tests {
-    use crate::lang_parser;
     use super::*;
     use crate::lang_parser::LangParser;
 
@@ -29,7 +25,7 @@ mod tests {
     #[test]
     fn test_eval() {
         let mut ast = Ast::new();
-        ast.add_node(ast::node::Node::Call {
+        ast.add_node(Node::Call {
             name: "print".to_string(),
             arguments: vec![Node::Atomic {
                 value: ast::value::Value::Str("hello, world".to_string()),

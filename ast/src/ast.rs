@@ -182,7 +182,7 @@ impl Ast {
             Node::Atomic { value } => {
                 return Ok(Node::Atomic { value });
             }
-            Node::MMExpression { expression } => {
+            Node::MMExpression { .. } => {
                 // todo!("will be migrated")
                 // let mut axiom = Axiom::new("ax-1".to_string(), expression);
                 // axiom.solve().expect("unexpected failure");
@@ -1055,7 +1055,7 @@ impl Ast {
                                 let index = fetch_integer(replaced_index)?;
                                 let v = s.as_bytes()[index as usize] as char;
 
-                                Ok(Node::Atomic { value: crate::value::Value::Str(v.to_string()) })
+                                Ok(Node::Atomic { value: Value::Str(v.to_string()) })
                             }
                             _ => {
                                 println!("kind: {:?}", string_node.node_type());

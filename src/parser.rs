@@ -1,5 +1,4 @@
 use std::cmp::PartialEq;
-use std::collections::{BTreeMap};
 use crate::lexer::{Token, TokenKind};
 use crate::lexer::DefaultLexer;
 
@@ -26,7 +25,6 @@ use std::fmt::{Display};
 use crate::lang_lexer::LangLexer;
 use crate::lang_parser::token_kind_to_operator_kind;
 use crate::lexer::TokenKind::{ForAll, Identifier, RightParenthesis, SetVar};
-use crate::parser::Node::Atomic;
 use crate::parser::ParseError::{EmptyNode};
 
 #[derive(Debug)]
@@ -339,7 +337,7 @@ impl Parser {
                 // TODO: check and see if the next token is a binary operator, if yes, parse additionally
 
                 if self.peek().kind.is_binary_operator() {
-                    self.consume(TokenKind::RightParenthesis)?;
+                    self.consume(RightParenthesis)?;
                     let parent_left = Node::BinaryExpression {
                         left: Box::new(first.clone()),
                         operator: operator_kind,

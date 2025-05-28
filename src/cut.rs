@@ -1,9 +1,7 @@
 use crate::parser::{ParseError, Parser};
-use crate::lexer::TokenKind;
 
 use ast::node::Node;
 use ast::node::OperatorKind;
-use crate::lexer::TokenKind::Operator;
 
 pub struct Axiom {
     index: usize,

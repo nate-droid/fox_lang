@@ -92,7 +92,7 @@ impl Compiler {
                 }
             }
 
-            Node::AssignStmt { left, right, kind } => {
+            Node::AssignStmt { left, right, .. } => {
                 Self::compile_node(right, chunk)?;
                 
                 if let Node::Identifier { value: name } = &**left {

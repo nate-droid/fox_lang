@@ -35,9 +35,9 @@ impl<'a> LangParser<'a> {
         }
     }
 
-    pub fn parse(&mut self) -> Result<ast::ast::Ast, String> {
+    pub fn parse(&mut self) -> Result<Ast, String> {
         let mut globals = Vec::new();
-        let mut ast = ast::ast::Ast::new();
+        let mut ast = Ast::new();
 
         while self.position < self.tokens.len() {
             match self.current_token()?.kind {
@@ -102,7 +102,7 @@ impl<'a> LangParser<'a> {
 
                             self.consume(TokenKind::RightParenthesis)?;
 
-                            ast.add_node(ast::node::Node::Atomic { value: ast::value::Value::Bin(bin) });
+                            ast.add_node(Node::Atomic { value: ast::value::Value::Bin(bin) });
                             continue;
                         }
                         _ => {
@@ -114,7 +114,7 @@ impl<'a> LangParser<'a> {
                                     self.consume(TokenKind::Equality)?;
                                     let value = self.parse_node()?;
 
-                                    ast.add_node(ast::node::Node::AssignStmt {
+                                    ast.add_node(Node::AssignStmt {
                                         left: Box::from(Node::Ident {
                                             name: ident.value,
                                             kind: "var".to_string(),
@@ -361,7 +361,7 @@ impl<'a> LangParser<'a> {
 
                     if self.current_token()?.kind == TokenKind::Equality {
                         self.consume(TokenKind::Equality)?;
-                        let right = self.parse_node()?;
+                        let _right = self.parse_node()?;
                         panic!("not yet implemented");
                     }
 
@@ -1098,7 +1098,7 @@ pub fn token_kind_to_operator_kind(kind: TokenKind) -> Result<OperatorKind, Stri
         TokenKind::LessThan => Ok(OperatorKind::LessThan),
         TokenKind::GreaterThan => Ok(OperatorKind::GreaterThan),
         TokenKind::Or => Ok(OperatorKind::Or),
-        TokenKind::And => Ok(OperatorKind::And),
+        And => Ok(OperatorKind::And),
         TokenKind::Implies => Ok(OperatorKind::Implies),
         TokenKind::Biconditional => Ok(OperatorKind::Biconditional),
         TokenKind::Disjunction => Ok(OperatorKind::Disjunction),

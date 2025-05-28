@@ -36,7 +36,7 @@ pub(crate) fn fetch_string(node: Node) -> Result<String, String> {
                 Err("expected string".to_string())
             }
         }
-        Node::AssignStmt { left, right, kind } => {
+        Node::AssignStmt { left, .. } => {
             let left = fetch_string(*left)?;
             Ok(left)
         }
