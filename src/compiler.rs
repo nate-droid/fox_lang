@@ -95,13 +95,19 @@ impl Compiler {
             Node::AssignStmt { left, right, .. } => {
                 Self::compile_node(right, chunk)?;
                 
-                if let Node::Identifier { value: name } = &**left {
-                    let name_index = chunk.add_constant(Value::Str(name.clone()));
+                match &**left {
+                    Node::Identifier { value: name } => {
+                        let name_index = chunk.add_constant(Value::Str(name.clone()));
 
-                    chunk.write(OpCode::DefineGlobal as u8);
-                    chunk.write(name_index);
-                } else {
-                    return Err("Invalid assignment target".to_string());
+                        chunk.write(OpCode::DefineGlobal as u8);
+                        chunk.write(name_index);
+                    }
+                    Node::Ident { name, kind } => {
+                        let name_index = chunk.add_constant(Value::Str(name.clone()));
+                        chunk.write(OpCode::DefineGlobal as u8);
+                        chunk.write(name_index);
+                    }
+                    _ => return Err(format!("Invalid assignment target: {:?}", left)),
                 }
             }
 
@@ -168,6 +174,22 @@ impl Compiler {
                 // Call the function
                 chunk.write(OpCode::Call as u8);
                 chunk.write(arguments.len() as u8);
+            }
+            Node::Ident {name, kind} => {
+                let name_index = chunk.add_constant(Value::Str(name.clone()));
+                
+                match kind.as_str() {
+                    "global" | "var" => {
+                        chunk.write(OpCode::GetGlobal as u8);
+                        chunk.write(name_index);
+                    }
+                    "local" => {
+                        // For local variables, we would need a different handling
+                        // Here we assume local variables are not yet implemented
+                        return Err("Local variable handling not implemented".to_string());
+                    }
+                    _ => return Err(format!("Unsupported identifier kind: {}", kind)),
+                }
             }
             _ => { 
                 // return Err("Unsupported AST node".to_string())
@@ -397,5 +419,26 @@ mod tests {
         let mut ast = ast.parse().expect("unexpected failure");
         let chunk = Compiler::compile(&ast).expect("Compilation failed");
         assert!(!chunk.code.is_empty(), "Compiled chunk should not be empty");
+        use debug::disassemble_chunk;
+        disassemble_chunk(&chunk, "Test Chunk");
+    }
+    
+    #[test]
+    fn call_function() {
+        // let input = "fn add(x, y) {
+        //     print(\"Adding\");
+        //     let z = x + y;
+        //     print(z);
+        // }
+        // add(5, 10);";
+        let input = "let x = 5;
+        let y = 4;
+        let z = x + y;";
+        let mut ast = LangParser::new(input);
+        let mut ast = ast.parse().expect("unexpected failure");
+        let chunk = Compiler::compile(&ast).expect("Compilation failed");
+        assert!(!chunk.code.is_empty(), "Compiled chunk should not be empty");
+        use debug::disassemble_chunk;
+        disassemble_chunk(&chunk, "Test Chunk");
     }
 }
