@@ -11,7 +11,6 @@ pub enum Value {
     Bool(bool),
     Bin(u32),
     Null,
-    // Add other types as needed
 }
 
 impl Value {

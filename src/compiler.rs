@@ -22,6 +22,7 @@ impl Compiler {
         chunk.code[offset] = ((jump >> 8) & 0xff) as u8;
         chunk.code[offset + 1] = (jump & 0xff) as u8;
     }
+
     pub fn compile(ast: &Ast) -> Result<Chunk, String> {
         let mut chunk = Chunk::new();
 
@@ -76,7 +77,6 @@ impl Compiler {
                 };
                 
             }
-
             Node::BinaryExpression { left, operator, right } => {
                 Self::compile_node(left, chunk)?;
                 Self::compile_node(right, chunk)?;
@@ -91,7 +91,6 @@ impl Compiler {
                     _ => return Err("Unsupported unary operator".to_string()),
                 }
             }
-
             Node::AssignStmt { left, right, .. } => {
                 Self::compile_node(right, chunk)?;
                 
@@ -110,14 +109,12 @@ impl Compiler {
                     _ => return Err(format!("Invalid assignment target: {:?}", left)),
                 }
             }
-
             Node::Identifier { value: name } => {
                 let name_index = chunk.add_constant(Value::Str(name.clone()));
 
                 chunk.write(OpCode::GetGlobal as u8);
                 chunk.write(name_index);
             }
-            
             Node::Atomic { value } => {
                 let const_index = chunk.add_constant(value.clone());
                 chunk.write(OpCode::Constant as u8);
@@ -191,8 +188,7 @@ impl Compiler {
                     _ => return Err(format!("Unsupported identifier kind: {}", kind)),
                 }
             }
-            _ => { 
-                // return Err("Unsupported AST node".to_string())
+            _ => {
                 return Err(format!("Unsupported expression node: {:?}", node));
             },
         }
@@ -207,7 +203,7 @@ impl Compiler {
                     chunk.write(OpCode::Pop as u8);
                 }
             }
-            
+
             Self::compile_node(last_node, chunk)?;
             
             if !is_expression_node(last_node) {
@@ -435,7 +431,7 @@ mod tests {
         let y = 4;
         let z = x + y;";
         let mut ast = LangParser::new(input);
-        let mut ast = ast.parse().expect("unexpected failure");
+        let ast = ast.parse().expect("unexpected failure");
         let chunk = Compiler::compile(&ast).expect("Compilation failed");
         assert!(!chunk.code.is_empty(), "Compiled chunk should not be empty");
         use debug::disassemble_chunk;
